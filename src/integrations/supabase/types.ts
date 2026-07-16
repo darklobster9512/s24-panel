@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          city: string
+          company_description: string
+          company_name: string
+          contact_email: string | null
+          contact_person: string
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          email: string
+          forwarding_enabled: boolean
+          greeting_text: string
+          id: string
+          industry: string
+          logo_url: string | null
+          phone: string
+          postal_code: string
+          street: string
+          updated_at: string
+          vat_id: string
+          website: string
+        }
+        Insert: {
+          city: string
+          company_description: string
+          company_name: string
+          contact_email?: string | null
+          contact_person: string
+          contact_phone?: string | null
+          created_at?: string
+          created_by: string
+          email: string
+          forwarding_enabled?: boolean
+          greeting_text: string
+          id?: string
+          industry: string
+          logo_url?: string | null
+          phone: string
+          postal_code: string
+          street: string
+          updated_at?: string
+          vat_id: string
+          website: string
+        }
+        Update: {
+          city?: string
+          company_description?: string
+          company_name?: string
+          contact_email?: string | null
+          contact_person?: string
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string
+          forwarding_enabled?: boolean
+          greeting_text?: string
+          id?: string
+          industry?: string
+          logo_url?: string | null
+          phone?: string
+          postal_code?: string
+          street?: string
+          updated_at?: string
+          vat_id?: string
+          website?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null
