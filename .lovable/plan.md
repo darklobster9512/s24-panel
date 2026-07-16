@@ -1,10 +1,10 @@
-## Änderungen
+## Änderung
 
-1. **Logo-Text umbenennen** — überall wo aktuell „Assistify Pro" steht, ersetzen durch „Sekreteriat**24**", wobei die „24" in der Akzentfarbe (`text-primary`, #7bed9f) gerendert wird:
-   - `src/pages/Auth.tsx` (Branding-Panel links)
-   - `src/components/DashboardShell.tsx` (Header-Logo in allen drei Dashboards)
-   - `src/pages/Auth.tsx` — Willkommens-Untertitel bleibt generisch
+Signup-Formular in `src/pages/Auth.tsx` vereinfachen:
 
-2. **Auth-Card höher machen** — Card ist aktuell nur so hoch wie der Formular-Inhalt. Ich gebe der Card eine Mindesthöhe (z. B. `min-h-[640px]`), damit sie deutlich vertikal wächst. Das linke Branding-Panel füllt den Extra-Platz automatisch (bereits `flex flex-col justify-between`), und rechts wird das Formular zentriert. Betroffen: der Grid-Wrapper in `src/pages/Auth.tsx`.
+- Entfernen: „Vollständiger Name", „Unternehmen" und Rollenauswahl (Kunde/Mitarbeiter)
+- Beibehalten: nur E-Mail und Passwort
+- `supabase.auth.signUp` ohne `options.data` — keine Metadaten mehr
+- Neue User bekommen weiterhin über den bestehenden `handle_new_user`-Trigger automatisch die Default-Rolle `kunde`
 
-Keine sonstigen Änderungen — Farben, Layout-Split 50/50 und Funktionalität bleiben identisch.
+Keine anderen Änderungen (Layout, Branding, Login-Tab, Dashboards, DB bleiben unangetastet).
