@@ -398,8 +398,8 @@ function StepAdresse({ form }: { form: FR }) {
 function StepKontakt({ form }: { form: FR }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <TextField form={form} name="phone" label="Telefonnummer" />
-      <TextField form={form} name="email" label="E-Mail" type="email" />
+      <TextField form={form} name="phone" label="Telefonnummer" placeholder="+49 30 1234567" />
+      <TextField form={form} name="email" label="E-Mail" type="email" placeholder="info@muster.de" />
     </div>
   );
 }
@@ -407,13 +407,14 @@ function StepKontakt({ form }: { form: FR }) {
 function StepAnsprechpartner({ form }: { form: FR }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <TextField form={form} name="contact_person" label="Name" />
-      <TextField form={form} name="contact_phone" label="Telefon (optional)" />
+      <TextField form={form} name="contact_person" label="Name" placeholder="Max Mustermann" />
+      <TextField form={form} name="contact_phone" label="Telefon (optional)" placeholder="+49 170 1234567" />
       <TextField
         form={form}
         name="contact_email"
         label="E-Mail (optional)"
         type="email"
+        placeholder="max@muster.de"
       />
     </div>
   );
