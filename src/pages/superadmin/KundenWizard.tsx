@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 
-// Draft schema: alles optional, damit man jederzeit speichern kann
 const draftSchema = z.object({
   company_name: z.string().trim().max(200).optional().or(z.literal("")),
   website: z.string().trim().max(300).optional().or(z.literal("")),
@@ -56,7 +55,6 @@ const draftSchema = z.object({
   forwarding_enabled: z.boolean(),
 });
 
-// Full schema: gilt beim finalen "Kunde anlegen"
 const fullSchema = z.object({
   company_name: z.string().trim().min(1, "Pflichtfeld").max(200),
   website: z.string().trim().min(1, "Pflichtfeld").max(300),
@@ -84,18 +82,38 @@ const fullSchema = z.object({
 type FormValues = z.infer<typeof draftSchema>;
 type Field = FieldPath<FormValues>;
 
-const STEPS: { title: string; fields: Field[] }[] = [
+type StepDef = {
+  title: string;
+  description: string;
+  fields: Field[];
+};
+
+const STEPS: StepDef[] = [
   {
     title: "Unternehmen",
+    description: "Basisdaten der Firma und Beschreibung des Geschäfts.",
     fields: ["company_name", "website", "industry", "vat_id", "company_description"],
   },
-  { title: "Adresse", fields: ["street", "postal_code", "city"] },
-  { title: "Kontakt Firma", fields: ["phone", "email"] },
+  {
+    title: "Adresse",
+    description: "Sitz des Unternehmens für Verträge und Abrechnung.",
+    fields: ["street", "postal_code", "city"],
+  },
+  {
+    title: "Kontakt Firma",
+    description: "Zentrale Rufnummer und E-Mail der Firma.",
+    fields: ["phone", "email"],
+  },
   {
     title: "Ansprechpartner",
+    description: "Feste Kontaktperson für Rückfragen und Weiterleitungen.",
     fields: ["contact_person", "contact_phone", "contact_email"],
   },
-  { title: "Konfiguration", fields: ["greeting_text", "forwarding_enabled"] },
+  {
+    title: "Konfiguration",
+    description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
+    fields: ["greeting_text", "forwarding_enabled"],
+  },
 ];
 
 const DEFAULTS: FormValues = {
@@ -116,7 +134,6 @@ const DEFAULTS: FormValues = {
   forwarding_enabled: false,
 };
 
-// Nullable string-Felder — leere Strings werden zu null
 const NULLABLE_STRINGS: Field[] = [
   "company_name",
   "website",
@@ -206,10 +223,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const submitMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       if (!user) throw new Error("Nicht angemeldet");
-      // Volle Validierung
       const parsed = fullSchema.safeParse(values);
       if (!parsed.success) {
-        // Fehler in Form-State schreiben und zum ersten fehlerhaften Step springen
         let firstErrStep = -1;
         for (const issue of parsed.error.issues) {
           const path = issue.path[0] as Field;
@@ -290,7 +305,6 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       qc.invalidateQueries({ queryKey: ["client", res.id] });
       setLogoFile(null);
       if (mode === "create") {
-        // Auf Edit-Route umschalten, damit weitere Speicherungen updaten
         navigate(`/superadmin/kunden/bearbeiten/${res.id}`, { replace: true });
       }
     },
@@ -299,6 +313,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
 
   const isLast = step === STEPS.length - 1;
   const busy = submitMutation.isPending || draftMutation.isPending;
+  const current = STEPS[step];
 
   function onSubmit(values: FormValues) {
     submitMutation.mutate(values);
@@ -324,74 +339,109 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         }
       />
 
-      <Panel>
-        <Stepper current={step} onJump={setStep} />
-
+      <Panel className="overflow-hidden !p-0">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
+          <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Lade Kunde…
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-6">
-              <div className="min-h-[320px]">
-                {step === 0 && <StepUnternehmen form={form} />}
-                {step === 1 && <StepAdresse form={form} />}
-                {step === 2 && <StepKontakt form={form} />}
-                {step === 3 && <StepAnsprechpartner form={form} />}
-                {step === 4 && (
-                  <StepKonfig
-                    form={form}
-                    logoFile={logoFile}
-                    setLogoFile={setLogoFile}
-                    existingLogo={existing.data?.logo_url ?? null}
-                  />
-                )}
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="grid lg:grid-cols-[280px_1fr]"
+            >
+              {/* Sidebar Stepper (desktop) */}
+              <aside className="hidden border-r border-border/60 bg-muted/20 p-6 lg:block">
+                <div className="sticky top-6">
+                  <p className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Fortschritt
+                  </p>
+                  <VerticalStepper current={step} onJump={setStep} />
+                </div>
+              </aside>
+
+              {/* Mobile Stepper */}
+              <div className="border-b border-border/60 bg-muted/20 p-4 lg:hidden">
+                <HorizontalStepper current={step} onJump={setStep} />
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setStep((s) => Math.max(0, s - 1))}
-                  disabled={step === 0 || busy}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
-                </Button>
+              {/* Content */}
+              <div className="flex min-h-[520px] flex-col">
+                <div className="flex-1 space-y-6 p-6 lg:p-10">
+                  <header className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wider text-primary">
+                      Schritt {step + 1} von {STEPS.length}
+                    </p>
+                    <h2 className="text-2xl font-semibold tracking-tight">
+                      {current.title}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      {current.description}
+                    </p>
+                  </header>
 
-                <div className="flex items-center gap-2">
+                  <div className="pt-2">
+                    {step === 0 && <StepUnternehmen form={form} />}
+                    {step === 1 && <StepAdresse form={form} />}
+                    {step === 2 && <StepKontakt form={form} />}
+                    {step === 3 && <StepAnsprechpartner form={form} />}
+                    {step === 4 && (
+                      <StepKonfig
+                        form={form}
+                        logoFile={logoFile}
+                        setLogoFile={setLogoFile}
+                        existingLogo={existing.data?.logo_url ?? null}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-border/60 bg-background/60 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between lg:px-10">
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={() => draftMutation.mutate()}
-                    disabled={busy}
+                    variant="ghost"
+                    onClick={() => setStep((s) => Math.max(0, s - 1))}
+                    disabled={step === 0 || busy}
                   >
-                    {draftMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <FileText className="mr-2 h-4 w-4" />
-                    )}
-                    Als Entwurf speichern
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
                   </Button>
 
-                  {isLast ? (
-                    <Button type="submit" disabled={busy}>
-                      {submitMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="mr-2 h-4 w-4" />
-                      )}
-                      {mode === "edit" ? "Speichern" : "Kunde anlegen"}
-                    </Button>
-                  ) : (
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
                     <Button
                       type="button"
-                      onClick={() => setStep((s) => Math.min(s + 1, STEPS.length - 1))}
+                      variant="outline"
+                      onClick={() => draftMutation.mutate()}
                       disabled={busy}
                     >
-                      Weiter <ArrowRight className="ml-2 h-4 w-4" />
+                      {draftMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="mr-2 h-4 w-4" />
+                      )}
+                      Als Entwurf speichern
                     </Button>
-                  )}
+
+                    {isLast ? (
+                      <Button type="submit" disabled={busy}>
+                        {submitMutation.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="mr-2 h-4 w-4" />
+                        )}
+                        {mode === "edit" ? "Speichern" : "Kunde anlegen"}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          setStep((s) => Math.min(s + 1, STEPS.length - 1))
+                        }
+                        disabled={busy}
+                      >
+                        Weiter <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </form>
@@ -402,7 +452,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   );
 }
 
-function Stepper({
+function VerticalStepper({
   current,
   onJump,
 }: {
@@ -410,17 +460,71 @@ function Stepper({
   onJump: (i: number) => void;
 }) {
   return (
-    <ol className="flex flex-wrap items-center gap-2">
+    <ol className="space-y-1">
       {STEPS.map((s, i) => {
         const done = i < current;
         const active = i === current;
         return (
-          <li key={s.title} className="flex items-center gap-2">
+          <li key={s.title}>
             <button
               type="button"
               onClick={() => onJump(i)}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:border-primary/60",
+                "group flex w-full items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition",
+                active && "border-primary/40 bg-primary/10",
+                !active && "hover:bg-muted/60",
+              )}
+            >
+              <span
+                className={cn(
+                  "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition",
+                  active && "bg-primary text-primary-foreground",
+                  done && "bg-primary/20 text-primary",
+                  !active && !done && "bg-muted text-muted-foreground",
+                )}
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className={cn(
+                    "block text-sm font-medium",
+                    active ? "text-foreground" : "text-foreground/80",
+                  )}
+                >
+                  {s.title}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  {s.description}
+                </span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function HorizontalStepper({
+  current,
+  onJump,
+}: {
+  current: number;
+  onJump: (i: number) => void;
+}) {
+  return (
+    <ol className="flex items-center gap-1 overflow-x-auto">
+      {STEPS.map((s, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <li key={s.title} className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onJump(i)}
+              className={cn(
+                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition",
                 active && "border-primary bg-primary/10 text-primary",
                 done && "border-primary/40 bg-primary/5 text-foreground",
                 !active && !done && "border-border text-muted-foreground",
@@ -436,10 +540,10 @@ function Stepper({
               >
                 {done ? <Check className="h-3 w-3" /> : i + 1}
               </span>
-              {s.title}
+              {active && <span className="whitespace-nowrap">{s.title}</span>}
             </button>
             {i < STEPS.length - 1 && (
-              <span className="h-px w-4 bg-border sm:w-6" />
+              <span className="h-px w-3 shrink-0 bg-border" />
             )}
           </li>
         );
@@ -456,19 +560,21 @@ function TextField({
   label,
   type = "text",
   placeholder,
+  className,
 }: {
   form: FR;
   name: Field;
   label: string;
   type?: string;
   placeholder?: string;
+  className?: string;
 }) {
   return (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className={className}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input
@@ -487,22 +593,20 @@ function TextField({
 
 function StepUnternehmen({ form }: { form: FR }) {
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField form={form} name="company_name" label="Unternehmen" placeholder="Muster GmbH" />
-        <TextField form={form} name="website" label="Website" placeholder="https://muster.de" />
-        <TextField form={form} name="industry" label="Branche" placeholder="Handwerk, IT, Kanzlei, …" />
-        <TextField form={form} name="vat_id" label="USt-ID" placeholder="DE123456789" />
-      </div>
+    <div className="grid gap-5 md:grid-cols-2">
+      <TextField form={form} name="company_name" label="Unternehmen" placeholder="Muster GmbH" />
+      <TextField form={form} name="website" label="Website" placeholder="https://muster.de" />
+      <TextField form={form} name="industry" label="Branche" placeholder="Handwerk, IT, Kanzlei, …" />
+      <TextField form={form} name="vat_id" label="USt-ID" placeholder="DE123456789" />
       <FormField
         control={form.control}
         name="company_description"
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="md:col-span-2">
             <FormLabel>Firmeninhalt</FormLabel>
             <FormControl>
               <Textarea
-                rows={4}
+                rows={5}
                 placeholder="Kurze Beschreibung, was das Unternehmen macht…"
                 {...field}
                 value={(field.value as string) ?? ""}
@@ -518,19 +622,35 @@ function StepUnternehmen({ form }: { form: FR }) {
 
 function StepAdresse({ form }: { form: FR }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <TextField form={form} name="street" label="Straße & Hausnummer" placeholder="Musterstraße 12" />
-      <div className="grid grid-cols-[120px_1fr] gap-3">
-        <TextField form={form} name="postal_code" label="PLZ" placeholder="10115" />
-        <TextField form={form} name="city" label="Stadt" placeholder="Berlin" />
-      </div>
+    <div className="grid gap-5 md:grid-cols-6">
+      <TextField
+        form={form}
+        name="street"
+        label="Straße & Hausnummer"
+        placeholder="Musterstraße 12"
+        className="md:col-span-6"
+      />
+      <TextField
+        form={form}
+        name="postal_code"
+        label="PLZ"
+        placeholder="10115"
+        className="md:col-span-2"
+      />
+      <TextField
+        form={form}
+        name="city"
+        label="Stadt"
+        placeholder="Berlin"
+        className="md:col-span-4"
+      />
     </div>
   );
 }
 
 function StepKontakt({ form }: { form: FR }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-5 md:grid-cols-2">
       <TextField form={form} name="phone" label="Telefonnummer" placeholder="+49 30 1234567" />
       <TextField form={form} name="email" label="E-Mail" type="email" placeholder="info@muster.de" />
     </div>
@@ -539,9 +659,20 @@ function StepKontakt({ form }: { form: FR }) {
 
 function StepAnsprechpartner({ form }: { form: FR }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <TextField form={form} name="contact_person" label="Name" placeholder="Max Mustermann" />
-      <TextField form={form} name="contact_phone" label="Telefon (optional)" placeholder="+49 170 1234567" />
+    <div className="grid gap-5 md:grid-cols-2">
+      <TextField
+        form={form}
+        name="contact_person"
+        label="Name"
+        placeholder="Max Mustermann"
+        className="md:col-span-2"
+      />
+      <TextField
+        form={form}
+        name="contact_phone"
+        label="Telefon (optional)"
+        placeholder="+49 170 1234567"
+      />
       <TextField
         form={form}
         name="contact_email"
@@ -571,17 +702,43 @@ function StepKonfig({
   }, [logoFile, existingLogo]);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Logo (optional)</Label>
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+    <div className="grid gap-6 md:grid-cols-2">
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <Label>Logo (optional)</Label>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+          />
+          {logoLabel && (
+            <p className="text-xs text-muted-foreground">{logoLabel}</p>
+          )}
+        </div>
+
+        <FormField
+          control={form.control}
+          name="forwarding_enabled"
+          render={({ field }) => (
+            <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className="mt-0.5"
+                />
+              </FormControl>
+              <div className="space-y-1">
+                <FormLabel className="!mt-0 cursor-pointer">
+                  Weiterleitung erwünscht
+                </FormLabel>
+                <p className="text-xs text-muted-foreground">
+                  Anrufe werden an den Ansprechpartner durchgestellt.
+                </p>
+              </div>
+            </FormItem>
+          )}
         />
-        {logoLabel && (
-          <p className="text-xs text-muted-foreground">{logoLabel}</p>
-        )}
       </div>
 
       <FormField
@@ -592,31 +749,13 @@ function StepKonfig({
             <FormLabel>Begrüßungstext</FormLabel>
             <FormControl>
               <Textarea
-                rows={3}
+                rows={8}
                 placeholder="Guten Tag, Sie sind verbunden mit …"
                 {...field}
                 value={(field.value as string) ?? ""}
               />
             </FormControl>
             <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="forwarding_enabled"
-        render={({ field }) => (
-          <FormItem className="flex items-center gap-3 space-y-0">
-            <FormControl>
-              <Checkbox
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-            <FormLabel className="!mt-0 cursor-pointer">
-              Weiterleitung erwünscht
-            </FormLabel>
           </FormItem>
         )}
       />
