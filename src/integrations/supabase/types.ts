@@ -16,70 +16,73 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
-          city: string
-          company_description: string
-          company_name: string
+          city: string | null
+          company_description: string | null
+          company_name: string | null
           contact_email: string | null
-          contact_person: string
+          contact_person: string | null
           contact_phone: string | null
           created_at: string
           created_by: string
-          email: string
+          email: string | null
           forwarding_enabled: boolean
-          greeting_text: string
+          greeting_text: string | null
           id: string
-          industry: string
+          industry: string | null
+          is_draft: boolean
           logo_url: string | null
-          phone: string
-          postal_code: string
-          street: string
+          phone: string | null
+          postal_code: string | null
+          street: string | null
           updated_at: string
-          vat_id: string
-          website: string
+          vat_id: string | null
+          website: string | null
         }
         Insert: {
-          city: string
-          company_description: string
-          company_name: string
+          city?: string | null
+          company_description?: string | null
+          company_name?: string | null
           contact_email?: string | null
-          contact_person: string
+          contact_person?: string | null
           contact_phone?: string | null
           created_at?: string
           created_by: string
-          email: string
+          email?: string | null
           forwarding_enabled?: boolean
-          greeting_text: string
+          greeting_text?: string | null
           id?: string
-          industry: string
+          industry?: string | null
+          is_draft?: boolean
           logo_url?: string | null
-          phone: string
-          postal_code: string
-          street: string
+          phone?: string | null
+          postal_code?: string | null
+          street?: string | null
           updated_at?: string
-          vat_id: string
-          website: string
+          vat_id?: string | null
+          website?: string | null
         }
         Update: {
-          city?: string
-          company_description?: string
-          company_name?: string
+          city?: string | null
+          company_description?: string | null
+          company_name?: string | null
           contact_email?: string | null
-          contact_person?: string
+          contact_person?: string | null
           contact_phone?: string | null
           created_at?: string
           created_by?: string
-          email?: string
+          email?: string | null
           forwarding_enabled?: boolean
-          greeting_text?: string
+          greeting_text?: string | null
           id?: string
-          industry?: string
+          industry?: string | null
+          is_draft?: boolean
           logo_url?: string | null
-          phone?: string
-          postal_code?: string
-          street?: string
+          phone?: string | null
+          postal_code?: string | null
+          street?: string | null
           updated_at?: string
-          vat_id?: string
-          website?: string
+          vat_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
