@@ -1,38 +1,26 @@
-## Problem 1 — "Full-page reload" beim Reiter-Wechsel
+## Ziel
+Wizard freischalten für freie Navigation + Draft-Speicherung.
 
-Ursache: In `src/App.tsx` sind alle Superadmin-Seiten per `lazy()` geladen und die `<Suspense>`-Grenze umfasst das gesamte `<Routes>`. Beim Wechsel zwischen z. B. `/superadmin/kunden` und `/superadmin/anrufe` wird beim ersten Aufruf jedes Chunks der `PageFallback` (Vollbild-Spinner) gezeigt — dadurch verschwindet auch Sidebar/Header kurz und es wirkt wie ein Reload.
+## Änderungen
 
-Fix (klein, gezielt):
-1. Alle Superadmin-Seiten **eager** importieren statt `lazy()` — es sind Mockups, sehr leicht. `SuperadminLayout` selbst darf lazy bleiben, das kostet nur einmal beim ersten Betreten von `/superadmin`.
-2. In `SuperadminLayout.tsx` eine zusätzliche innere `<Suspense>`-Grenze um den `<Outlet />` ziehen mit einem lokalen, kleinen Loader (nur im Content-Bereich, nicht Vollbild). So bleibt beim Navigieren die Sidebar stehen — auch für zukünftige, evtl. lazy geladene Unterseiten.
+### 1. DB-Migration: `clients` Tabelle
+- Neue Spalte `is_draft BOOLEAN NOT NULL DEFAULT false`.
+- Alle Pflichtfelder auf `NULLABLE` setzen (`company_name`, `website`, `company_description`, `industry`, `contact_person`, `street`, `postal_code`, `city`, `vat_id`, `phone`, `email`, `greeting_text`), damit unvollständige Drafts gespeichert werden können.
 
-Ergebnis: Sidebar + Header bleiben beim Reiter-Wechsel stehen, kein Vollbild-Flash mehr.
+### 2. `src/pages/superadmin/KundenWizard.tsx`
+- **Freie Navigation**: `Stepper` erlaubt Klick auf jeden Step (kein `disabled`, kein `i <= current`-Guard). „Weiter"-Button ohne `form.trigger`-Validierung.
+- **Zwei Zod-Schemas**:
+  - `draftSchema` — alles optional (für Draft-Speicherung).
+  - `fullSchema` — bestehendes strenges Schema (für finales „Kunde anlegen").
+- Resolver auf `draftSchema` setzen; beim finalen Submit manuell `fullSchema.parse` prüfen und Fehler in Form-State schreiben (mit Sprung zum ersten fehlerhaften Step).
+- **Neuer Button „Als Entwurf speichern"** (mit `Save`-Icon, `variant="outline"`) neben Zurück/Weiter, immer sichtbar. Speichert aktuelle Werte + `is_draft: true`, ohne Validierung, mit Logo-Upload falls vorhanden. Anschließend Redirect zu `/superadmin/kunden` oder `bearbeiten/:id` (bei Neuanlage: umschalten auf Edit-Route mit neuer ID).
+- **Finaler Submit** setzt `is_draft: false`.
+- Leere Strings werden beim Speichern zu `null` konvertiert (nicht nur `contact_*`, sondern alle jetzt nullable Felder).
 
-## Problem 2 — Fehlende Platzhalter im "Kunde anlegen"-Wizard
+### 3. `src/pages/superadmin/Kunden.tsx`
+- Draft-Badge in der Kunden-Tabelle anzeigen (Kunden mit `is_draft = true` visuell markieren, z.B. „Entwurf"-Pill).
 
-In `src/pages/superadmin/KundenWizard.tsx` haben die meisten Felder keinen `placeholder`. Ich ergänze sinnvolle Beispieltexte für alle Eingabefelder:
-
-- Unternehmen: „Muster GmbH"
-- Website: „https://muster.de" (bereits vorhanden)
-- Branche: „Handwerk, IT, Kanzlei, …"
-- USt-ID: „DE123456789"
-- Firmeninhalt: „Kurze Beschreibung was das Unternehmen macht…"
-- Straße & Hausnummer: „Musterstraße 12"
-- PLZ: „10115"
-- Stadt: „Berlin"
-- Telefon (Firma): „+49 30 1234567"
-- E-Mail (Firma): „info@muster.de"
-- Ansprechpartner Name: „Max Mustermann"
-- Ansprechpartner Telefon: „+49 170 1234567"
-- Ansprechpartner E-Mail: „max@muster.de"
-- Begrüßungstext: bereits vorhanden
-
-Technisch: `TextField` gibt `placeholder` schon durch — nur pro Feld setzen. Für die zwei `Textarea`-Felder direkt `placeholder` am `<Textarea>` ergänzen.
-
-## Betroffene Dateien
-
-- `src/App.tsx` — Superadmin-Seiten von `lazy` auf normale Imports umstellen.
-- `src/components/superadmin/SuperadminLayout.tsx` — kleine `<Suspense>`-Grenze mit lokalem Loader um den `<Outlet />`.
-- `src/pages/superadmin/KundenWizard.tsx` — Platzhalter an allen Wizard-Feldern ergänzen.
-
-Nicht verändert: Routing-Pfade, Datenbank, Rollen-Guard.
+## Technische Notizen
+- Reihenfolge: erst Migration (macht Spalten nullable, fügt `is_draft` hinzu), dann Code-Anpassung nach Typen-Regen.
+- Bestehende Kunden bleiben unverändert (Default `is_draft = false`).
+- RLS bleibt gleich (Superadmin-Only Policy deckt beides ab).
