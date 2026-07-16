@@ -115,8 +115,10 @@ export default function Kunden() {
                 >
                   {c.forwarding_enabled ? "aktiv" : "aus"}
                 </Badge>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                  <Link to={`/superadmin/kunden/bearbeiten/${c.id}`} aria-label="Bearbeiten">
+                    <Pencil className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             ))}
