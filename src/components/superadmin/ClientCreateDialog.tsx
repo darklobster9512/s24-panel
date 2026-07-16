@@ -295,8 +295,9 @@ function TextField({
   type = "text",
   placeholder,
 }: {
-  form: ReturnType<typeof useForm<FormValues>>;
-  name: keyof FormValues;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: any;
+  name: string;
   label: string;
   type?: string;
   placeholder?: string;
@@ -304,12 +305,12 @@ function TextField({
   return (
     <FormField
       control={form.control}
-      name={name as Exclude<keyof FormValues, "forwarding_enabled">}
+      name={name}
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input type={type} placeholder={placeholder} {...field} value={(field.value as string) ?? ""} />
+            <Input type={type} placeholder={placeholder} {...field} value={field.value ?? ""} />
           </FormControl>
           <FormMessage />
         </FormItem>
