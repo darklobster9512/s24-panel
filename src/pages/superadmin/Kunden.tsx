@@ -54,11 +54,11 @@ export default function Kunden() {
         title="Kunden"
         subtitle="Alle Firmenkunden verwalten und neue Kunden anlegen."
         actions={
-          <ClientCreateDialog>
-            <Button size="sm" className="gap-2">
+          <Button asChild size="sm" className="gap-2">
+            <Link to="/superadmin/kunden/anlegen">
               <Plus className="h-4 w-4" /> Kunde anlegen
-            </Button>
-          </ClientCreateDialog>
+            </Link>
+          </Button>
         }
       />
 
