@@ -13,6 +13,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const SuperadminLayout = lazy(() => import("./components/superadmin/SuperadminLayout"));
 const SuperadminOverview = lazy(() => import("./pages/superadmin/Overview"));
 const SuperadminKunden = lazy(() => import("./pages/superadmin/Kunden"));
+const SuperadminKundenWizard = lazy(() => import("./pages/superadmin/KundenWizard"));
 const SuperadminMitarbeiter = lazy(() => import("./pages/superadmin/Mitarbeiter"));
 const SuperadminZuweisungen = lazy(() => import("./pages/superadmin/Zuweisungen"));
 const SuperadminAnrufe = lazy(() => import("./pages/superadmin/Anrufe"));
