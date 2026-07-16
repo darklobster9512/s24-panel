@@ -222,11 +222,8 @@ function LoginForm() {
 }
 
 function SignupForm() {
-  const [fullName, setFullName] = useState("");
-  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<SignupRole>("kunde");
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -236,14 +233,7 @@ function SignupForm() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          company,
-          role: selectedRole,
-        },
-      },
+      options: { emailRedirectTo: redirectUrl },
     });
     setSubmitting(false);
     if (error) {
@@ -258,73 +248,29 @@ function SignupForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="signup-name">Vollständiger Name</Label>
+        <Label htmlFor="signup-email">E-Mail</Label>
         <Input
-          id="signup-name"
+          id="signup-email"
+          type="email"
+          autoComplete="email"
           required
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="name@firma.de"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="signup-company">Unternehmen</Label>
+        <Label htmlFor="signup-password">Passwort</Label>
         <Input
-          id="signup-company"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          placeholder="optional"
+          id="signup-password"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="signup-email">E-Mail</Label>
-          <Input
-            id="signup-email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="signup-password">Passwort</Label>
-          <Input
-            id="signup-password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Ich bin</Label>
-        <RadioGroup
-          value={selectedRole}
-          onValueChange={(v) => setSelectedRole(v as SignupRole)}
-          className="grid grid-cols-2 gap-2"
-        >
-          <label
-            htmlFor="role-kunde"
-            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent"
-          >
-            <RadioGroupItem id="role-kunde" value="kunde" />
-            Kunde
-          </label>
-          <label
-            htmlFor="role-mitarbeiter"
-            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-accent"
-          >
-            <RadioGroupItem id="role-mitarbeiter" value="mitarbeiter" />
-            Mitarbeiter
-          </label>
-        </RadioGroup>
-      </div>
-
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? (
           <Loader2 className="h-4 w-4 animate-spin" />
