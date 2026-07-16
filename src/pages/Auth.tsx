@@ -42,7 +42,7 @@ export default function AuthPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="grid w-full max-w-6xl overflow-hidden rounded-3xl bg-card shadow-mockup md:grid-cols-2"
+          className="grid w-full max-w-6xl overflow-hidden rounded-3xl bg-card shadow-mockup md:min-h-[720px] md:grid-cols-2"
         >
           <BrandingPanel />
           <FormPanel />
@@ -71,7 +71,7 @@ function BrandingPanel() {
             <Headphones className="h-5 w-5" />
           </div>
           <span className="text-lg font-semibold tracking-tight">
-            Assistify Pro
+            Sekreteriat<span className="text-primary">24</span>
           </span>
         </Link>
 
