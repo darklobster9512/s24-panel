@@ -57,6 +57,8 @@ export default function App() {
                   <Route path="/superadmin" element={<SuperadminLayout />}>
                     <Route index element={<SuperadminOverview />} />
                     <Route path="kunden" element={<SuperadminKunden />} />
+                    <Route path="kunden/anlegen" element={<SuperadminKundenWizard mode="create" />} />
+                    <Route path="kunden/bearbeiten/:id" element={<SuperadminKundenWizard mode="edit" />} />
                     <Route path="mitarbeiter" element={<SuperadminMitarbeiter />} />
                     <Route path="zuweisungen" element={<SuperadminZuweisungen />} />
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
