@@ -155,8 +155,10 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       };
 
       if (mode === "edit" && id) {
-        const payload: Record<string, unknown> = { ...base };
-        if (logo_url !== undefined) payload.logo_url = logo_url;
+        const payload = {
+          ...base,
+          ...(logo_url !== undefined ? { logo_url } : {}),
+        };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
       } else {
