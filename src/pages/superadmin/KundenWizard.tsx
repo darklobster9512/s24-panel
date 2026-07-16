@@ -357,10 +357,10 @@ function StepUnternehmen({ form }: { form: FR }) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField form={form} name="company_name" label="Unternehmen" />
-        <TextField form={form} name="website" label="Website" placeholder="https://…" />
-        <TextField form={form} name="industry" label="Branche" />
-        <TextField form={form} name="vat_id" label="USt-ID" />
+        <TextField form={form} name="company_name" label="Unternehmen" placeholder="Muster GmbH" />
+        <TextField form={form} name="website" label="Website" placeholder="https://muster.de" />
+        <TextField form={form} name="industry" label="Branche" placeholder="Handwerk, IT, Kanzlei, …" />
+        <TextField form={form} name="vat_id" label="USt-ID" placeholder="DE123456789" />
       </div>
       <FormField
         control={form.control}
@@ -369,7 +369,11 @@ function StepUnternehmen({ form }: { form: FR }) {
           <FormItem>
             <FormLabel>Firmeninhalt</FormLabel>
             <FormControl>
-              <Textarea rows={4} {...field} />
+              <Textarea
+                rows={4}
+                placeholder="Kurze Beschreibung, was das Unternehmen macht…"
+                {...field}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -382,10 +386,10 @@ function StepUnternehmen({ form }: { form: FR }) {
 function StepAdresse({ form }: { form: FR }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <TextField form={form} name="street" label="Straße & Hausnummer" />
+      <TextField form={form} name="street" label="Straße & Hausnummer" placeholder="Musterstraße 12" />
       <div className="grid grid-cols-[120px_1fr] gap-3">
-        <TextField form={form} name="postal_code" label="PLZ" />
-        <TextField form={form} name="city" label="Stadt" />
+        <TextField form={form} name="postal_code" label="PLZ" placeholder="10115" />
+        <TextField form={form} name="city" label="Stadt" placeholder="Berlin" />
       </div>
     </div>
   );
