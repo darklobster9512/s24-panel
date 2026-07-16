@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 
 interface ClientRow {
   id: string;
-  company_name: string;
-  industry: string;
-  city: string;
-  phone: string;
-  email: string;
+  company_name: string | null;
+  industry: string | null;
+  city: string | null;
+  phone: string | null;
+  email: string | null;
   forwarding_enabled: boolean;
+  is_draft: boolean;
   created_at: string;
 }
 
@@ -28,10 +29,10 @@ export default function Kunden() {
     queryFn: async (): Promise<ClientRow[]> => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, company_name, industry, city, phone, email, forwarding_enabled, created_at")
+        .select("id, company_name, industry, city, phone, email, forwarding_enabled, is_draft, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ClientRow[];
     },
   });
 
@@ -41,10 +42,10 @@ export default function Kunden() {
     if (!needle) return data;
     return data.filter(
       (c) =>
-        c.company_name.toLowerCase().includes(needle) ||
-        c.email.toLowerCase().includes(needle) ||
-        c.city.toLowerCase().includes(needle) ||
-        c.industry.toLowerCase().includes(needle),
+        (c.company_name ?? "").toLowerCase().includes(needle) ||
+        (c.email ?? "").toLowerCase().includes(needle) ||
+        (c.city ?? "").toLowerCase().includes(needle) ||
+        (c.industry ?? "").toLowerCase().includes(needle),
     );
   }, [data, q]);
 
@@ -94,7 +95,7 @@ export default function Kunden() {
               <span>Branche</span>
               <span>Stadt</span>
               <span>Telefon</span>
-              <span>Weiterleitung</span>
+              <span>Status</span>
               <span></span>
             </div>
             {rows.map((c) => (
@@ -103,17 +104,26 @@ export default function Kunden() {
                 className="grid grid-cols-[1.6fr_1fr_1fr_1fr_140px_40px] items-center gap-4 py-3 text-sm"
               >
                 <div className="min-w-0">
-                  <div className="truncate font-medium">{c.company_name}</div>
-                  <div className="truncate text-xs text-muted-foreground">{c.email}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">
+                      {c.company_name || <span className="text-muted-foreground italic">Unbenannter Entwurf</span>}
+                    </span>
+                    {c.is_draft && (
+                      <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        Entwurf
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="truncate text-xs text-muted-foreground">{c.email ?? "—"}</div>
                 </div>
-                <span className="truncate text-muted-foreground">{c.industry}</span>
-                <span className="truncate">{c.city}</span>
-                <span className="truncate font-mono text-xs">{c.phone}</span>
+                <span className="truncate text-muted-foreground">{c.industry ?? "—"}</span>
+                <span className="truncate">{c.city ?? "—"}</span>
+                <span className="truncate font-mono text-xs">{c.phone ?? "—"}</span>
                 <Badge
                   variant={c.forwarding_enabled ? "default" : "secondary"}
                   className="w-fit"
                 >
-                  {c.forwarding_enabled ? "aktiv" : "aus"}
+                  {c.is_draft ? "—" : c.forwarding_enabled ? "Weiterleitung aktiv" : "Weiterleitung aus"}
                 </Badge>
                 <Button asChild variant="ghost" size="icon" className="h-8 w-8">
                   <Link to={`/superadmin/kunden/bearbeiten/${c.id}`} aria-label="Bearbeiten">
