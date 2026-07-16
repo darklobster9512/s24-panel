@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Search, Loader2 } from "lucide-react";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -48,7 +49,15 @@ export default function SuperadminLayout() {
             </div>
           </header>
           <main className="flex-1 px-6 py-8">
-            <Outlet />
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-16 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </main>
         </SidebarInset>
       </div>
