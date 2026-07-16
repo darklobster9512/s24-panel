@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -197,18 +198,16 @@ export function ClientCreateDialog({ children }: Props) {
 
             <Section title="Konfiguration">
               <div className="space-y-4">
-                <FormItem>
-                  <FormLabel>Logo (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        setLogoFile(e.target.files?.[0] ?? null)
-                      }
-                    />
-                  </FormControl>
-                </FormItem>
+                <div className="space-y-2">
+                  <Label>Logo (optional)</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setLogoFile(e.target.files?.[0] ?? null)
+                    }
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
