@@ -1,26 +1,48 @@
 ## Ziel
-Wizard freischalten für freie Navigation + Draft-Speicherung.
+Wizard von schmalem Ein-Spalten-Layout auf ein desktop-optimiertes 2-Spalten-Layout umbauen. Aktuell wirken die Cards leer und die Felder verlieren sich im Panel.
 
-## Änderungen
+## Neues Layout (`src/pages/superadmin/KundenWizard.tsx`)
 
-### 1. DB-Migration: `clients` Tabelle
-- Neue Spalte `is_draft BOOLEAN NOT NULL DEFAULT false`.
-- Alle Pflichtfelder auf `NULLABLE` setzen (`company_name`, `website`, `company_description`, `industry`, `contact_person`, `street`, `postal_code`, `city`, `vat_id`, `phone`, `email`, `greeting_text`), damit unvollständige Drafts gespeichert werden können.
+### Desktop (≥ lg)
+Zweispaltiges Layout im `Panel`:
 
-### 2. `src/pages/superadmin/KundenWizard.tsx`
-- **Freie Navigation**: `Stepper` erlaubt Klick auf jeden Step (kein `disabled`, kein `i <= current`-Guard). „Weiter"-Button ohne `form.trigger`-Validierung.
-- **Zwei Zod-Schemas**:
-  - `draftSchema` — alles optional (für Draft-Speicherung).
-  - `fullSchema` — bestehendes strenges Schema (für finales „Kunde anlegen").
-- Resolver auf `draftSchema` setzen; beim finalen Submit manuell `fullSchema.parse` prüfen und Fehler in Form-State schreiben (mit Sprung zum ersten fehlerhaften Step).
-- **Neuer Button „Als Entwurf speichern"** (mit `Save`-Icon, `variant="outline"`) neben Zurück/Weiter, immer sichtbar. Speichert aktuelle Werte + `is_draft: true`, ohne Validierung, mit Logo-Upload falls vorhanden. Anschließend Redirect zu `/superadmin/kunden` oder `bearbeiten/:id` (bei Neuanlage: umschalten auf Edit-Route mit neuer ID).
-- **Finaler Submit** setzt `is_draft: false`.
-- Leere Strings werden beim Speichern zu `null` konvertiert (nicht nur `contact_*`, sondern alle jetzt nullable Felder).
+```text
+┌───────────────────────────────────────────────────────────┐
+│  PageHeader (Titel + Zurück-Button)                       │
+├────────────────────┬──────────────────────────────────────┤
+│  Stepper (vertikal)│  Step-Titel + Beschreibung          │
+│  ● Unternehmen     │  ─────────────────────────────       │
+│  ● Adresse         │                                      │
+│  ● Kontakt Firma   │   [ Feld ]  [ Feld ]                 │
+│  ● Ansprechpartner │   [ Feld ]  [ Feld ]                 │
+│  ● Konfiguration   │   [ Feld voll breit ]                │
+│                    │                                      │
+│  (max-w-64)        │   (flex-1, max-w-3xl)                │
+├────────────────────┴──────────────────────────────────────┤
+│  [Zurück]        [Als Entwurf speichern] [Weiter/Anlegen] │
+└───────────────────────────────────────────────────────────┘
+```
 
-### 3. `src/pages/superadmin/Kunden.tsx`
-- Draft-Badge in der Kunden-Tabelle anzeigen (Kunden mit `is_draft = true` visuell markieren, z.B. „Entwurf"-Pill).
+- Linke Sidebar: vertikaler Stepper mit nummerierten Steps, aktivem/erledigtem Zustand und Kurzbeschreibung pro Step. Sticky ab lg.
+- Rechte Content-Spalte: Step-Titel als Sub-Heading + Kurzbeschreibung, dann die Felder in flüssigem 2-Column-Grid.
+- Feld-Grid: `grid-cols-1 md:grid-cols-2`, Textareas und der Adresse-Block spannen `md:col-span-2`.
+- Innen mehr Luft: `p-8`, `gap-6`, größere Label-Typo.
+- Mindest-Content-Höhe entfernen (die leere Fläche im Screenshot); stattdessen konsistente Sektions-Höhen via `space-y-6`.
 
-## Technische Notizen
-- Reihenfolge: erst Migration (macht Spalten nullable, fügt `is_draft` hinzu), dann Code-Anpassung nach Typen-Regen.
-- Bestehende Kunden bleiben unverändert (Default `is_draft = false`).
-- RLS bleibt gleich (Superadmin-Only Policy deckt beides ab).
+### Mobile / Tablet (< lg)
+Horizontaler Stepper oben (bestehende Pill-Optik, aber kompakter — nur aktive Nummer + Titel voll, Rest als Nummern). Felder einspaltig. Buttons stapeln unten.
+
+## Feld-Umbau pro Step
+
+- **Unternehmen**: 2 Cols für company_name/website/industry/vat_id; company_description volle Breite.
+- **Adresse**: street volle Breite, PLZ + Stadt in einer Zeile (PLZ 140px + Stadt flex).
+- **Kontakt Firma**: 2 Cols (phone, email).
+- **Ansprechpartner**: 2 Cols; contact_email darf einzeln stehen (2. Zeile).
+- **Konfiguration**: Logo-Upload + Weiterleitung-Checkbox links, Begrüßungstext rechts als große Textarea (`md:col-span-2` wenn kein Sidebar-Split).
+
+## Panel & Header
+- `Panel` verliert die Content-Padding-Enge; im Wizard-Fall Panel als `<section>` mit `p-0 lg:grid lg:grid-cols-[240px_1fr]` — Sidebar bekommt eigene Border rechts.
+- Buttons-Footer bleibt im Content-Bereich, sticky auf Mobile (`sticky bottom-0 bg-background/95 backdrop-blur`).
+
+## Nicht angefasst
+- Formular-Logik, Draft-Speicherung, Validierung, Routes, DB — alles bleibt unverändert. Reine Layout-/Presentation-Änderung.
