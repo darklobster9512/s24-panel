@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Loader2, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,7 +25,39 @@ import {
 } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 
-const schema = z.object({
+// Draft schema: alles optional, damit man jederzeit speichern kann
+const draftSchema = z.object({
+  company_name: z.string().trim().max(200).optional().or(z.literal("")),
+  website: z.string().trim().max(300).optional().or(z.literal("")),
+  company_description: z.string().trim().max(2000).optional().or(z.literal("")),
+  industry: z.string().trim().max(120).optional().or(z.literal("")),
+  contact_person: z.string().trim().max(200).optional().or(z.literal("")),
+  street: z.string().trim().max(200).optional().or(z.literal("")),
+  postal_code: z.string().trim().max(20).optional().or(z.literal("")),
+  city: z.string().trim().max(120).optional().or(z.literal("")),
+  vat_id: z.string().trim().max(50).optional().or(z.literal("")),
+  phone: z.string().trim().max(50).optional().or(z.literal("")),
+  email: z
+    .string()
+    .trim()
+    .max(200)
+    .email("Ungültige E-Mail")
+    .optional()
+    .or(z.literal("")),
+  contact_phone: z.string().trim().max(50).optional().or(z.literal("")),
+  contact_email: z
+    .string()
+    .trim()
+    .max(200)
+    .email("Ungültige E-Mail")
+    .optional()
+    .or(z.literal("")),
+  greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
+  forwarding_enabled: z.boolean(),
+});
+
+// Full schema: gilt beim finalen "Kunde anlegen"
+const fullSchema = z.object({
   company_name: z.string().trim().min(1, "Pflichtfeld").max(200),
   website: z.string().trim().min(1, "Pflichtfeld").max(300),
   company_description: z.string().trim().min(1, "Pflichtfeld").max(2000),
@@ -49,7 +81,7 @@ const schema = z.object({
   forwarding_enabled: z.boolean(),
 });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<typeof draftSchema>;
 type Field = FieldPath<FormValues>;
 
 const STEPS: { title: string; fields: Field[] }[] = [
@@ -84,6 +116,33 @@ const DEFAULTS: FormValues = {
   forwarding_enabled: false,
 };
 
+// Nullable string-Felder — leere Strings werden zu null
+const NULLABLE_STRINGS: Field[] = [
+  "company_name",
+  "website",
+  "company_description",
+  "industry",
+  "contact_person",
+  "street",
+  "postal_code",
+  "city",
+  "vat_id",
+  "phone",
+  "email",
+  "contact_phone",
+  "contact_email",
+  "greeting_text",
+];
+
+function normalize(values: FormValues) {
+  const out: Record<string, unknown> = { ...values };
+  for (const key of NULLABLE_STRINGS) {
+    const v = out[key];
+    if (typeof v === "string" && v.trim() === "") out[key] = null;
+  }
+  return out;
+}
+
 export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -93,7 +152,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(draftSchema),
     defaultValues: DEFAULTS,
   });
 
@@ -133,30 +192,44 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     }
   }, [mode, existing.data, form]);
 
-  const mutation = useMutation({
+  async function uploadLogoIfNeeded() {
+    if (!logoFile) return undefined;
+    const ext = logoFile.name.split(".").pop() || "png";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("client-logos")
+      .upload(path, logoFile, { upsert: false, contentType: logoFile.type });
+    if (upErr) throw upErr;
+    return path;
+  }
+
+  const submitMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       if (!user) throw new Error("Nicht angemeldet");
-
-      let logo_url: string | null | undefined = undefined;
-      if (logoFile) {
-        const ext = logoFile.name.split(".").pop() || "png";
-        const path = `${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("client-logos")
-          .upload(path, logoFile, { upsert: false, contentType: logoFile.type });
-        if (upErr) throw upErr;
-        logo_url = path;
+      // Volle Validierung
+      const parsed = fullSchema.safeParse(values);
+      if (!parsed.success) {
+        // Fehler in Form-State schreiben und zum ersten fehlerhaften Step springen
+        let firstErrStep = -1;
+        for (const issue of parsed.error.issues) {
+          const path = issue.path[0] as Field;
+          form.setError(path, { message: issue.message });
+          if (firstErrStep === -1) {
+            const stepIdx = STEPS.findIndex((s) => s.fields.includes(path));
+            if (stepIdx >= 0) firstErrStep = stepIdx;
+          }
+        }
+        if (firstErrStep >= 0) setStep(firstErrStep);
+        throw new Error("Bitte alle Pflichtfelder ausfüllen.");
       }
 
-      const base = {
-        ...values,
-        contact_phone: values.contact_phone || null,
-        contact_email: values.contact_email || null,
-      };
+      const logo_url = await uploadLogoIfNeeded();
+      const base = normalize(values);
 
       if (mode === "edit" && id) {
         const payload = {
           ...base,
+          is_draft: false,
           ...(logo_url !== undefined ? { logo_url } : {}),
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
@@ -164,6 +237,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       } else {
         const { error } = await supabase.from("clients").insert({
           ...base,
+          is_draft: false,
           logo_url: logo_url ?? null,
           created_by: user.id,
         });
@@ -179,16 +253,55 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const isLast = step === STEPS.length - 1;
+  const draftMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Nicht angemeldet");
+      const values = form.getValues();
+      const logo_url = await uploadLogoIfNeeded();
+      const base = normalize(values);
 
-  async function next() {
-    const ok = await form.trigger(STEPS[step].fields);
-    if (!ok) return;
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  }
+      if (mode === "edit" && id) {
+        const payload = {
+          ...base,
+          is_draft: true,
+          ...(logo_url !== undefined ? { logo_url } : {}),
+        };
+        const { error } = await supabase.from("clients").update(payload).eq("id", id);
+        if (error) throw error;
+        return { id };
+      } else {
+        const { data, error } = await supabase
+          .from("clients")
+          .insert({
+            ...base,
+            is_draft: true,
+            logo_url: logo_url ?? null,
+            created_by: user.id,
+          })
+          .select("id")
+          .single();
+        if (error) throw error;
+        return { id: data.id as string };
+      }
+    },
+    onSuccess: (res) => {
+      toast.success("Als Entwurf gespeichert");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["client", res.id] });
+      setLogoFile(null);
+      if (mode === "create") {
+        // Auf Edit-Route umschalten, damit weitere Speicherungen updaten
+        navigate(`/superadmin/kunden/bearbeiten/${res.id}`, { replace: true });
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const isLast = step === STEPS.length - 1;
+  const busy = submitMutation.isPending || draftMutation.isPending;
 
   function onSubmit(values: FormValues) {
-    mutation.mutate(values);
+    submitMutation.mutate(values);
   }
 
   const loading = mode === "edit" && existing.isLoading;
@@ -236,30 +349,50 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                 )}
               </div>
 
-              <div className="flex items-center justify-between border-t border-border/60 pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setStep((s) => Math.max(0, s - 1))}
-                  disabled={step === 0 || mutation.isPending}
+                  disabled={step === 0 || busy}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
                 </Button>
 
-                {isLast ? (
-                  <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => draftMutation.mutate()}
+                    disabled={busy}
+                  >
+                    {draftMutation.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <Save className="mr-2 h-4 w-4" />
+                      <FileText className="mr-2 h-4 w-4" />
                     )}
-                    {mode === "edit" ? "Speichern" : "Kunde anlegen"}
+                    Als Entwurf speichern
                   </Button>
-                ) : (
-                  <Button type="button" onClick={next}>
-                    Weiter <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
+
+                  {isLast ? (
+                    <Button type="submit" disabled={busy}>
+                      {submitMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
+                      {mode === "edit" ? "Speichern" : "Kunde anlegen"}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={() => setStep((s) => Math.min(s + 1, STEPS.length - 1))}
+                      disabled={busy}
+                    >
+                      Weiter <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </form>
           </Form>
@@ -285,10 +418,9 @@ function Stepper({
           <li key={s.title} className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => i <= current && onJump(i)}
-              disabled={i > current}
+              onClick={() => onJump(i)}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:border-primary/60",
                 active && "border-primary bg-primary/10 text-primary",
                 done && "border-primary/40 bg-primary/5 text-foreground",
                 !active && !done && "border-border text-muted-foreground",
@@ -373,6 +505,7 @@ function StepUnternehmen({ form }: { form: FR }) {
                 rows={4}
                 placeholder="Kurze Beschreibung, was das Unternehmen macht…"
                 {...field}
+                value={(field.value as string) ?? ""}
               />
             </FormControl>
             <FormMessage />
@@ -462,6 +595,7 @@ function StepKonfig({
                 rows={3}
                 placeholder="Guten Tag, Sie sind verbunden mit …"
                 {...field}
+                value={(field.value as string) ?? ""}
               />
             </FormControl>
             <FormMessage />
