@@ -51,7 +51,7 @@ const schema = z.object({
     .optional()
     .or(z.literal("")),
   greeting_text: z.string().trim().min(1, "Pflichtfeld").max(1000),
-  forwarding_enabled: z.boolean().default(false),
+  forwarding_enabled: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
