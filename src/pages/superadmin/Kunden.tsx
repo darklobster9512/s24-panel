@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, MoreHorizontal, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, Panel } from "@/components/superadmin/SuperadminLayout";
-import { ClientCreateDialog } from "@/components/superadmin/ClientCreateDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -54,11 +54,11 @@ export default function Kunden() {
         title="Kunden"
         subtitle="Alle Firmenkunden verwalten und neue Kunden anlegen."
         actions={
-          <ClientCreateDialog>
-            <Button size="sm" className="gap-2">
+          <Button asChild size="sm" className="gap-2">
+            <Link to="/superadmin/kunden/anlegen">
               <Plus className="h-4 w-4" /> Kunde anlegen
-            </Button>
-          </ClientCreateDialog>
+            </Link>
+          </Button>
         }
       />
 
@@ -115,8 +115,10 @@ export default function Kunden() {
                 >
                   {c.forwarding_enabled ? "aktiv" : "aus"}
                 </Badge>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                  <Link to={`/superadmin/kunden/bearbeiten/${c.id}`} aria-label="Bearbeiten">
+                    <Pencil className="h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             ))}

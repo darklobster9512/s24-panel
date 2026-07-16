@@ -13,6 +13,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const SuperadminLayout = lazy(() => import("./components/superadmin/SuperadminLayout"));
 const SuperadminOverview = lazy(() => import("./pages/superadmin/Overview"));
 const SuperadminKunden = lazy(() => import("./pages/superadmin/Kunden"));
+const SuperadminKundenWizard = lazy(() => import("./pages/superadmin/KundenWizard"));
 const SuperadminMitarbeiter = lazy(() => import("./pages/superadmin/Mitarbeiter"));
 const SuperadminZuweisungen = lazy(() => import("./pages/superadmin/Zuweisungen"));
 const SuperadminAnrufe = lazy(() => import("./pages/superadmin/Anrufe"));
@@ -56,6 +57,8 @@ export default function App() {
                   <Route path="/superadmin" element={<SuperadminLayout />}>
                     <Route index element={<SuperadminOverview />} />
                     <Route path="kunden" element={<SuperadminKunden />} />
+                    <Route path="kunden/anlegen" element={<SuperadminKundenWizard mode="create" />} />
+                    <Route path="kunden/bearbeiten/:id" element={<SuperadminKundenWizard mode="edit" />} />
                     <Route path="mitarbeiter" element={<SuperadminMitarbeiter />} />
                     <Route path="zuweisungen" element={<SuperadminZuweisungen />} />
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
