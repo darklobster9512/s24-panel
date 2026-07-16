@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Search, Loader2 } from "lucide-react";
 import {
   SidebarProvider,
   SidebarTrigger,
