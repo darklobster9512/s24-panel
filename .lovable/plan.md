@@ -1,48 +1,36 @@
 ## Ziel
-Wizard von schmalem Ein-Spalten-Layout auf ein desktop-optimiertes 2-Spalten-Layout umbauen. Aktuell wirken die Cards leer und die Felder verlieren sich im Panel.
+Wizard von 5 auf 4 Steps reduzieren, indem „Adresse" und „Kontakt Firma" zu einem gemeinsamen Step zusammengefasst werden.
 
-## Neues Layout (`src/pages/superadmin/KundenWizard.tsx`)
+## Änderung in `src/pages/superadmin/KundenWizard.tsx`
 
-### Desktop (≥ lg)
-Zweispaltiges Layout im `Panel`:
+### Neue Step-Struktur
+
+1. **Unternehmen** — company_name, website, industry, vat_id, company_description
+2. **Adresse & Kontakt** (neu, kombiniert) — street, postal_code, city, phone, email
+3. **Ansprechpartner** — contact_person, contact_phone, contact_email
+4. **Konfiguration** — logo, forwarding_enabled, greeting_text
+
+### Layout des kombinierten Steps
 
 ```text
-┌───────────────────────────────────────────────────────────┐
-│  PageHeader (Titel + Zurück-Button)                       │
-├────────────────────┬──────────────────────────────────────┤
-│  Stepper (vertikal)│  Step-Titel + Beschreibung          │
-│  ● Unternehmen     │  ─────────────────────────────       │
-│  ● Adresse         │                                      │
-│  ● Kontakt Firma   │   [ Feld ]  [ Feld ]                 │
-│  ● Ansprechpartner │   [ Feld ]  [ Feld ]                 │
-│  ● Konfiguration   │   [ Feld voll breit ]                │
-│                    │                                      │
-│  (max-w-64)        │   (flex-1, max-w-3xl)                │
-├────────────────────┴──────────────────────────────────────┤
-│  [Zurück]        [Als Entwurf speichern] [Weiter/Anlegen] │
-└───────────────────────────────────────────────────────────┘
+Step-Titel:        „Adresse & Kontakt"
+Beschreibung:      „Firmensitz und geschäftliche Kontaktdaten"
+
+[ Straße & Hausnr. — volle Breite ]
+[ PLZ (140px) ] [ Stadt (flex)   ]
+[ Telefon      ] [ E-Mail         ]
 ```
 
-- Linke Sidebar: vertikaler Stepper mit nummerierten Steps, aktivem/erledigtem Zustand und Kurzbeschreibung pro Step. Sticky ab lg.
-- Rechte Content-Spalte: Step-Titel als Sub-Heading + Kurzbeschreibung, dann die Felder in flüssigem 2-Column-Grid.
-- Feld-Grid: `grid-cols-1 md:grid-cols-2`, Textareas und der Adresse-Block spannen `md:col-span-2`.
-- Innen mehr Luft: `p-8`, `gap-6`, größere Label-Typo.
-- Mindest-Content-Höhe entfernen (die leere Fläche im Screenshot); stattdessen konsistente Sektions-Höhen via `space-y-6`.
+- Adresse-Block (street/PLZ/Stadt) oben, Kontakt-Block (phone/email) darunter — visuell durch `space-y-6` getrennt, kein zusätzlicher Divider nötig.
+- Innerhalb des 2-Column-Grids: `street` spannt `md:col-span-2`, `postal_code` + `city` teilen sich eine Zeile (PLZ 140px), `phone` + `email` teilen sich die nächste Zeile.
 
-### Mobile / Tablet (< lg)
-Horizontaler Stepper oben (bestehende Pill-Optik, aber kompakter — nur aktive Nummer + Titel voll, Rest als Nummern). Felder einspaltig. Buttons stapeln unten.
+### Zu aktualisierende Stellen
 
-## Feld-Umbau pro Step
-
-- **Unternehmen**: 2 Cols für company_name/website/industry/vat_id; company_description volle Breite.
-- **Adresse**: street volle Breite, PLZ + Stadt in einer Zeile (PLZ 140px + Stadt flex).
-- **Kontakt Firma**: 2 Cols (phone, email).
-- **Ansprechpartner**: 2 Cols; contact_email darf einzeln stehen (2. Zeile).
-- **Konfiguration**: Logo-Upload + Weiterleitung-Checkbox links, Begrüßungstext rechts als große Textarea (`md:col-span-2` wenn kein Sidebar-Split).
-
-## Panel & Header
-- `Panel` verliert die Content-Padding-Enge; im Wizard-Fall Panel als `<section>` mit `p-0 lg:grid lg:grid-cols-[240px_1fr]` — Sidebar bekommt eigene Border rechts.
-- Buttons-Footer bleibt im Content-Bereich, sticky auf Mobile (`sticky bottom-0 bg-background/95 backdrop-blur`).
+- Steps-Array: 5 → 4 Einträge (Titel, Beschreibung, Feldliste für Validierung).
+- Stepper-Rendering (Sidebar vertikal + mobiler Horizontal-Stepper): läuft automatisch über das gekürzte Array.
+- Step-Content-Rendering: die beiden Blöcke der bisherigen Steps 2 und 3 in einen gemeinsamen Step verschmelzen.
+- „Weiter → Anlegen"-Umschaltung: greift jetzt auf Step 4 statt Step 5.
+- Validierungs-Felder pro Step: Adresse- und Kontakt-Firma-Felder in einem gemeinsamen Feld-Set kombinieren.
 
 ## Nicht angefasst
-- Formular-Logik, Draft-Speicherung, Validierung, Routes, DB — alles bleibt unverändert. Reine Layout-/Presentation-Änderung.
+Formular-Schema, DB-Felder, Draft-Speicherung, Routen, Design-Tokens — reine Step-Konsolidierung.

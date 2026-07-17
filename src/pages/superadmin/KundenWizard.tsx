@@ -95,14 +95,9 @@ const STEPS: StepDef[] = [
     fields: ["company_name", "website", "industry", "vat_id", "company_description"],
   },
   {
-    title: "Adresse",
-    description: "Sitz des Unternehmens für Verträge und Abrechnung.",
-    fields: ["street", "postal_code", "city"],
-  },
-  {
-    title: "Kontakt Firma",
-    description: "Zentrale Rufnummer und E-Mail der Firma.",
-    fields: ["phone", "email"],
+    title: "Adresse & Kontakt",
+    description: "Firmensitz und geschäftliche Kontaktdaten.",
+    fields: ["street", "postal_code", "city", "phone", "email"],
   },
   {
     title: "Ansprechpartner",
@@ -382,10 +377,9 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
 
                   <div className="pt-2">
                     {step === 0 && <StepUnternehmen form={form} />}
-                    {step === 1 && <StepAdresse form={form} />}
-                    {step === 2 && <StepKontakt form={form} />}
-                    {step === 3 && <StepAnsprechpartner form={form} />}
-                    {step === 4 && (
+                    {step === 1 && <StepAdresseKontakt form={form} />}
+                    {step === 2 && <StepAnsprechpartner form={form} />}
+                    {step === 3 && (
                       <StepKonfig
                         form={form}
                         logoFile={logoFile}
@@ -620,7 +614,7 @@ function StepUnternehmen({ form }: { form: FR }) {
   );
 }
 
-function StepAdresse({ form }: { form: FR }) {
+function StepAdresseKontakt({ form }: { form: FR }) {
   return (
     <div className="grid gap-5 md:grid-cols-6">
       <TextField
@@ -644,15 +638,21 @@ function StepAdresse({ form }: { form: FR }) {
         placeholder="Berlin"
         className="md:col-span-4"
       />
-    </div>
-  );
-}
-
-function StepKontakt({ form }: { form: FR }) {
-  return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <TextField form={form} name="phone" label="Telefonnummer" placeholder="+49 30 1234567" />
-      <TextField form={form} name="email" label="E-Mail" type="email" placeholder="info@muster.de" />
+      <TextField
+        form={form}
+        name="phone"
+        label="Telefonnummer"
+        placeholder="+49 30 1234567"
+        className="md:col-span-3"
+      />
+      <TextField
+        form={form}
+        name="email"
+        label="E-Mail"
+        type="email"
+        placeholder="info@muster.de"
+        className="md:col-span-3"
+      />
     </div>
   );
 }
