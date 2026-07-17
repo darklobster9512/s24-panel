@@ -300,7 +300,7 @@ export default function MitarbeiterWizard({
 
       if (mode === "edit" && id) {
         // If account already exists, we don't re-create it. Just update fields (excl. login/password immutability).
-        const updatePayload: Record<string, unknown> = { ...base };
+        const updatePayload = { ...base } as EmployeeUpdate & Record<string, unknown>;
         if (accountExists) {
           delete updatePayload.login_local_part;
           delete updatePayload.login_email;
