@@ -72,6 +72,10 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           postal_code: string | null
+          sip_password: string | null
+          sip_phone_number: string | null
+          sip_server: string | null
+          sip_username: string | null
           street: string | null
           updated_at: string
           vat_id: string | null
@@ -95,6 +99,10 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          sip_password?: string | null
+          sip_phone_number?: string | null
+          sip_server?: string | null
+          sip_username?: string | null
           street?: string | null
           updated_at?: string
           vat_id?: string | null
@@ -118,6 +126,10 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
+          sip_password?: string | null
+          sip_phone_number?: string | null
+          sip_server?: string | null
+          sip_username?: string | null
           street?: string | null
           updated_at?: string
           vat_id?: string | null
