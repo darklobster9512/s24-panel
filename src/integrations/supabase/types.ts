@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          employee_id: string
+          id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by: string
+          employee_id: string
+          id?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           city: string | null
