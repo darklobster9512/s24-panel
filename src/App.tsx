@@ -22,6 +22,7 @@ import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
 import SuperadminTickets from "./pages/superadmin/Tickets";
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
+import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageEditor";
 import SuperadminAuszahlungen from "./pages/superadmin/Auszahlungen";
 import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
@@ -70,6 +71,7 @@ export default function App() {
                     <Route path="notizen" element={<SuperadminNotizen />} />
                     <Route path="tickets" element={<SuperadminTickets />} />
                     <Route path="vertraege" element={<SuperadminVertraege />} />
+                    <Route path="vertraege/:templateId" element={<SuperadminVertragsvorlageEditor />} />
                     <Route path="auszahlungen" element={<SuperadminAuszahlungen />} />
                     <Route path="abrechnung" element={<SuperadminAbrechnung />} />
                     <Route path="einstellungen" element={<SuperadminEinstellungen />} />
