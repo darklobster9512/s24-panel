@@ -221,6 +221,10 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         contact_email: existing.data.contact_email ?? "",
         greeting_text: existing.data.greeting_text ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
+        sip_phone_number: existing.data.sip_phone_number ?? "",
+        sip_server: existing.data.sip_server ?? "",
+        sip_username: existing.data.sip_username ?? "",
+        sip_password: existing.data.sip_password ?? "",
       });
     }
   }, [mode, existing.data, form]);
