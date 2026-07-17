@@ -15,6 +15,8 @@ import SuperadminOverview from "./pages/superadmin/Overview";
 import SuperadminKunden from "./pages/superadmin/Kunden";
 import SuperadminKundenWizard from "./pages/superadmin/KundenWizard";
 import SuperadminMitarbeiter from "./pages/superadmin/Mitarbeiter";
+import SuperadminMitarbeiterWizard from "./pages/superadmin/MitarbeiterWizard";
+import SuperadminMitarbeiterDetail from "./pages/superadmin/MitarbeiterDetail";
 import SuperadminZuweisungen from "./pages/superadmin/Zuweisungen";
 import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
@@ -60,6 +62,9 @@ export default function App() {
                     <Route path="kunden/anlegen" element={<SuperadminKundenWizard mode="create" />} />
                     <Route path="kunden/bearbeiten/:id" element={<SuperadminKundenWizard mode="edit" />} />
                     <Route path="mitarbeiter" element={<SuperadminMitarbeiter />} />
+                    <Route path="mitarbeiter/anlegen" element={<SuperadminMitarbeiterWizard mode="create" />} />
+                    <Route path="mitarbeiter/bearbeiten/:id" element={<SuperadminMitarbeiterWizard mode="edit" />} />
+                    <Route path="mitarbeiter/:id" element={<SuperadminMitarbeiterDetail />} />
                     <Route path="zuweisungen" element={<SuperadminZuweisungen />} />
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
                     <Route path="notizen" element={<SuperadminNotizen />} />
