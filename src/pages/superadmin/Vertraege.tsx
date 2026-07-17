@@ -49,8 +49,8 @@ export default function Vertraege() {
   async function load() {
     setLoading(true);
     const [tpl, sig] = await Promise.all([
-      supabase.from("contract_templates" as never).select("id,title,category,monthly_salary,version,is_active,updated_at").order("updated_at", { ascending: false }),
-      supabase.from("company_signature" as never).select("signer_name,signer_title,signature_url,signature_source,signature_style,updated_at").eq("singleton", true).maybeSingle(),
+      (supabase as any).from("contract_templates").select("id,title,category,monthly_salary,version,is_active,updated_at").order("updated_at", { ascending: false }),
+      (supabase as any).from("company_signature").select("signer_name,signer_title,signature_url,signature_source,signature_style,updated_at").eq("singleton", true).maybeSingle(),
     ]);
     if (tpl.error) toast.error(tpl.error.message);
     else setTemplates((tpl.data ?? []) as Template[]);
@@ -100,7 +100,7 @@ export default function Vertraege() {
 
   async function handleDuplicate(id: string) {
     if (!user) return;
-    const { data: src } = await supabase.from("contract_templates" as never).select("*").eq("id", id).single();
+    const { data: src } = await (supabase as any).from("contract_templates").select("*").eq("id", id).single();
     if (!src) return;
     const s = src as Record<string, unknown>;
     const { data, error } = await supabase
@@ -122,7 +122,7 @@ export default function Vertraege() {
 
   async function handleDelete() {
     if (!deleteId) return;
-    const { error } = await supabase.from("contract_templates" as never).delete().eq("id", deleteId);
+    const { error } = await (supabase as any).from("contract_templates").delete().eq("id", deleteId);
     if (error) toast.error(error.message);
     else {
       toast.success("Vorlage gelöscht");
