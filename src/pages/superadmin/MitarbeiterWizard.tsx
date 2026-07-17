@@ -362,7 +362,7 @@ export default function MitarbeiterWizard({
       const base = normalize(values, true);
 
       if (mode === "edit" && id) {
-        const updatePayload: Record<string, unknown> = { ...base };
+        const updatePayload = { ...base } as Record<string, unknown>;
         if (accountExists) {
           delete updatePayload.login_local_part;
           delete updatePayload.login_email;
@@ -370,7 +370,7 @@ export default function MitarbeiterWizard({
         }
         const { error } = await supabase
           .from("employees")
-          .update(updatePayload)
+          .update(updatePayload as EmployeeUpdate)
           .eq("id", id);
         if (error) throw error;
         return { id };
