@@ -75,7 +75,7 @@ export default function Vertraege() {
 
   async function persistSigner(name: string, jobTitle: string) {
     const { error } = await supabase
-      .from("company_signature" as never)
+      .from("company_signature" as any)
       .upsert({ singleton: true, signer_name: name, signer_title: jobTitle }, { onConflict: "singleton" });
     if (error) toast.error(error.message);
   }
@@ -90,7 +90,7 @@ export default function Vertraege() {
   async function handleCreate() {
     if (!user) return;
     const { data, error } = await supabase
-      .from("contract_templates" as never)
+      .from("contract_templates" as any)
       .insert({ title: "Neue Vorlage", category: "Arbeitsvertrag", content_html: "<p></p>", created_by: user.id })
       .select("id")
       .single();
@@ -104,7 +104,7 @@ export default function Vertraege() {
     if (!src) return;
     const s = src as Record<string, unknown>;
     const { data, error } = await supabase
-      .from("contract_templates" as never)
+      .from("contract_templates" as any)
       .insert({
         title: `${s.title as string} (Kopie)`,
         category: s.category,
@@ -141,7 +141,7 @@ export default function Vertraege() {
       .upload(path, file, { contentType: file.type, upsert: true });
     if (upErr) return toast.error(upErr.message);
     const { error } = await supabase
-      .from("company_signature" as never)
+      .from("company_signature" as any)
       .upsert(
         { singleton: true, signer_name: nameDraft, signer_title: titleDraft, signature_url: path, signature_source: "upload", signature_style: null },
         { onConflict: "singleton" },

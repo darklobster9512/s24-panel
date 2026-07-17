@@ -32,7 +32,7 @@ export default function VertragsvorlageEditor() {
     void (async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("contract_templates" as never)
+        .from("contract_templates" as any)
         .select("*")
         .eq("id", templateId)
         .maybeSingle();
@@ -54,7 +54,7 @@ export default function VertragsvorlageEditor() {
     if (!title.trim()) return toast.error("Bitte einen Titel eingeben");
     setSaving(true);
     const { error } = await supabase
-      .from("contract_templates" as never)
+      .from("contract_templates" as any)
       .update({
         title: title.trim(),
         category,
