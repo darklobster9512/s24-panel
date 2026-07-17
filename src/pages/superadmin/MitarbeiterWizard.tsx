@@ -300,7 +300,7 @@ export default function MitarbeiterWizard({
 
       if (mode === "edit" && id) {
         // If account already exists, we don't re-create it. Just update fields (excl. login/password immutability).
-        const updatePayload = { ...base } as EmployeeUpdate & Record<string, unknown>;
+        const updatePayload = { ...base } as Record<string, unknown>;
         if (accountExists) {
           delete updatePayload.login_local_part;
           delete updatePayload.login_email;
@@ -308,7 +308,7 @@ export default function MitarbeiterWizard({
         }
         const { error } = await supabase
           .from("employees")
-          .update(updatePayload)
+          .update(updatePayload as EmployeeUpdate)
           .eq("id", id);
         if (error) throw error;
       } else {
