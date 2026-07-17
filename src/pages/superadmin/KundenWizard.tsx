@@ -412,6 +412,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                         existingLogo={existing.data?.logo_url ?? null}
                       />
                     )}
+                    {step === 4 && <StepSip form={form} />}
                   </div>
                 </div>
 
