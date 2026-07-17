@@ -18,7 +18,11 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
+
+type EmployeeInsert = TablesInsert<"employees">;
+type EmployeeUpdate = TablesUpdate<"employees">;
 import { PageHeader, Panel } from "@/components/superadmin/SuperadminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
