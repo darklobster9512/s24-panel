@@ -1,76 +1,53 @@
 ## Ziel
-`/superadmin/zuweisungen` neu gestalten und an Supabase anbinden. Statt Matrix bekommt jeder Mitarbeiter eine eigene Sektion mit Karten der zugewiesenen Kunden und einer „+"-Karte, die ein Dialog mit den verfügbaren Kunden öffnet.
+Im Kunden-Wizard (`/superadmin/kunden/anlegen` und `/bearbeiten/:id`) einen zusätzlichen Step "SIP-Daten" einfügen, in dem die Zugangsdaten für PhonerLite hinterlegt werden.
 
 ## Datenbank
 
-### Migration: Tabelle `assignments`
+Migration auf `public.clients` — 4 neue Spalten (alle nullable, damit Drafts und Bestandsdatensätze weiter funktionieren):
 
-Verknüpft Mitarbeiter (`employees.id`) mit Kunden (`clients.id`) — Many-to-Many.
+- `sip_phone_number text`
+- `sip_server text`
+- `sip_username text`
+- `sip_password text`
 
-Felder:
-- `id uuid pk`
-- `employee_id uuid not null references public.employees(id) on delete cascade`
-- `client_id uuid not null references public.clients(id) on delete cascade`
-- `created_by uuid not null`
-- `created_at timestamptz default now()`
-- `UNIQUE (employee_id, client_id)`
-- Index auf `employee_id`, `client_id`
-
-Grants & RLS:
-- `GRANT SELECT, INSERT, DELETE ON public.assignments TO authenticated`
-- `GRANT ALL ON public.assignments TO service_role`
-- RLS: nur Superadmins (`has_role(auth.uid(),'superadmin')`) dürfen SELECT/INSERT/DELETE.
-
-Kein `updated_at`-Trigger nötig (rein zuweisen/entfernen, keine Updates).
+Keine Änderung an RLS/Grants nötig — bestehende Policies decken die Spalten ab. Da Passwörter im Klartext gespeichert werden (analog zu `employees.password_plain` für PhonerLite-Zwecke), keine zusätzliche Verschlüsselung — konsistent zur bisherigen Entscheidung.
 
 ## Frontend
 
-### `src/pages/superadmin/Zuweisungen.tsx` neu aufbauen
+### `src/pages/superadmin/KundenWizard.tsx`
 
-Layout:
-- `PageHeader` mit Titel + Untertitel, kein „Speichern"-Button (Änderungen sind live).
-- Darunter eine vertikale Liste, für **jeden aktiven Mitarbeiter** (nur `is_draft = false`) eine Sektion:
+Neuer Step **"SIP-Daten"** wird als **5. und letzter Step** hinter "Zusatz" (oder aktuellem letztem Step) eingefügt. Damit hat der Wizard wieder 5 Steps:
 
 ```text
-┌─ Sofia Weber ────────────────────────────────────────────────┐
-│  Vollzeit · sofia.w@sekreteriat24.de                         │
-│                                                              │
-│  [Kunden-Card] [Kunden-Card] [Kunden-Card] [ + Zuweisen ]    │
-└──────────────────────────────────────────────────────────────┘
+1. Firma
+2. Adresse & Kontakt
+3. Ansprechpartner
+4. Zusatz (Logo, Begrüßung, Weiterleitung)
+5. SIP-Daten   ← neu
 ```
 
-Mitarbeiter-Sektion:
-- `Panel` mit Kopfzeile: Avatar/Initialen, Name, Vertragsart, Login-Email.
-- Grid darunter (`grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3`) mit:
-  - Kunden-Cards für jede Zuweisung: Logo/Initiale, Firmenname, Branche, kleines „x"-Icon (hover) zum Entfernen.
-  - Zum Schluss eine gestrichelte **„+ Zuweisen"-Karte** (gleiche Größe), Klick öffnet den Dialog.
+Felder im neuen Step (2-Spalten-Grid, konsistent zum Rest):
 
-### Dialog: „Kunde zuweisen"
-- `Dialog` aus shadcn.
-- Zeigt Titel „Kunde für {Mitarbeiter} zuweisen".
-- Suchfeld (Filter über `company_name`).
-- Liste der Kunden, die **noch nicht** diesem Mitarbeiter zugewiesen sind (nur `is_draft = false`).
-- Klick auf einen Eintrag → Insert in `assignments`, Dialog schließt, Card taucht in der Sektion auf.
-- Leerzustand: „Keine weiteren Kunden verfügbar".
+- **Telefonnummer** (`sip_phone_number`) — Text/Tel input
+- **Server** (`sip_server`) — Text input, Placeholder z.B. `sip.provider.de`
+- **Benutzername** (`sip_username`) — Text input
+- **Passwort** (`sip_password`) — Password input mit Show/Hide-Toggle (Auge-Icon), analog zur Passwort-Anzeige beim Mitarbeiter
 
-### Datenfluss
-- Bei Mount: parallel `employees` (aktiv), `clients` (aktiv), `assignments` laden.
-- Client-seitig zu einer Map `employeeId → Client[]` gruppieren.
-- Mutationen (Insert/Delete auf `assignments`) → optimistisch UI updaten, danach reload/refetch bei Fehler zurückrollen. Toast-Feedback.
+Kurzer Hinweistext oben im Step: „Diese Zugangsdaten werden für PhonerLite verwendet."
 
-### Kunden-Card entfernen
-- Kleines `X`-Icon rechts oben in der Card (nur bei Hover sichtbar).
-- Bestätigung via kurzem `confirm`/Toast-Action reicht — Löschung via `DELETE FROM assignments WHERE id = ...`.
+### Schemas & State
 
-### Leere Zustände
-- Keine Mitarbeiter aktiv: Hinweis-Karte mit Link zu `/superadmin/mitarbeiter/anlegen`.
-- Mitarbeiter ohne Zuweisungen: nur die „+"-Card wird gerendert.
+- `draftSchema` und `fullSchema` in `KundenWizard.tsx` um die 4 Felder erweitern (alle `.optional()` im Draft; im `fullSchema` ebenfalls optional, da SIP-Daten evtl. nachgereicht werden — falls Pflicht gewünscht, siehe Rückfrage unten).
+- `defaultValues` um leere Strings ergänzen.
+- Insert/Update-Payload für `clients` erweitert.
+- Bei Bearbeiten-Route: bestehende Werte in Form laden.
+
+### Kundenliste
+Keine Änderung — SIP-Daten werden nicht in der Übersicht angezeigt.
 
 ## Nicht angefasst
-- Mitarbeiter- und Kunden-Module (nur lesend genutzt).
-- Auth, Rollen, Design-Tokens, andere Superadmin-Seiten.
+- Mitarbeiter, Zuweisungen, Auth, andere Superadmin-Seiten.
+- Grants/RLS auf `clients`.
 
-## Technische Details
-- Neue Tabelle `assignments` mit RLS auf Superadmin beschränkt.
-- Keine Edge Function nötig — reine Client-Queries mit RLS-Schutz.
-- Types werden nach Migration automatisch neu generiert; `Zuweisungen.tsx` nutzt danach `Tables<'assignments'>`.
+## Offene Rückfrage
+Sollen die SIP-Daten beim finalen Aktivieren (kein Draft) **Pflicht** sein, oder immer optional bleiben? Ich gehe im Plan aktuell von *optional* aus.
