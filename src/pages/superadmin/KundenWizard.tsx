@@ -614,7 +614,7 @@ function StepUnternehmen({ form }: { form: FR }) {
   );
 }
 
-function StepAdresse({ form }: { form: FR }) {
+function StepAdresseKontakt({ form }: { form: FR }) {
   return (
     <div className="grid gap-5 md:grid-cols-6">
       <TextField
@@ -638,15 +638,21 @@ function StepAdresse({ form }: { form: FR }) {
         placeholder="Berlin"
         className="md:col-span-4"
       />
-    </div>
-  );
-}
-
-function StepKontakt({ form }: { form: FR }) {
-  return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <TextField form={form} name="phone" label="Telefonnummer" placeholder="+49 30 1234567" />
-      <TextField form={form} name="email" label="E-Mail" type="email" placeholder="info@muster.de" />
+      <TextField
+        form={form}
+        name="phone"
+        label="Telefonnummer"
+        placeholder="+49 30 1234567"
+        className="md:col-span-3"
+      />
+      <TextField
+        form={form}
+        name="email"
+        label="E-Mail"
+        type="email"
+        placeholder="info@muster.de"
+        className="md:col-span-3"
+      />
     </div>
   );
 }
