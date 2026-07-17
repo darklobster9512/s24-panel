@@ -117,6 +117,11 @@ const STEPS: StepDef[] = [
     description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
     fields: ["greeting_text", "forwarding_enabled"],
   },
+  {
+    title: "SIP-Daten",
+    description: "Zugangsdaten für PhonerLite.",
+    fields: ["sip_phone_number", "sip_server", "sip_username", "sip_password"],
+  },
 ];
 
 const DEFAULTS: FormValues = {
@@ -135,6 +140,10 @@ const DEFAULTS: FormValues = {
   contact_email: "",
   greeting_text: "",
   forwarding_enabled: false,
+  sip_phone_number: "",
+  sip_server: "",
+  sip_username: "",
+  sip_password: "",
 };
 
 const NULLABLE_STRINGS: Field[] = [
@@ -152,6 +161,10 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_phone",
   "contact_email",
   "greeting_text",
+  "sip_phone_number",
+  "sip_server",
+  "sip_username",
+  "sip_password",
 ];
 
 function normalize(values: FormValues) {
