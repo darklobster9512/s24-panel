@@ -137,6 +137,81 @@ export type Database = {
         }
         Relationships: []
       }
+      company_signature: {
+        Row: {
+          created_at: string
+          id: string
+          signature_source: string
+          signature_style: string | null
+          signature_url: string | null
+          signer_name: string
+          signer_title: string
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          signature_source?: string
+          signature_style?: string | null
+          signature_url?: string | null
+          signer_name?: string
+          signer_title?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          signature_source?: string
+          signature_style?: string | null
+          signature_url?: string | null
+          signer_name?: string
+          signer_title?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contract_templates: {
+        Row: {
+          category: string | null
+          content_html: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          monthly_salary: number
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          category?: string | null
+          content_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_salary?: number
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          category?: string | null
+          content_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_salary?: number
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           bank_name: string | null
