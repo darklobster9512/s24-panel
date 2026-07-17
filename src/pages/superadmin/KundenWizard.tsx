@@ -377,10 +377,9 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
 
                   <div className="pt-2">
                     {step === 0 && <StepUnternehmen form={form} />}
-                    {step === 1 && <StepAdresse form={form} />}
-                    {step === 2 && <StepKontakt form={form} />}
-                    {step === 3 && <StepAnsprechpartner form={form} />}
-                    {step === 4 && (
+                    {step === 1 && <StepAdresseKontakt form={form} />}
+                    {step === 2 && <StepAnsprechpartner form={form} />}
+                    {step === 3 && (
                       <StepKonfig
                         form={form}
                         logoFile={logoFile}
