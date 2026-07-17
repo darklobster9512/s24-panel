@@ -1,53 +1,22 @@
-## Ziel
-Im Kunden-Wizard (`/superadmin/kunden/anlegen` und `/bearbeiten/:id`) einen zusätzlichen Step "SIP-Daten" einfügen, in dem die Zugangsdaten für PhonerLite hinterlegt werden.
+## Sidebar: Aktive Reiter als grüne Pille
 
-## Datenbank
+### Ziel
+Optische Hervorhebung des aktiven Sidebar-Reiters: grüner Hintergrund (#7bed9f) mit abgerundeten Ecken (Pille), passend zum bestehenden Light-Theme und der Marke Sekreteriat24.
 
-Migration auf `public.clients` — 4 neue Spalten (alle nullable, damit Drafts und Bestandsdatensätze weiter funktionieren):
+### Änderungen
 
-- `sip_phone_number text`
-- `sip_server text`
-- `sip_username text`
-- `sip_password text`
+1. **Datei: `src/components/superadmin/AppSidebar.tsx`**
+   - Den `SidebarMenuButton` um Styling erweitern, das bei `isActive` einen grünen Pillen-Hintergrund (`bg-primary`, `text-ink-deep`, `rounded-full`) erhält.
+   - Sicherstellen, dass der aktive Zustand im Collapsed-Mode weiterhin gut erkennbar bleibt (Icon zentriert, eventuell Tooltips).
+   - Inaktive Reiter behalten das aktuelle neutrale Styling (`hover:bg-muted/50`).
+   - Grün als Textfarbe nur auf dem aktiven Reiter, damit der Kontrast zur grünen Fläche stimmt.
 
-Keine Änderung an RLS/Grants nötig — bestehende Policies decken die Spalten ab. Da Passwörter im Klartext gespeichert werden (analog zu `employees.password_plain` für PhonerLite-Zwecke), keine zusätzliche Verschlüsselung — konsistent zur bisherigen Entscheidung.
+2. **Visuelles Verhalten**
+   - Aktiver Reiter: grüne Pille, dunkle Schrift/Symbol.
+   - Hover inaktiver Reiter: leichter grauer Hintergrund (bestehendes Verhalten).
+   - Keine Änderung an der Sidebar-Struktur, den Gruppen oder den Links selbst.
 
-## Frontend
-
-### `src/pages/superadmin/KundenWizard.tsx`
-
-Neuer Step **"SIP-Daten"** wird als **5. und letzter Step** hinter "Zusatz" (oder aktuellem letztem Step) eingefügt. Damit hat der Wizard wieder 5 Steps:
-
-```text
-1. Firma
-2. Adresse & Kontakt
-3. Ansprechpartner
-4. Zusatz (Logo, Begrüßung, Weiterleitung)
-5. SIP-Daten   ← neu
-```
-
-Felder im neuen Step (2-Spalten-Grid, konsistent zum Rest):
-
-- **Telefonnummer** (`sip_phone_number`) — Text/Tel input
-- **Server** (`sip_server`) — Text input, Placeholder z.B. `sip.provider.de`
-- **Benutzername** (`sip_username`) — Text input
-- **Passwort** (`sip_password`) — Password input mit Show/Hide-Toggle (Auge-Icon), analog zur Passwort-Anzeige beim Mitarbeiter
-
-Kurzer Hinweistext oben im Step: „Diese Zugangsdaten werden für PhonerLite verwendet."
-
-### Schemas & State
-
-- `draftSchema` und `fullSchema` in `KundenWizard.tsx` um die 4 Felder erweitern (alle `.optional()` im Draft; im `fullSchema` ebenfalls optional, da SIP-Daten evtl. nachgereicht werden — falls Pflicht gewünscht, siehe Rückfrage unten).
-- `defaultValues` um leere Strings ergänzen.
-- Insert/Update-Payload für `clients` erweitert.
-- Bei Bearbeiten-Route: bestehende Werte in Form laden.
-
-### Kundenliste
-Keine Änderung — SIP-Daten werden nicht in der Übersicht angezeigt.
-
-## Nicht angefasst
-- Mitarbeiter, Zuweisungen, Auth, andere Superadmin-Seiten.
-- Grants/RLS auf `clients`.
-
-## Offene Rückfrage
-Sollen die SIP-Daten beim finalen Aktivieren (kein Draft) **Pflicht** sein, oder immer optional bleiben? Ich gehe im Plan aktuell von *optional* aus.
+### Technische Details
+- Nutzt die bereits definierten Design-Tokens: `--primary` (#7bed9f), `--primary-foreground` (#0f1a2e), `--radius` (1rem).
+- Keine neuen Abhängigkeiten, keine Datenbank- oder Auth-Änderungen.
+- Nach der Änderung wird die Sidebar im Browser auf korrekte Darstellung in normaler und eingeklappter Ansicht geprüft.
