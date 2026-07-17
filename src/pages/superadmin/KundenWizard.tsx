@@ -95,14 +95,9 @@ const STEPS: StepDef[] = [
     fields: ["company_name", "website", "industry", "vat_id", "company_description"],
   },
   {
-    title: "Adresse",
-    description: "Sitz des Unternehmens für Verträge und Abrechnung.",
-    fields: ["street", "postal_code", "city"],
-  },
-  {
-    title: "Kontakt Firma",
-    description: "Zentrale Rufnummer und E-Mail der Firma.",
-    fields: ["phone", "email"],
+    title: "Adresse & Kontakt",
+    description: "Firmensitz und geschäftliche Kontaktdaten.",
+    fields: ["street", "postal_code", "city", "phone", "email"],
   },
   {
     title: "Ansprechpartner",
