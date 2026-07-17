@@ -48,7 +48,7 @@ export function SignatureGeneratorDialog({ open, onOpenChange, initialName, init
         });
       if (upErr) throw new Error(upErr.message);
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("company_signature")
         .upsert(
           {
