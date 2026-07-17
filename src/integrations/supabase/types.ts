@@ -86,6 +86,93 @@ export type Database = {
         }
         Relationships: []
       }
+      employees: {
+        Row: {
+          bank_name: string | null
+          bic: string | null
+          birth_date: string | null
+          birth_place: string | null
+          contract_type: string | null
+          created_at: string
+          created_by: string
+          first_name: string | null
+          health_insurance: string | null
+          iban: string | null
+          id: string
+          is_draft: boolean
+          last_name: string | null
+          login_email: string | null
+          login_local_part: string | null
+          marital_status: string | null
+          nationality: string | null
+          password_plain: string | null
+          personal_email: string | null
+          personal_phone: string | null
+          salary: number | null
+          social_security_number: string | null
+          start_date: string | null
+          tax_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bank_name?: string | null
+          bic?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          contract_type?: string | null
+          created_at?: string
+          created_by: string
+          first_name?: string | null
+          health_insurance?: string | null
+          iban?: string | null
+          id?: string
+          is_draft?: boolean
+          last_name?: string | null
+          login_email?: string | null
+          login_local_part?: string | null
+          marital_status?: string | null
+          nationality?: string | null
+          password_plain?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          salary?: number | null
+          social_security_number?: string | null
+          start_date?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bank_name?: string | null
+          bic?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          contract_type?: string | null
+          created_at?: string
+          created_by?: string
+          first_name?: string | null
+          health_insurance?: string | null
+          iban?: string | null
+          id?: string
+          is_draft?: boolean
+          last_name?: string | null
+          login_email?: string | null
+          login_local_part?: string | null
+          marital_status?: string | null
+          nationality?: string | null
+          password_plain?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          salary?: number | null
+          social_security_number?: string | null
+          start_date?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null
