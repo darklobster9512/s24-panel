@@ -72,6 +72,7 @@ export function SuperadminSidebar() {
                 asChild
                 isActive={isActive(item.url, item.end)}
                 tooltip={item.title}
+                className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:rounded-full data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
               >
                 <NavLink to={item.url} end={item.end}>
                   <item.icon className="h-4 w-4" />
