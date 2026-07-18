@@ -37,15 +37,13 @@ export default function Tickets() {
             <Panel
               key={col.key}
               title={
-                (
-                  <span className="inline-flex items-center gap-2">
-                    <col.icon className={`h-4 w-4 ${col.tone}`} />
-                    {col.label}
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {list.length}
-                    </span>
+                <span className="inline-flex items-center gap-2">
+                  <col.icon className={`h-4 w-4 ${col.tone}`} />
+                  {col.label}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {list.length}
                   </span>
-                ) as unknown as string
+                </span>
               }
             >
               {list.length === 0 ? (
