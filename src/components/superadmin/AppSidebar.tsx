@@ -26,6 +26,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { SidebarUserFooter } from "@/components/SidebarUserFooter";
 
 const mainItems = [
   { title: "Übersicht", url: "/superadmin", icon: LayoutDashboard, end: true },
@@ -111,6 +112,7 @@ export function SuperadminSidebar() {
         {renderGroup("Finanzen", finItems)}
         {renderGroup("System", systemItems)}
       </SidebarContent>
+      <SidebarUserFooter roleLabel="Superadmin" />
     </Sidebar>
   );
 }
