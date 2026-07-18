@@ -26,6 +26,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { SidebarUserFooter } from "@/components/SidebarUserFooter";
 
 const mainItems = [
   { title: "Übersicht", url: "/superadmin", icon: LayoutDashboard, end: true },
