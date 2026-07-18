@@ -266,9 +266,9 @@ export default function Zuweisungen() {
                       className="group relative flex items-center gap-3 rounded-xl border border-border/60 bg-background p-3 transition-colors hover:border-primary/60"
                     >
                       <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                        {c.logo_url ? (
+                        {logoUrls.get(c.id) ? (
                           <img
-                            src={c.logo_url}
+                            src={logoUrls.get(c.id)}
                             alt=""
                             className="h-full w-full object-cover"
                           />
