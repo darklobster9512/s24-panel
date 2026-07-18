@@ -48,25 +48,18 @@ Deno.serve(async (req) => {
     }
     const { employee_id, login_email, password } = parsed.data;
 
-    // Create auth user
+    // Create auth user with role in metadata so handle_new_user trigger assigns 'mitarbeiter'
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: login_email,
       password,
       email_confirm: true,
+      user_metadata: { role: "mitarbeiter" },
     });
     if (createErr || !created?.user) {
       return json({ error: createErr?.message ?? "createUser failed" }, 400);
     }
     const newUserId = created.user.id;
 
-    // Assign role
-    const { error: roleInsErr } = await admin
-      .from("user_roles")
-      .insert({ user_id: newUserId, role: "mitarbeiter" });
-    if (roleInsErr) {
-      await admin.auth.admin.deleteUser(newUserId);
-      return json({ error: roleInsErr.message }, 500);
-    }
 
     // Link + activate employee
     const { error: updErr } = await admin

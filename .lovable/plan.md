@@ -1,25 +1,27 @@
-## Ziel
-Kunden-Logos auf `/superadmin/zuweisungen` (und im Zuweisungs-Dialog) korrekt aus dem privaten Bucket `client-logos` laden.
+## Problem
 
-## Ursache
-- `clients.logo_url` speichert nur den Objekt-Pfad im Bucket (z. B. `4d018b43-….png`), nicht eine vollständige URL.
-- Bucket `client-logos` ist privat → direkte URL funktioniert nicht, `<img src="4d018b43-….png">` wird als relativer Pfad interpretiert.
-- In `src/pages/superadmin/Zuweisungen.tsx` wird `c.logo_url` unverändert an `<img src>` übergeben.
+Beim Anlegen eines Mitarbeiter-Kontos landet der User als „kunde" statt „mitarbeiter". Ursache:
 
-## Lösung
-Signierte URLs vom Supabase Storage holen und cachen. Nur Frontend-Änderungen, keine DB- oder Bucket-Änderungen.
+1. Der DB-Trigger `handle_new_user` läuft bei jedem `auth.users` Insert und legt automatisch eine Rolle in `user_roles` an — Default = `'kunde'`, weil in `raw_user_meta_data` nichts steht.
+2. Die Edge Function `create-employee-account` fügt danach zusätzlich `'mitarbeiter'` ein → der User hat **zwei** Rollen.
+3. Das Frontend (`AuthProvider`) lädt Rollen mit `order=created_at.asc&limit=1` — die vom Trigger zuerst geschriebene `'kunde'` gewinnt.
 
-### Änderungen in `src/pages/superadmin/Zuweisungen.tsx`
-1. Nach dem Laden der `clients` einen `Map<clientId, signedUrl>` State aufbauen:
-   - Für alle Clients mit `logo_url != null` einen Batch-Aufruf `supabase.storage.from('client-logos').createSignedUrls(paths, 3600)` machen.
-   - Ergebnis in `logoUrls` State ablegen.
-2. Beide `<img>`-Stellen (Zuweisungs-Card + Dialog-Liste) auf `logoUrls.get(c.id)` umstellen. Fallback bleibt das `Building2`-Icon, wenn keine URL vorhanden ist.
-3. Defensive: falls `logo_url` bereits mit `http` beginnt (Altdaten), unverändert verwenden.
+Beleg im Log:
+```
+GET /user_roles?...limit=1 → [{"role":"kunde"}]
+```
 
-### Optional (kleine Hilfsfunktion)
-Kein neuer globaler Helper nötig — die Logik bleibt lokal in `Zuweisungen.tsx`, da dies aktuell der einzige Ort ist, der Logos in einer Liste rendert. Falls später weitere Seiten Logos brauchen (z. B. `Kunden.tsx`), kann ein `useClientLogoUrls(paths)`-Hook extrahiert werden — nicht Teil dieses Plans.
+## Fix
 
-## Technische Details
-- `createSignedUrls` gibt ein Array `{ path, signedUrl, error }` zurück; nur erfolgreiche Einträge werden in die Map geschrieben.
-- Ablauf 1 h ist ausreichend, da die Seite bei Reload neu signiert.
-- Keine RLS-Änderungen: bestehende Storage-Policies für `client-logos` erlauben Superadmins bereits Lesezugriff (Logo-Upload funktioniert im Wizard).
+**Edge Function `create-employee-account`:**
+- Beim `admin.auth.admin.createUser` `user_metadata: { role: "mitarbeiter" }` mitgeben, damit der Trigger direkt die richtige Rolle setzt.
+- Den nachgelagerten manuellen `insert` in `user_roles` durch ein defensives `upsert` (bzw. `.insert(...).select()` mit ignore-on-conflict via `onConflict: 'user_id,role'`) ersetzen — oder ganz entfernen, da der Trigger es bereits erledigt. Ich entferne den expliziten Insert.
+
+**Bestehende falsche Datensätze bereinigen:**
+- Für alle Users, die in `employees` verknüpft sind und eine `'kunde'`-Rolle statt `'mitarbeiter'` haben: `UPDATE user_roles SET role='mitarbeiter' WHERE user_id IN (SELECT user_id FROM employees WHERE user_id IS NOT NULL) AND role='kunde'`. Das mache ich über die Insert/Update-Konsole nach deinem OK.
+
+## Warum kein Trigger-Change
+
+Den Trigger `handle_new_user` anzufassen wäre invasiver (betrifft auch Self-Signup /auth). Metadaten mitzugeben ist der saubere, vom Trigger bereits vorgesehene Weg (`role IN ('kunde','mitarbeiter')`).
+
+Sag Bescheid, dann setze ich es um und bereinige den bereits angelegten Mitarbeiter-Account.
