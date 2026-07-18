@@ -24,14 +24,7 @@ const STATUS_META: Record<Status, { label: string; dot: string; ring: string }> 
 };
 
 export default function MitarbeiterLayout() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [status, setStatus] = useState<Status>("verfuegbar");
-
-  async function handleSignOut() {
-    await signOut();
-    navigate("/auth", { replace: true });
-  }
 
   const meta = STATUS_META[status];
 
@@ -70,20 +63,6 @@ export default function MitarbeiterLayout() {
                 <PhoneCall className="h-4 w-4" /> Anruf erfassen
               </Link>
             </Button>
-
-            <div className="ml-auto flex items-center gap-3">
-              <span className="hidden text-sm text-muted-foreground md:inline">
-                {user?.email}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="gap-2"
-              >
-                <LogOut className="h-4 w-4" /> Abmelden
-              </Button>
-            </div>
           </header>
           <main className="flex-1 px-6 py-8">
             <Suspense
