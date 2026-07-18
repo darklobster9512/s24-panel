@@ -183,11 +183,28 @@ export function StatCard({
   );
 }
 
-export function ClientLogo({ logo, name, size = "md" }: { logo?: string; name: string; size?: "sm" | "md" | "lg" }) {
+export function ClientLogo({
+  logo,
+  logoUrl,
+  name,
+  size = "md",
+}: {
+  logo?: string;
+  logoUrl?: string;
+  name: string;
+  size?: "sm" | "md" | "lg";
+}) {
   const sz = size === "sm" ? "h-8 w-8 text-base" : size === "lg" ? "h-14 w-14 text-2xl" : "h-10 w-10 text-lg";
   return (
-    <div className={cn("grid shrink-0 place-items-center rounded-xl bg-primary/15 text-ink", sz)} aria-label={name}>
-      <span>{logo ?? name.charAt(0)}</span>
+    <div
+      className={cn("grid shrink-0 place-items-center overflow-hidden rounded-xl bg-primary/15 text-ink", sz)}
+      aria-label={name}
+    >
+      {logoUrl ? (
+        <img src={logoUrl} alt={name} className="h-full w-full object-cover" />
+      ) : (
+        <span>{logo ?? name.charAt(0).toUpperCase()}</span>
+      )}
     </div>
   );
 }
