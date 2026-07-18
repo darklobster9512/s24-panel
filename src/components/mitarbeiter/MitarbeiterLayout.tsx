@@ -1,6 +1,6 @@
 import { Suspense, useState } from "react";
-import { Outlet, useNavigate, Link } from "react-router-dom";
-import { LogOut, Loader2, PhoneCall, Circle } from "lucide-react";
+import { Outlet, Link } from "react-router-dom";
+import { Loader2, PhoneCall, Circle } from "lucide-react";
 import {
   SidebarProvider,
   SidebarTrigger,
@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/sidebar";
 import { MitarbeiterSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
