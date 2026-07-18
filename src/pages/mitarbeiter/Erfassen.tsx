@@ -23,7 +23,7 @@ const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"]
 
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
-  const { clients, byId } = useAssignedClients();
+  const { clients, byId, logoUrls } = useAssignedClients();
   const preselectedId = params.get("client") ?? "";
 
   const [clientId, setClientId] = useState(preselectedId);
@@ -113,7 +113,7 @@ export default function Erfassen() {
                   <SelectContent>
                     {clients.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.logo} {c.name}
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -125,7 +125,7 @@ export default function Erfassen() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <ClientLogo logo={client.logo} name={client.name} size="lg" />
+                  <ClientLogo logoUrl={logoUrls[client.id]} name={client.name} size="lg" />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{client.name}</div>
                     <div className="text-xs text-muted-foreground">{client.branche}</div>
@@ -164,7 +164,7 @@ export default function Erfassen() {
                   <div className="mt-1 flex justify-between">
                     <span className="text-muted-foreground">Weiterleitung</span>
                     <span className="font-mono">
-                      {client.weiterleitung ? client.weiterleitungNummer : "—"}
+                      {client.weiterleitung ? "aktiv" : "—"}
                     </span>
                   </div>
                 </div>

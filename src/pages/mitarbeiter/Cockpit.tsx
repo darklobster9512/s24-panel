@@ -6,7 +6,7 @@ import { useAssignedClients } from "@/hooks/use-assigned-clients";
 import { MOCK_RECENT_CALLS, fmtRelative, fmtDauer, CURRENT_EMPLOYEE } from "@/lib/mitarbeiter-mock";
 
 export default function Cockpit() {
-  const { clients, isAssigned } = useAssignedClients();
+  const { clients, isAssigned, logoUrls } = useAssignedClients();
   const recent = MOCK_RECENT_CALLS.filter((c) => isAssigned(c.clientId)).slice(0, 6);
 
   return (
@@ -42,7 +42,7 @@ export default function Cockpit() {
                   const missed = call.status === "verpasst";
                   return (
                     <li key={call.id} className="flex items-center gap-3 py-3">
-                      <ClientLogo logo={client?.logo} name={client?.name ?? "?"} size="sm" />
+                      <ClientLogo logoUrl={client ? logoUrls[client.id] : undefined} name={client?.name ?? "?"} size="sm" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium">{call.anruferName}</span>
@@ -91,7 +91,7 @@ export default function Cockpit() {
                   to={`/mitarbeiter/kunden/${c.id}`}
                   className="flex items-center gap-3 rounded-xl border border-transparent p-2 transition hover:border-border/60 hover:bg-surface/60"
                 >
-                  <ClientLogo logo={c.logo} name={c.name} size="sm" />
+                  <ClientLogo logoUrl={logoUrls[c.id]} name={c.name} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{c.name}</div>
                     <div className="truncate text-xs text-muted-foreground">{c.branche}</div>

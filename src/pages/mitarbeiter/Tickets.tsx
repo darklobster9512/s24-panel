@@ -12,7 +12,7 @@ const COLUMNS: { key: MockTicket["status"]; label: string; icon: typeof AlertCir
 ];
 
 export default function Tickets() {
-  const { isAssigned, byId } = useAssignedClients();
+  const { isAssigned, byId, logoUrls } = useAssignedClients();
   const tickets = useMemo(
     () => MOCK_TICKETS.filter((t) => isAssigned(t.clientId)),
     [isAssigned],
@@ -60,7 +60,7 @@ export default function Tickets() {
                         className="cursor-pointer rounded-xl border border-border/60 bg-surface/40 p-3 transition hover:border-primary/40 hover:bg-surface/70"
                       >
                         <div className="flex items-start gap-2">
-                          <ClientLogo logo={client?.logo} name={client?.name ?? "?"} size="sm" />
+                          <ClientLogo logoUrl={client ? logoUrls[client.id] : undefined} name={client?.name ?? "?"} size="sm" />
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-medium">{t.titel}</div>
                             <div className="truncate text-xs text-muted-foreground">{client?.name}</div>

@@ -359,6 +359,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_client_assigned_to_me: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "superadmin" | "kunde" | "mitarbeiter"

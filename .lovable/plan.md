@@ -1,73 +1,69 @@
-## /mitarbeiter Panel — Mockup-Plan
 
-Alle Seiten reine Frontend-Mockups mit Dummy-Daten. Keine DB/Edge-Function-Anbindung. Softphone bleibt lokal (Phonerlite) — das Panel ist der Kontext- und Dokumentations-Layer. Sekretärinnen sehen nur Anrufe/Daten ihrer **zugewiesenen** Kunden (im Mockup: gefilterte Dummy-Liste).
+## Ziel
+`/mitarbeiter/kunden` (Übersicht) und `/mitarbeiter/kunden/:id` (Detail) laden echte Daten aus Supabase — nur die dem eingeloggten Mitarbeiter zugewiesenen Kunden. Anrufe/Notizen/Tickets bleiben vorerst Mock (eigene Anbindung später).
 
-### Layout & Shell
+## Aktueller Stand (verifiziert)
+- Tabellen `employees` (mit `user_id`), `assignments` (`employee_id`, `client_id`), `clients` (mit `logo_url`, `greeting_text`, `forwarding_enabled`, SIP-Feldern etc.) sind vorhanden.
+- RLS-Policies existieren aktuell **nur für Superadmins**. Mitarbeiter können nichts lesen — muss ergänzt werden.
+- Bucket `client-logos` ist privat → signierte URLs nötig (gleicher Ansatz wie in `/superadmin/zuweisungen`).
 
-Neue Datei `src/components/mitarbeiter/MitarbeiterLayout.tsx` mit Sidebar analog zum Superadmin-Panel (gleiche grüne Pillen-Optik). Struktur:
+## Umsetzung
 
-```text
-Sidebar                Content
-──────────           ─────────────────────────
-Cockpit              Header (Titel, Status-Pill „Verfügbar/Pause/Im Anruf")
-Meine Kunden         + „Anruf starten"-Button (global)
-Live-Anrufe          
-Anruf erfassen       [Outlet]
-Notizen              
-Tickets              
-Meine Statistik      
-Profil & Vertrag     
+### 1. RLS-Migration (neue Policies, nichts Bestehendes anfassen)
+Ziel: Mitarbeiter sieht genau die Zeilen, für die eine `assignments`-Zeile mit seiner `employees.user_id = auth.uid()` existiert.
+
+Security-Definer-Helper, damit RLS auf `clients` keinen Umweg über `assignments` mit weiteren Policies braucht:
+
+```sql
+create or replace function public.is_client_assigned_to_me(_client_id uuid)
+returns boolean language sql stable security definer set search_path=public as $$
+  select exists (
+    select 1 from public.assignments a
+    join public.employees e on e.id = a.employee_id
+    where a.client_id = _client_id and e.user_id = auth.uid()
+  )
+$$;
 ```
 
-Route-Änderung in `src/App.tsx`: aus der Single-Route `/mitarbeiter` wird ein Layout mit Kind-Routen. Bestehende `src/pages/Mitarbeiter.tsx` wird durch `Cockpit.tsx` ersetzt.
+Policies:
+- `clients` SELECT für `authenticated`: `public.is_client_assigned_to_me(id)` (zusätzlich zur bestehenden Superadmin-ALL-Policy — RLS ist OR-verknüpft).
+- `assignments` SELECT für `authenticated`: `exists (select 1 from employees e where e.id = employee_id and e.user_id = auth.uid())` (zusätzlich zur Superadmin-Policy).
+- `employees` SELECT für `authenticated`: `user_id = auth.uid()` (eigener Datensatz, für Cockpit/Profil später nützlich).
 
-### Reiter im Detail
+GRANTs prüfen und ggf. `GRANT SELECT ON public.clients, public.assignments, public.employees TO authenticated` ergänzen.
 
-**1. Cockpit** (`/mitarbeiter`)
-Startseite. Status-Toggle (Verfügbar / Pause / Nicht bereit), 4 KPI-Cards (Anrufe heute, Ø Gesprächszeit, Offene Notizen, Zugewiesene Kunden), Panel „Meine zugewiesenen Kunden" als kompakte Logo-Grid, Panel „Letzte Anrufe" (Timeline).
+### 2. Neuer Hook `useAssignedClients` (Ersatz)
+`src/hooks/use-assigned-clients.ts` von Mock auf Supabase umstellen:
+- Query: `assignments` → join `clients` (nested select) → gefiltert per RLS automatisch auf den eingeloggten User.
+- Zusätzlich: für jedes Kunden-Logo eine signierte URL via `supabase.storage.from('client-logos').createSignedUrl(path, 3600)` erzeugen (analog Superadmin-Zuweisungen), Map `clientId → signedUrl`.
+- Rückgabe: `{ clients, loading, error, byId, isAssigned, logoUrls }`. Typ `Client` neu aus DB-Spalten (kein Emoji-Logo mehr).
 
-**2. Meine Kunden** (`/mitarbeiter/kunden`)
-Grid aus Kunden-Cards (Logo, Name, Branche, Telefon). Klick → `/mitarbeiter/kunden/:id` mit vollem Kunden-Cockpit: Firmendaten, Firmeninhalt, Begrüßungstext, Weiterleitungs-Nummer, Ansprechpartner, letzte Anrufe/Notizen/Tickets für diesen Kunden, Button „Anruf für diesen Kunden erfassen".
+### 3. Feldmapping DB → UI
+| UI (Mock)              | DB (`clients`)         |
+|------------------------|------------------------|
+| `name`                 | `company_name`         |
+| `branche`              | `industry`             |
+| `telefon`              | `phone`                |
+| `logo` (Emoji)         | `logo_url` → signed URL (Fallback: Initiale) |
+| `firmeninhalt`         | `company_description`  |
+| `begruessung`          | `greeting_text`        |
+| `weiterleitung`        | `forwarding_enabled`   |
+| `ansprechpartner`      | `contact_person`       |
+| `ansprechpartnerTel`   | `contact_phone`        |
+| `adresse`              | `street`, `postal_code`, `city` zusammenbauen |
 
-**3. Live-Anrufe** (`/mitarbeiter/live`)
-Realtime-Liste (Mockup) eingehender Anrufe für zugewiesene Kunden. Card pro Anruf: Kundenlogo, Anrufernummer, gerufene Nummer, Wartezeit-Ticker. Button „Erfassen starten" öffnet den Erfassungs-Flow mit vorbelegten Feldern (später aus sipgate `newCall`-Webhook). Info-Banner oben: „Anrufe werden über sipgate Push-API automatisch erkannt — aktuell Mockup-Daten."
+### 4. UI-Anpassungen
+- `src/pages/mitarbeiter/Kunden.tsx`: Loading-Skeletons + Empty-State ("Dir wurden noch keine Kunden zugewiesen"), Suchfilter auf neue Felder umstellen.
+- `src/components/mitarbeiter/MitarbeiterLayout.tsx` → `ClientLogo`: `logo` optional String-URL akzeptieren; wenn URL vorhanden `<img>` rendern, sonst Initialen.
+- `src/pages/mitarbeiter/KundeDetail.tsx`: gleiche Feldnamen wie oben; Anrufe/Notizen/Tickets bleiben `MOCK_*` mit Hinweis-Badge "Mockup" (klare Trennung, wird später einzeln angebunden).
+- Draft-Kunden (`is_draft = true`) werden nicht angezeigt — Filter in Query.
 
-**4. Anruf erfassen** (`/mitarbeiter/erfassen`)
-Der zentrale Arbeits-Screen. 2-Spalten-Layout:
-- **Links (Kontext):** Kundenauswahl-Card (falls nicht aus Live-Anruf vorbelegt) → nach Auswahl Anzeige von Firmeninhalt, Begrüßungstext, Ansprechpartner, Weiterleitung Ja/Nein.
-- **Rechts (Formular):** Start/Stop-Button mit Timer (manuell, da lokales Softphone). Felder: Anrufer Name, Anrufer Telefon, Anrufer Email (optional), Anliegen (Textarea), Kategorie-Dropdown (Rückruf / Termin / Info / Beschwerde / Weiterleitung), Priorität, Weitergeleitet-an, Ticket-erstellen-Checkbox, Rückruf-erwünscht-Checkbox mit Zeit. Buttons: „Speichern & Neu", „Speichern & Schließen".
+### 5. Nicht Teil dieses Schritts
+- Anrufe, Notizen, Tickets (bleiben Mock)
+- Cockpit-KPIs, Live-Anrufe, Statistik, Erfassen — bleiben Mock
+- Realtime auf `assignments` (kann später ergänzt werden)
 
-**5. Notizen** (`/mitarbeiter/notizen`)
-Liste aller eigenen Notizen (nur eigene / nur zugewiesene Kunden), Suche, Filter nach Kunde/Datum/Kategorie. Card-Layout wie Superadmin-Notizen aber mit Bearbeiten-Button.
-
-**6. Tickets** (`/mitarbeiter/tickets`)
-Kanban-artige 3-Spalten-Ansicht (Offen / In Bearbeitung / Erledigt) oder einfache Tabelle. Ticket = eskalierter Anruf, der einen Rückruf/Aktion vom Kunden erfordert. Klick → Detail-Drawer mit Verlauf und Kommentaren.
-
-**7. Meine Statistik** (`/mitarbeiter/statistik`)
-Wochen-/Monats-Charts: Anrufe pro Tag (Balken), Ø Gesprächsdauer (Line), Verteilung nach Kategorie (Donut), Verteilung nach Kunde (Balken). Zeitraum-Umschalter.
-
-**8. Profil & Vertrag** (`/mitarbeiter/profil`)
-Read-only Anzeige der Mitarbeiter-Stammdaten (aus `employees`): Name, Login-Email, Vertragsart, Startdatum, Gehalt (nur eigene Sicht). Passwort-Ändern-Button. Sektion „Meine SIP-Zugangsdaten für Phonerlite" (Anleitung/Placeholder — kommt später aus einer noch anzulegenden Employee-SIP-Config).
-
-### Sichtbarkeits-Regel (Mockup-Ebene bereits vorbereiten)
-
-In allen Datenquellen (Dummy-Arrays) ein `assignedClientIds` Konzept: Mockup-Daten werden clientseitig gegen eine Liste zugewiesener Kunden-IDs gefiltert, damit später beim DB-Anschluss nur der Query gegen `assignments` getauscht werden muss. Ein zentraler Hook `useAssignedClients()` liefert im Mockup ein festes Array und wird später auf Supabase umgestellt.
-
-### Was nicht Teil dieses Schritts ist
-
-- Keine Datenbank-Migrationen (`calls`, `call_notes`, `tickets` etc.).
-- Keine sipgate-Edge-Function.
-- Keine Realtime-Subscriptions.
-- Kein WebRTC-Softphone.
-
-Alles davon kommt in einem Folge-Schritt, sobald die UI steht und du grünes Licht gibst.
-
-### Technische Details
-
-- Neue Dateien: `src/components/mitarbeiter/MitarbeiterLayout.tsx`, `src/components/mitarbeiter/AppSidebar.tsx`, `src/hooks/use-assigned-clients.ts`, `src/lib/mitarbeiter-mock.ts` (zentrale Dummy-Daten).
-- Neue Pages: `src/pages/mitarbeiter/Cockpit.tsx`, `Kunden.tsx`, `KundeDetail.tsx`, `LiveAnrufe.tsx`, `Erfassen.tsx`, `Notizen.tsx`, `Tickets.tsx`, `Statistik.tsx`, `Profil.tsx`.
-- `src/pages/Mitarbeiter.tsx` wird entfernt (durch Layout ersetzt).
-- Routing in `src/App.tsx` erweitert (analog Superadmin, `RequireRole allow={["mitarbeiter"]}`).
-- Kein neues npm-Paket nötig — Recharts/lucide/shadcn sind vorhanden.
-
-Sag Bescheid, dann bau ich die Mockups.
+## Verifikation nach Umsetzung
+- Als Mitarbeiter einloggen → nur zugewiesene Kunden sichtbar.
+- Logo-URLs werden signiert geladen (Netzwerk-Check).
+- Als Kunde/anderer Mitarbeiter → keine fremden Kunden sichtbar (RLS-Test).

@@ -17,7 +17,7 @@ import { MOCK_NOTES, fmtRelative } from "@/lib/mitarbeiter-mock";
 const KATEGORIEN = ["Alle", "Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"];
 
 export default function Notizen() {
-  const { isAssigned, byId, clients } = useAssignedClients();
+  const { isAssigned, byId, clients, logoUrls } = useAssignedClients();
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Alle");
   const [clientFilter, setClientFilter] = useState("alle");
@@ -86,7 +86,7 @@ export default function Notizen() {
                   className="rounded-xl border border-border/60 bg-surface/40 p-4 transition hover:border-primary/40"
                 >
                   <div className="flex items-start gap-3">
-                    <ClientLogo logo={client?.logo} name={client?.name ?? "?"} size="sm" />
+                    <ClientLogo logoUrl={client ? logoUrls[client.id] : undefined} name={client?.name ?? "?"} size="sm" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
