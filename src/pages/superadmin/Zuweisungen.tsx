@@ -82,6 +82,37 @@ export default function Zuweisungen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const paths = clients
+      .map((c) => c.logo_url)
+      .filter((p): p is string => !!p && !p.startsWith("http"));
+    if (paths.length === 0) {
+      setLogoUrls(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from("client-logos")
+        .createSignedUrls(paths, 3600);
+      if (cancelled || error || !data) return;
+      const map = new Map<string, string>();
+      for (const c of clients) {
+        if (!c.logo_url) continue;
+        if (c.logo_url.startsWith("http")) {
+          map.set(c.id, c.logo_url);
+          continue;
+        }
+        const entry = data.find((d) => d.path === c.logo_url);
+        if (entry?.signedUrl) map.set(c.id, entry.signedUrl);
+      }
+      setLogoUrls(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clients]);
+
   const clientsById = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
     [clients],
