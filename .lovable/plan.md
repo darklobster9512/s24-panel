@@ -1,36 +1,26 @@
 ## Ziel
-`/mitarbeiter/profil` an Supabase anbinden — echte Mitarbeiterdaten aus `employees` + SIP-Daten des zugewiesenen Kunden anzeigen. Passwort-Ändern-Sektion entfällt.
+Abmelden-Button aus dem Header in einen Sidebar-Footer verschieben — darüber Name + E-Mail des eingeloggten Nutzers.
 
-## Datenquellen
-- `employees` (via `user_id = auth.uid()`): `first_name`, `last_name`, `login_email`, `personal_email`, `personal_phone`, `contract_type`, `start_date`
-- `clients` (via `assignments` → nur zugewiesene Kunden, gefiltert über bestehende RLS + `is_client_assigned_to_me`): `sip_server`, `sip_username`, `sip_password`, `sip_phone_number`, `company_name`, `logo_url`
+## Betroffene Bereiche
+- **Superadmin** (`src/components/superadmin/AppSidebar.tsx` + Header in `SuperadminLayout.tsx`)
+- **Mitarbeiter** (`src/components/mitarbeiter/AppSidebar.tsx` + Header in `MitarbeiterLayout.tsx`)
+- **Kunde** hat aktuell keine Sidebar (nutzt `DashboardShell` mit Header). Da der User explizit „Sidebar ganz nach unten" sagt, lasse ich das Kunde-Panel unverändert — es hat keinen Sidebar-Kontext. Falls doch gewünscht, separater Schritt.
 
-## RLS-Check
-Mitarbeiter braucht `SELECT` auf eigene Zeile in `employees`. Aktuell existieren nur 2 Policies auf `employees` (vermutlich Superadmin). Vor der UI-Arbeit prüfen und ggf. Policy `"Employees can view own row"` mit `USING (user_id = auth.uid())` per Migration ergänzen. Für `clients` sind Policies mit `is_client_assigned_to_me` bereits vorhanden.
+## Neue Komponente
+`src/components/SidebarUserFooter.tsx` — wiederverwendbar für beide Sidebars:
+- Nutzt `useAuth()` für `user`
+- Zusätzliche Query auf `profiles.full_name` (oder Employee `first_name/last_name` für Mitarbeiter — fallback über profiles, das reicht für alle Rollen); bei leerem Namen: E-Mail-Präfix
+- Layout: Avatar-Kreis mit Initialen · Name (fett, truncate) + E-Mail (klein, muted) · Logout-Icon-Button rechts
+- Collapsed-Zustand (`useSidebar().state === "collapsed"`): nur Avatar + Logout-Icon
+- Ruft `signOut()` + `navigate("/auth", { replace: true })`
 
-## UI-Änderungen `src/pages/mitarbeiter/Profil.tsx`
-1. **Passwort-Sektion komplett entfernen** (inkl. Import `KeyRound`).
-2. **Persönliche Daten** aus `employees`:
-   - Name = `first_name + last_name`
-   - Login E-Mail = `login_email`
-   - Private E-Mail = `personal_email`
-   - Telefon = `personal_phone`
-3. **Vertrag** aus `employees`:
-   - Vertragsart = `contract_type` (Vollzeit/Teilzeit)
-   - Startdatum = `start_date` (formatiert `dd.MM.yyyy`)
-   - Status = "Aktiv"
-4. **SIP-Zugangsdaten** — pro zugewiesenem Kunden ein eigener Block (Mitarbeiter kann mehrere Kunden haben, jeder Kunde hat eigene SIP-Credentials für Phonerlite):
-   - Kopf: Kundenlogo + `company_name` + `sip_phone_number`
-   - Zeilen: Server, Benutzername, Passwort (Show/Hide + Copy) — bereits vorhandenes Row-Layout wiederverwenden
-   - Wenn keine Zuweisungen: leerer Zustand („Noch keine Kunden zugewiesen").
-   - Wenn Kunde keine SIP-Daten hat: Hinweis „SIP-Daten noch nicht hinterlegt".
-5. Loading (Skeleton) + Error-Toast, Mock-Import `CURRENT_EMPLOYEE` entfernen.
-
-## Datenladen
-Einzelner `useEffect`:
-- `employees` where `user_id = auth.uid()` → single row
-- `assignments` join `clients` (analog `use-assigned-clients`) für SIP-Blöcke; signierte Logo-URLs wie in bestehendem Hook
+## Änderungen
+1. **`SidebarUserFooter.tsx`** neu erstellen.
+2. **`superadmin/AppSidebar.tsx`**: `SidebarFooter` importieren, `<SidebarUserFooter />` am Ende einfügen.
+3. **`mitarbeiter/AppSidebar.tsx`**: gleich.
+4. **`SuperadminLayout.tsx`**: E-Mail-Anzeige + Abmelden-Button aus Header entfernen; `SidebarTrigger` und optionaler Titel bleiben.
+5. **`MitarbeiterLayout.tsx`**: gleiche Header-Aufräumung.
 
 ## Nicht enthalten
-- Passwort ändern (entfernt)
-- Bearbeiten der eigenen Daten (read-only)
+- Kunde-Dashboard (kein Sidebar-Layout)
+- Design-Refactor des DashboardShell
