@@ -14,7 +14,6 @@ import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
-import { cn } from "@/lib/utils";
 
 function CardLogo({
   logoUrl,
