@@ -23,7 +23,7 @@ const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"]
 
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
-  const { clients, byId } = useAssignedClients();
+  const { clients, byId, logoUrls } = useAssignedClients();
   const preselectedId = params.get("client") ?? "";
 
   const [clientId, setClientId] = useState(preselectedId);
