@@ -1,25 +1,15 @@
 import { Suspense } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { LogOut, Search, Loader2 } from "lucide-react";
+import { Outlet } from "react-router-dom";
+import { Search, Loader2 } from "lucide-react";
 import {
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { SuperadminSidebar } from "./AppSidebar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
 
 export default function SuperadminLayout() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-
-  async function handleSignOut() {
-    await signOut();
-    navigate("/auth", { replace: true });
-  }
-
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-surface">
@@ -33,19 +23,6 @@ export default function SuperadminLayout() {
                 placeholder="Suche nach Kunden, Mitarbeitern, Anrufen…"
                 className="h-9 pl-9"
               />
-            </div>
-            <div className="ml-auto flex items-center gap-3">
-              <span className="hidden text-sm text-muted-foreground md:inline">
-                {user?.email}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="gap-2"
-              >
-                <LogOut className="h-4 w-4" /> Abmelden
-              </Button>
             </div>
           </header>
           <main className="flex-1 px-6 py-8">
