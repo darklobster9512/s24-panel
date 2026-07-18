@@ -23,6 +23,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { SidebarUserFooter } from "@/components/SidebarUserFooter";
 
 const workItems = [
   { title: "Cockpit", url: "/mitarbeiter", icon: LayoutDashboard, end: true },
