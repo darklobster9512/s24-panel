@@ -42,7 +42,7 @@ export default function Cockpit() {
                   const missed = call.status === "verpasst";
                   return (
                     <li key={call.id} className="flex items-center gap-3 py-3">
-                      <ClientLogo logo={client?.logo} name={client?.name ?? "?"} size="sm" />
+                      <ClientLogo logoUrl={client ? logoUrls[client.id] : undefined} name={client?.name ?? "?"} size="sm" />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-medium">{call.anruferName}</span>

@@ -62,7 +62,7 @@ export default function LiveAnrufe() {
                 className="rounded-2xl border-2 border-primary/40 bg-card p-5 shadow-card-elegant"
               >
                 <div className="flex items-start gap-3">
-                  <ClientLogo logo={client?.logo} name={client?.name ?? "?"} size="lg" />
+                  <ClientLogo logoUrl={client ? logoUrls[client.id] : undefined} name={client?.name ?? "?"} size="lg" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <PhoneIncoming className="h-4 w-4 text-primary" />
