@@ -17,7 +17,7 @@ function useTicker() {
 
 export default function LiveAnrufe() {
   useTicker();
-  const { isAssigned, byId } = useAssignedClients();
+  const { isAssigned, byId, logoUrls } = useAssignedClients();
   const calls = MOCK_LIVE_CALLS.filter((c) => isAssigned(c.clientId));
 
   return (

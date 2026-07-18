@@ -17,7 +17,7 @@ import { MOCK_NOTES, fmtRelative } from "@/lib/mitarbeiter-mock";
 const KATEGORIEN = ["Alle", "Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"];
 
 export default function Notizen() {
-  const { isAssigned, byId, clients } = useAssignedClients();
+  const { isAssigned, byId, clients, logoUrls } = useAssignedClients();
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Alle");
   const [clientFilter, setClientFilter] = useState("alle");

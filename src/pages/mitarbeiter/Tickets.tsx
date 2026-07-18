@@ -12,7 +12,7 @@ const COLUMNS: { key: MockTicket["status"]; label: string; icon: typeof AlertCir
 ];
 
 export default function Tickets() {
-  const { isAssigned, byId } = useAssignedClients();
+  const { isAssigned, byId, logoUrls } = useAssignedClients();
   const tickets = useMemo(
     () => MOCK_TICKETS.filter((t) => isAssigned(t.clientId)),
     [isAssigned],
