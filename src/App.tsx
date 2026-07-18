@@ -28,7 +28,17 @@ import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
 
 const Kunde = lazy(() => import("./pages/Kunde"));
-const Mitarbeiter = lazy(() => import("./pages/Mitarbeiter"));
+
+const MitarbeiterLayout = lazy(() => import("./components/mitarbeiter/MitarbeiterLayout"));
+import MitarbeiterCockpit from "./pages/mitarbeiter/Cockpit";
+import MitarbeiterKunden from "./pages/mitarbeiter/Kunden";
+import MitarbeiterKundeDetail from "./pages/mitarbeiter/KundeDetail";
+import MitarbeiterLive from "./pages/mitarbeiter/LiveAnrufe";
+import MitarbeiterErfassen from "./pages/mitarbeiter/Erfassen";
+import MitarbeiterNotizen from "./pages/mitarbeiter/Notizen";
+import MitarbeiterTickets from "./pages/mitarbeiter/Tickets";
+import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
+import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -83,7 +93,17 @@ export default function App() {
                 </Route>
 
                 <Route element={<RequireRole allow={["mitarbeiter"]} />}>
-                  <Route path="/mitarbeiter" element={<Mitarbeiter />} />
+                  <Route path="/mitarbeiter" element={<MitarbeiterLayout />}>
+                    <Route index element={<MitarbeiterCockpit />} />
+                    <Route path="kunden" element={<MitarbeiterKunden />} />
+                    <Route path="kunden/:id" element={<MitarbeiterKundeDetail />} />
+                    <Route path="live" element={<MitarbeiterLive />} />
+                    <Route path="erfassen" element={<MitarbeiterErfassen />} />
+                    <Route path="notizen" element={<MitarbeiterNotizen />} />
+                    <Route path="tickets" element={<MitarbeiterTickets />} />
+                    <Route path="statistik" element={<MitarbeiterStatistik />} />
+                    <Route path="profil" element={<MitarbeiterProfil />} />
+                  </Route>
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
