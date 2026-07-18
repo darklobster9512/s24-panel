@@ -102,6 +102,7 @@ export function MitarbeiterSidebar() {
         {renderGroup("Dokumentation", docItems)}
         {renderGroup("Persönlich", meItems)}
       </SidebarContent>
+      <SidebarUserFooter roleLabel="Mitarbeiter" />
     </Sidebar>
   );
 }
