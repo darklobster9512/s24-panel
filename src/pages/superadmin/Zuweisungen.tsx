@@ -47,6 +47,7 @@ export default function Zuweisungen() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [logoUrls, setLogoUrls] = useState<Map<string, string>>(new Map());
   const [dialogEmployee, setDialogEmployee] = useState<Employee | null>(null);
   const [search, setSearch] = useState("");
 
@@ -80,6 +81,37 @@ export default function Zuweisungen() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const paths = clients
+      .map((c) => c.logo_url)
+      .filter((p): p is string => !!p && !p.startsWith("http"));
+    if (paths.length === 0) {
+      setLogoUrls(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from("client-logos")
+        .createSignedUrls(paths, 3600);
+      if (cancelled || error || !data) return;
+      const map = new Map<string, string>();
+      for (const c of clients) {
+        if (!c.logo_url) continue;
+        if (c.logo_url.startsWith("http")) {
+          map.set(c.id, c.logo_url);
+          continue;
+        }
+        const entry = data.find((d) => d.path === c.logo_url);
+        if (entry?.signedUrl) map.set(c.id, entry.signedUrl);
+      }
+      setLogoUrls(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clients]);
 
   const clientsById = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
@@ -234,9 +266,9 @@ export default function Zuweisungen() {
                       className="group relative flex items-center gap-3 rounded-xl border border-border/60 bg-background p-3 transition-colors hover:border-primary/60"
                     >
                       <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                        {c.logo_url ? (
+                        {logoUrls.get(c.id) ? (
                           <img
-                            src={c.logo_url}
+                            src={logoUrls.get(c.id)}
                             alt=""
                             className="h-full w-full object-cover"
                           />
@@ -324,9 +356,9 @@ export default function Zuweisungen() {
                       className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted"
                     >
                       <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                        {c.logo_url ? (
+                        {logoUrls.get(c.id) ? (
                           <img
-                            src={c.logo_url}
+                            src={logoUrls.get(c.id)}
                             alt=""
                             className="h-full w-full object-cover"
                           />
