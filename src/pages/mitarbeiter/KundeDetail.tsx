@@ -8,9 +8,10 @@ import { MOCK_RECENT_CALLS, MOCK_NOTES, MOCK_TICKETS, fmtRelative, fmtDauer } fr
 
 export default function KundeDetail() {
   const { id } = useParams<{ id: string }>();
-  const { byId } = useAssignedClients();
+  const { byId, logoUrls, loading } = useAssignedClients();
   const client = id ? byId(id) : undefined;
 
+  if (loading) return null;
   if (!client) return <Navigate to="/mitarbeiter/kunden" replace />;
 
   const calls = MOCK_RECENT_CALLS.filter((c) => c.clientId === client.id);
@@ -28,7 +29,7 @@ export default function KundeDetail() {
 
       <PageHeader
         title={client.name}
-        subtitle={client.branche}
+        subtitle={client.branche ?? undefined}
         actions={
           <Button asChild size="sm" className="gap-2">
             <Link to={`/mitarbeiter/erfassen?client=${client.id}`}>
@@ -42,7 +43,7 @@ export default function KundeDetail() {
         <div className="lg:col-span-2 space-y-6">
           <Panel title="Firmeninhalt">
             <div className="flex items-start gap-4">
-              <ClientLogo logo={client.logo} name={client.name} size="lg" />
+              <ClientLogo logoUrl={logoUrls[client.id]} name={client.name} size="lg" />
               <p className="flex-1 text-sm leading-relaxed text-foreground/90">
                 {client.firmeninhalt}
               </p>
@@ -141,8 +142,8 @@ export default function KundeDetail() {
                 <PhoneForwarded className="mt-0.5 h-4 w-4 text-ink" />
                 <div>
                   <div className="text-sm font-medium">Aktiv</div>
-                  <div className="mt-0.5 font-mono text-xs text-muted-foreground">
-                    {client.weiterleitungNummer}
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    Anrufe werden nach Rückfrage weitergeleitet.
                   </div>
                 </div>
               </div>
