@@ -47,6 +47,7 @@ export default function Zuweisungen() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [logoUrls, setLogoUrls] = useState<Map<string, string>>(new Map());
   const [dialogEmployee, setDialogEmployee] = useState<Employee | null>(null);
   const [search, setSearch] = useState("");
 
