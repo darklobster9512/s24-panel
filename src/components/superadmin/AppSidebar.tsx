@@ -112,6 +112,7 @@ export function SuperadminSidebar() {
         {renderGroup("Finanzen", finItems)}
         {renderGroup("System", systemItems)}
       </SidebarContent>
+      <SidebarUserFooter roleLabel="Superadmin" />
     </Sidebar>
   );
 }
