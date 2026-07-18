@@ -1,41 +1,36 @@
-Verbesserung der /mitarbeiter/kunden Kundenübersicht.
+## Ziel
+`/mitarbeiter/profil` an Supabase anbinden — echte Mitarbeiterdaten aus `employees` + SIP-Daten des zugewiesenen Kunden anzeigen. Passwort-Ändern-Sektion entfällt.
 
-Ziel
-- Die Kundenliste soll als übersichtliche, volle Breite Karten-Liste statt als 3-Spalten-Grid dargestellt werden.
-- Pro Karte sollen auf den ersten Blick mehr relevante Informationen sichtbar sein.
-- Das Kundenlogo soll nicht mehr als kleines, abgerundetes Icon aussehen, sondern als erste Spalte der Karte fungieren und vollständig sichtbar sein.
+## Datenquellen
+- `employees` (via `user_id = auth.uid()`): `first_name`, `last_name`, `login_email`, `personal_email`, `personal_phone`, `contract_type`, `start_date`
+- `clients` (via `assignments` → nur zugewiesene Kunden, gefiltert über bestehende RLS + `is_client_assigned_to_me`): `sip_server`, `sip_username`, `sip_password`, `sip_phone_number`, `company_name`, `logo_url`
 
-Geplante Änderungen in `src/pages/mitarbeiter/Kunden.tsx`
-1. Layout-Wechsel
-   - Entferne das aktuelle `grid sm:grid-cols-2 lg:grid-cols-3`.
-   - Jede Kundenkarte wird eine einzelne, volle Breite Zeile (`flex` oder `grid` mit 3 Bereichen: Logo, Infos, Aktionen).
+## RLS-Check
+Mitarbeiter braucht `SELECT` auf eigene Zeile in `employees`. Aktuell existieren nur 2 Policies auf `employees` (vermutlich Superadmin). Vor der UI-Arbeit prüfen und ggf. Policy `"Employees can view own row"` mit `USING (user_id = auth.uid())` per Migration ergänzen. Für `clients` sind Policies mit `is_client_assigned_to_me` bereits vorhanden.
 
-2. Logo als erste Spalte
-   - Logo links, in einem festen breiten Bereich (z. B. `w-40` oder `w-48`), mit quadratischem/gerundetem Rahmen.
-   - Bild wird mit `object-contain` dargestellt, damit es vollständig sichtbar ist und nicht beschnitten wird.
-   - Fallback: Initialen des Kunden in einem neutralen Platzhalter.
+## UI-Änderungen `src/pages/mitarbeiter/Profil.tsx`
+1. **Passwort-Sektion komplett entfernen** (inkl. Import `KeyRound`).
+2. **Persönliche Daten** aus `employees`:
+   - Name = `first_name + last_name`
+   - Login E-Mail = `login_email`
+   - Private E-Mail = `personal_email`
+   - Telefon = `personal_phone`
+3. **Vertrag** aus `employees`:
+   - Vertragsart = `contract_type` (Vollzeit/Teilzeit)
+   - Startdatum = `start_date` (formatiert `dd.MM.yyyy`)
+   - Status = "Aktiv"
+4. **SIP-Zugangsdaten** — pro zugewiesenem Kunden ein eigener Block (Mitarbeiter kann mehrere Kunden haben, jeder Kunde hat eigene SIP-Credentials für Phonerlite):
+   - Kopf: Kundenlogo + `company_name` + `sip_phone_number`
+   - Zeilen: Server, Benutzername, Passwort (Show/Hide + Copy) — bereits vorhandenes Row-Layout wiederverwenden
+   - Wenn keine Zuweisungen: leerer Zustand („Noch keine Kunden zugewiesen").
+   - Wenn Kunde keine SIP-Daten hat: Hinweis „SIP-Daten noch nicht hinterlegt".
+5. Loading (Skeleton) + Error-Toast, Mock-Import `CURRENT_EMPLOYEE` entfernen.
 
-3. Mehr Infos auf einen Blick
-   - Hauptinfo-Bereich: Unternehmensname, Branche, Firmeninhalt (2-3 Zeilen gekürzt), Telefon, E-Mail.
-   - Rechter Bereich: Weiterleitungs-Status-Badge, ggf. Aktionen/Link zur Detailseite.
+## Datenladen
+Einzelner `useEffect`:
+- `employees` where `user_id = auth.uid()` → single row
+- `assignments` join `clients` (analog `use-assigned-clients`) für SIP-Blöcke; signierte Logo-URLs wie in bestehendem Hook
 
-4. Styling
-   - Beibehaltung der bestehenden Design-Token (`bg-card`, `border-border/60`, `rounded-2xl`, `shadow-card-elegant`).
-   - Hover- und Fokus-States bleiben erhalten.
-   - Suchleiste bleibt oben bestehen.
-
-5. Keine Backend-Änderungen
-   - Die notwendigen Daten (Firma, Branche, Telefon, E-Mail, Website, Firmeninhalt, Weiterleitung, Logo) sind bereits über `useAssignedClients` verfügbar.
-
-Mockup der neuen Kartenstruktur:
-
-```text
-+---------------------------------------------------------+
-|  +------+  Unternehmen GmbH          [Weiterleitung]    |
-|  |      |  Branche                   [Nur Notiz]         |
-|  | LOGO |  📞 0123 456789                                    |
-|  |      |  ✉ info@firma.de                                   |
-|  +------+  Kurzer Firmeninhalt (2 Zeilen)                     |
-|  +----------------------------------------------------+|      |
-|  +-----------------------------------------------------+
-```
+## Nicht enthalten
+- Passwort ändern (entfernt)
+- Bearbeiten der eigenen Daten (read-only)
