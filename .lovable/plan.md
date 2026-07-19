@@ -1,35 +1,15 @@
-## Ziel
-SIP-Zugangsdaten werden nicht mehr pro Kunde, sondern pro Mitarbeiter gepflegt. Auf `/mitarbeiter/profil` sieht der eingeloggte Mitarbeiter seine eigenen SIP-Daten.
+Sidebar-Design optimieren
 
-## Datenbank (Migration)
-- `employees`: neue Spalten
-  - `sip_phone_number text`
-  - `sip_server text`
-  - `sip_username text`
-  - `sip_password text`
-- `clients`: die 4 SIP-Spalten (`sip_phone_number`, `sip_server`, `sip_username`, `sip_password`) entfernen.
-- Bestehende RLS-Policies auf `employees` bleiben unverändert (Mitarbeiter darf eigene Zeile lesen, Superadmin alles).
+1. Divider entfernen
+   - Entferne `border-t`/`border-b` Klassen aus `SidebarHeader`, `SidebarFooter` und ggf. `SidebarContent`-Trennungen in `src/components/superadmin/AppSidebar.tsx` und `src/components/mitarbeiter/AppSidebar.tsx`.
 
-## Superadmin — Mitarbeiter-Wizard
-`src/pages/superadmin/MitarbeiterWizard.tsx`:
-- Neuer Step „SIP-Daten" (Telefonnummer, Server, Benutzername, Passwort mit Show/Hide-Toggle).
-- Speichern der Felder in `employees` beim Anlegen und Bearbeiten.
-- `MitarbeiterDetail.tsx`: SIP-Daten als eigener Abschnitt anzeigen (analog zur bisherigen Kunden-Anzeige, mit Copy-Buttons).
+2. Gruppierungs-Labels besser sichtbar machen
+   - Ersetze die aktuellen dezenten grauen Labels (`text-muted-foreground/70`) durch stärkere Typografie: `text-[11px]`, `font-bold`, `text-foreground/80`, `uppercase tracking-wider`, mit etwas mehr Abstand und dezenterem visueller Trennung (z. B. kleiner Akzentpunkt oder Linie links). Labels sollen klar als Gruppenüberschriften erkennbar sein.
 
-## Superadmin — Kunden-Wizard
-`src/pages/superadmin/KundenWizard.tsx`:
-- SIP-Step (aktuell Step 5) komplett entfernen → Wizard zurück auf 4 Steps.
-- Zod-Schema, Defaults und Save-Logik um die 4 SIP-Felder bereinigen.
+3. Weiße Outline um User-Footer entfernen
+   - Entferne `border border-sidebar-border/50` und `bg-sidebar-accent/30` aus der Footer-Box in `src/components/SidebarUserFooter.tsx`. Stattdessen ein flacher, simpler Footer ohne Rahmen, passend zur restlichen Sidebar.
 
-## Mitarbeiter — Profil
-`src/pages/mitarbeiter/Profil.tsx`:
-- Assignments/Signed-URL-Logik für SIP-Blöcke pro Kunde entfernen.
-- Neue Panel „SIP-Zugangsdaten (Phonerlite)" mit den Feldern aus `employees` (eine Karte statt einer pro Kunde), Show/Hide + Copy.
-- „Meine Kunden" bleibt informativ ohne SIP-Anzeige (oder wird ganz entfernt — Vorschlag: entfernen, da nicht mehr relevant).
-
-## Aufräumen
-- `useAssignedClients` liefert weiterhin Kundendaten, aber ohne SIP-Felder (waren dort nicht drin — nichts zu ändern).
-- Typen kommen nach der Migration automatisch aus `src/integrations/supabase/types.ts`.
-
-## Offene Frage
-Sollen die bereits in `clients` eingetragenen SIP-Daten vor dem Drop verworfen werden, oder soll ich vorher versuchen sie auf die zugewiesenen Mitarbeiter zu übertragen? Da SIP-Zugänge pro Person eindeutig sind, empfehle ich **verwerfen** und im Mitarbeiter-Wizard neu eintragen.
+Technische Details:
+- Betroffene Dateien: `src/components/superadmin/AppSidebar.tsx`, `src/components/mitarbeiter/AppSidebar.tsx`, `src/components/SidebarUserFooter.tsx`.
+- Keine Backend-Änderungen, keine Datenbank-Änderungen.
+- Fokus auf Styling-Anpassungen mit bestehenden Design-Tokens.

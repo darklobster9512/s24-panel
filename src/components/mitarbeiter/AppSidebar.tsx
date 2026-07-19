@@ -84,7 +84,7 @@ export function MitarbeiterSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
-      <SidebarHeader className="border-b border-sidebar-border/60">
+      <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-3">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-ink-deep to-ink text-primary shadow-sm">
             <Headphones className="h-4 w-4" />
