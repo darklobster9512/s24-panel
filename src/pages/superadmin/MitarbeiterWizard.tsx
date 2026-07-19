@@ -290,6 +290,10 @@ export default function MitarbeiterWizard({
         tax_id: d.tax_id ?? "",
         social_security_number: d.social_security_number ?? "",
         health_insurance: d.health_insurance ?? "",
+        sip_phone_number: d.sip_phone_number ?? "",
+        sip_server: d.sip_server ?? "",
+        sip_username: d.sip_username ?? "",
+        sip_password: d.sip_password ?? "",
       });
     }
   }, [mode, existing.data, form]);
