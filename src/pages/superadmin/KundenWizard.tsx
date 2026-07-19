@@ -109,11 +109,6 @@ const STEPS: StepDef[] = [
     description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
     fields: ["greeting_text", "forwarding_enabled"],
   },
-  {
-    title: "SIP-Daten",
-    description: "Zugangsdaten für PhonerLite.",
-    fields: ["sip_phone_number", "sip_server", "sip_username", "sip_password"],
-  },
 ];
 
 const DEFAULTS: FormValues = {
