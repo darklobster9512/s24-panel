@@ -65,7 +65,8 @@ export function SuperadminSidebar() {
   ) => (
     <SidebarGroup className="px-2 py-2">
       {!collapsed && (
-        <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+        <SidebarGroupLabel className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground/80">
+          <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" />
           {label}
         </SidebarGroupLabel>
       )}
@@ -93,7 +94,7 @@ export function SuperadminSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
-      <SidebarHeader className="border-b border-sidebar-border/60">
+      <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-3">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-ink-deep to-ink text-primary shadow-sm">
             <Headphones className="h-4 w-4" />

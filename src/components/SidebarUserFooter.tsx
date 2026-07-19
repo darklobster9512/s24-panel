@@ -62,7 +62,7 @@ export function SidebarUserFooter({ roleLabel }: { roleLabel?: string }) {
 
   if (collapsed) {
     return (
-      <SidebarFooter className="border-t border-sidebar-border/60 p-2">
+      <SidebarFooter className="p-2">
         <div className="flex flex-col items-center gap-2">
           <div className="relative grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-sm">
             {initials}
@@ -83,8 +83,8 @@ export function SidebarUserFooter({ roleLabel }: { roleLabel?: string }) {
   }
 
   return (
-    <SidebarFooter className="border-t border-sidebar-border/60 p-3">
-      <div className={cn("flex items-center gap-3 rounded-xl border border-sidebar-border/50 bg-sidebar-accent/30 p-2.5")}>
+    <SidebarFooter className="p-3">
+      <div className="flex items-center gap-3 rounded-xl p-2.5">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm">
           {initials}
         </div>
