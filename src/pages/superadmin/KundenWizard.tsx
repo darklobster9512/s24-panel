@@ -144,10 +144,6 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_phone",
   "contact_email",
   "greeting_text",
-  "sip_phone_number",
-  "sip_server",
-  "sip_username",
-  "sip_password",
 ];
 
 function normalize(values: FormValues) {
