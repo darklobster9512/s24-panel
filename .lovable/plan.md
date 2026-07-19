@@ -1,15 +1,17 @@
-Sidebar-Design optimieren
+Anpassung der Sidebar-Gruppierungs-Labels in `src/components/superadmin/AppSidebar.tsx` und `src/components/mitarbeiter/AppSidebar.tsx`.
 
-1. Divider entfernen
-   - Entferne `border-t`/`border-b` Klassen aus `SidebarHeader`, `SidebarFooter` und ggf. `SidebarContent`-Trennungen in `src/components/superadmin/AppSidebar.tsx` und `src/components/mitarbeiter/AppSidebar.tsx`.
+Aktueller Zustand:
+- Die Sidebar-Menüpunkte nutzen `text-sidebar-foreground/80`.
+- Die Gruppentitel (z. B. „Allgemein“, „Arbeit“, „Persönlich“) nutzen `text-foreground/80`, wodurch sie auf dem dunklen Sidebar-Hintergrund schlecht lesbar sind.
 
-2. Gruppierungs-Labels besser sichtbar machen
-   - Ersetze die aktuellen dezenten grauen Labels (`text-muted-foreground/70`) durch stärkere Typografie: `text-[11px]`, `font-bold`, `text-foreground/80`, `uppercase tracking-wider`, mit etwas mehr Abstand und dezenterem visueller Trennung (z. B. kleiner Akzentpunkt oder Linie links). Labels sollen klar als Gruppenüberschriften erkennbar sein.
+Geplante Änderung:
+- Die `SidebarGroupLabel`-Komponente in beiden Sidebars auf `text-sidebar-foreground/80` (bzw. ohne separate Farbabweichung) umstellen, sodass die Gruppentitel optisch zur gleichen Farbfamilie wie die darunterliegenden Menüpunkte gehören.
+- Trennpunkt vor dem Label bleibt als primärer Akzent unverändert erhalten.
+- Keine Änderungen an Datenbank, Edge Functions oder Routen.
 
-3. Weiße Outline um User-Footer entfernen
-   - Entferne `border border-sidebar-border/50` und `bg-sidebar-accent/30` aus der Footer-Box in `src/components/SidebarUserFooter.tsx`. Stattdessen ein flacher, simpler Footer ohne Rahmen, passend zur restlichen Sidebar.
+Betroffene Dateien:
+- `src/components/superadmin/AppSidebar.tsx`
+- `src/components/mitarbeiter/AppSidebar.tsx`
 
-Technische Details:
-- Betroffene Dateien: `src/components/superadmin/AppSidebar.tsx`, `src/components/mitarbeiter/AppSidebar.tsx`, `src/components/SidebarUserFooter.tsx`.
-- Keine Backend-Änderungen, keine Datenbank-Änderungen.
-- Fokus auf Styling-Anpassungen mit bestehenden Design-Tokens.
+Validierung:
+- Typecheck/Build nach den Änderungen ausführen, um sicherzustellen, dass keine Token-Typfehler entstehen.
