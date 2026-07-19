@@ -1,26 +1,27 @@
 ## Ziel
-Abmelden-Button aus dem Header in einen Sidebar-Footer verschieben — darüber Name + E-Mail des eingeloggten Nutzers.
-
-## Betroffene Bereiche
-- **Superadmin** (`src/components/superadmin/AppSidebar.tsx` + Header in `SuperadminLayout.tsx`)
-- **Mitarbeiter** (`src/components/mitarbeiter/AppSidebar.tsx` + Header in `MitarbeiterLayout.tsx`)
-- **Kunde** hat aktuell keine Sidebar (nutzt `DashboardShell` mit Header). Da der User explizit „Sidebar ganz nach unten" sagt, lasse ich das Kunde-Panel unverändert — es hat keinen Sidebar-Kontext. Falls doch gewünscht, separater Schritt.
-
-## Neue Komponente
-`src/components/SidebarUserFooter.tsx` — wiederverwendbar für beide Sidebars:
-- Nutzt `useAuth()` für `user`
-- Zusätzliche Query auf `profiles.full_name` (oder Employee `first_name/last_name` für Mitarbeiter — fallback über profiles, das reicht für alle Rollen); bei leerem Namen: E-Mail-Präfix
-- Layout: Avatar-Kreis mit Initialen · Name (fett, truncate) + E-Mail (klein, muted) · Logout-Icon-Button rechts
-- Collapsed-Zustand (`useSidebar().state === "collapsed"`): nur Avatar + Logout-Icon
-- Ruft `signOut()` + `navigate("/auth", { replace: true })`
+E-Mail im Sidebar-Footer ausblenden und die Sidebar insgesamt visuell aufwerten (Superadmin + Mitarbeiter).
 
 ## Änderungen
-1. **`SidebarUserFooter.tsx`** neu erstellen.
-2. **`superadmin/AppSidebar.tsx`**: `SidebarFooter` importieren, `<SidebarUserFooter />` am Ende einfügen.
-3. **`mitarbeiter/AppSidebar.tsx`**: gleich.
-4. **`SuperadminLayout.tsx`**: E-Mail-Anzeige + Abmelden-Button aus Header entfernen; `SidebarTrigger` und optionaler Titel bleiben.
-5. **`MitarbeiterLayout.tsx`**: gleiche Header-Aufräumung.
 
-## Nicht enthalten
-- Kunde-Dashboard (kein Sidebar-Layout)
-- Design-Refactor des DashboardShell
+### 1. `SidebarUserFooter.tsx`
+- E-Mail-Zeile komplett entfernen.
+- Footer-Card kompakter: Avatar + Name (fett) + kleine Rollen-Badge in Primär-Grün darunter.
+- Logout-Button als Icon-Button rechts, mit Hover-State (rot-tint).
+- Collapsed: nur Avatar mit Rollen-Dot als kleines Indikator-Badge unten rechts.
+
+### 2. Sidebar-Optik (`superadmin/AppSidebar.tsx` + `mitarbeiter/AppSidebar.tsx`)
+- **Header/Brand**: größerer, klarerer Brand-Block mit dezentem Gradient-Hintergrund, klare Trennung durch Border-Bottom.
+- **Group-Labels**: kleiner, mehr Letter-Spacing, muted-foreground, mehr vertikaler Abstand zu Items.
+- **Menu-Items**:
+  - Default: transparent, Icon in muted-foreground, sanfter `hover:bg-sidebar-accent/60`.
+  - Aktiv: statt runder Pille → abgerundetes Rechteck (`rounded-lg`) mit Primär-Grün-Hintergrund, kräftigem Text, subtiler Schatten und einem 3px-Akzentbalken links. Wirkt hochwertiger als die aktuelle Vollpille und fügt sich besser in Sidebar-Grid ein.
+  - Konsistente Höhe (`h-9`), Icon-Container mit fester Breite für sauberes Alignment.
+- **Spacing**: mehr Padding im Sidebar-Content, Groups mit klarem Abstand.
+- **Border**: rechte Border der Sidebar mit sanftem Verlauf/leichter Schatten für Tiefe.
+
+### 3. Nicht betroffen
+- Routing, Auth-Logik, DB — nur Präsentation.
+- Kunde-Panel (kein Sidebar-Layout).
+
+## Offene Frage
+Aktiv-Style-Präferenz: Ich schlage abgerundetes Rechteck mit linkem Akzentbalken vor (moderner, professioneller als volle Pille). Falls du die Pillen-Form beibehalten willst, sag Bescheid — dann bleibt `rounded-full` und ich verfeinere nur Padding/Schatten.
