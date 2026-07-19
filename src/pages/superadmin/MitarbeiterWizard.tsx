@@ -64,6 +64,10 @@ const draftSchema = z.object({
   tax_id: z.string().trim().max(40).optional().or(z.literal("")),
   social_security_number: z.string().trim().max(40).optional().or(z.literal("")),
   health_insurance: z.string().trim().max(120).optional().or(z.literal("")),
+  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
+  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
+  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
+  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 const LOCAL_RE = /^[a-zA-Z0-9._-]+$/;
