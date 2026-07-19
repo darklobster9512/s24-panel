@@ -64,6 +64,10 @@ const draftSchema = z.object({
   tax_id: z.string().trim().max(40).optional().or(z.literal("")),
   social_security_number: z.string().trim().max(40).optional().or(z.literal("")),
   health_insurance: z.string().trim().max(120).optional().or(z.literal("")),
+  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
+  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
+  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
+  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 const LOCAL_RE = /^[a-zA-Z0-9._-]+$/;
@@ -95,6 +99,10 @@ const fullSchema = z.object({
   tax_id: z.string().trim().max(40).optional().or(z.literal("")),
   social_security_number: z.string().trim().max(40).optional().or(z.literal("")),
   health_insurance: z.string().trim().max(120).optional().or(z.literal("")),
+  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
+  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
+  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
+  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof draftSchema>;
@@ -135,6 +143,11 @@ const STEPS: StepDef[] = [
       "health_insurance",
     ],
   },
+  {
+    title: "SIP-Daten",
+    description: "Zugangsdaten für PhonerLite.",
+    fields: ["sip_phone_number", "sip_server", "sip_username", "sip_password"],
+  },
 ];
 
 const DEFAULTS: FormValues = {
@@ -157,6 +170,10 @@ const DEFAULTS: FormValues = {
   tax_id: "",
   social_security_number: "",
   health_insurance: "",
+  sip_phone_number: "",
+  sip_server: "",
+  sip_username: "",
+  sip_password: "",
 };
 
 const NULLABLE_STRINGS: Field[] = [
@@ -175,6 +192,10 @@ const NULLABLE_STRINGS: Field[] = [
   "tax_id",
   "social_security_number",
   "health_insurance",
+  "sip_phone_number",
+  "sip_server",
+  "sip_username",
+  "sip_password",
 ];
 
 const NULLABLE_DATES: Field[] = ["start_date", "birth_date"];
@@ -269,6 +290,10 @@ export default function MitarbeiterWizard({
         tax_id: d.tax_id ?? "",
         social_security_number: d.social_security_number ?? "",
         health_insurance: d.health_insurance ?? "",
+        sip_phone_number: d.sip_phone_number ?? "",
+        sip_server: d.sip_server ?? "",
+        sip_username: d.sip_username ?? "",
+        sip_password: d.sip_password ?? "",
       });
     }
   }, [mode, existing.data, form]);
@@ -472,6 +497,7 @@ export default function MitarbeiterWizard({
                       />
                     )}
                     {step === 2 && <StepOptional form={form} />}
+                    {step === 3 && <StepSip form={form} />}
                   </div>
                 </div>
 
@@ -863,3 +889,49 @@ function StepOptional({ form }: { form: FR }) {
     </div>
   );
 }
+
+function StepSip({ form }: { form: FR }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="space-y-5">
+      <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+        Diese Zugangsdaten werden im Mitarbeiter-Panel für PhonerLite angezeigt.
+      </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        <TextField form={form} name="sip_phone_number" label="Telefonnummer" placeholder="+49 30 1234567" />
+        <TextField form={form} name="sip_server" label="Server" placeholder="sip.provider.de" />
+        <TextField form={form} name="sip_username" label="Benutzername" placeholder="user123" />
+        <FormField
+          control={form.control}
+          name="sip_password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Passwort</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    type={show ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...field}
+                    value={(field.value as string) ?? ""}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                    aria-label={show ? "Passwort verbergen" : "Passwort anzeigen"}
+                  >
+                    {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+

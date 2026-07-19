@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,10 +53,6 @@ const draftSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
-  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
-  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 const fullSchema = z.object({
@@ -81,10 +77,6 @@ const fullSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().min(1, "Pflichtfeld").max(1000),
   forwarding_enabled: z.boolean(),
-  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
-  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof draftSchema>;
@@ -117,11 +109,6 @@ const STEPS: StepDef[] = [
     description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
     fields: ["greeting_text", "forwarding_enabled"],
   },
-  {
-    title: "SIP-Daten",
-    description: "Zugangsdaten für PhonerLite.",
-    fields: ["sip_phone_number", "sip_server", "sip_username", "sip_password"],
-  },
 ];
 
 const DEFAULTS: FormValues = {
@@ -140,10 +127,6 @@ const DEFAULTS: FormValues = {
   contact_email: "",
   greeting_text: "",
   forwarding_enabled: false,
-  sip_phone_number: "",
-  sip_server: "",
-  sip_username: "",
-  sip_password: "",
 };
 
 const NULLABLE_STRINGS: Field[] = [
@@ -161,10 +144,6 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_phone",
   "contact_email",
   "greeting_text",
-  "sip_phone_number",
-  "sip_server",
-  "sip_username",
-  "sip_password",
 ];
 
 function normalize(values: FormValues) {
@@ -221,10 +200,6 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         contact_email: existing.data.contact_email ?? "",
         greeting_text: existing.data.greeting_text ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
-        sip_phone_number: existing.data.sip_phone_number ?? "",
-        sip_server: existing.data.sip_server ?? "",
-        sip_username: existing.data.sip_username ?? "",
-        sip_password: existing.data.sip_password ?? "",
       });
     }
   }, [mode, existing.data, form]);
@@ -412,7 +387,6 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                         existingLogo={existing.data?.logo_url ?? null}
                       />
                     )}
-                    {step === 4 && <StepSip form={form} />}
                   </div>
                 </div>
 
@@ -785,66 +759,6 @@ function StepKonfig({
           </FormItem>
         )}
       />
-    </div>
-  );
-}
-
-function StepSip({ form }: { form: FR }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-        Diese Zugangsdaten werden für PhonerLite verwendet.
-      </div>
-      <div className="grid gap-5 md:grid-cols-2">
-        <TextField
-          form={form}
-          name="sip_phone_number"
-          label="Telefonnummer"
-          placeholder="+49 30 1234567"
-        />
-        <TextField
-          form={form}
-          name="sip_server"
-          label="Server"
-          placeholder="sip.provider.de"
-        />
-        <TextField
-          form={form}
-          name="sip_username"
-          label="Benutzername"
-          placeholder="user123"
-        />
-        <FormField
-          control={form.control}
-          name="sip_password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Passwort</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    type={show ? "text" : "password"}
-                    placeholder="••••••••"
-                    {...field}
-                    value={(field.value as string) ?? ""}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-                    aria-label={show ? "Passwort verbergen" : "Passwort anzeigen"}
-                  >
-                    {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
     </div>
   );
 }

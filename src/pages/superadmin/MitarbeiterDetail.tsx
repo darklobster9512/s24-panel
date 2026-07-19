@@ -207,6 +207,23 @@ export default function MitarbeiterDetail() {
                 </div>
               </div>
             </Panel>
+
+            <Panel>
+              <h3 className="mb-3 text-sm font-semibold">SIP-Zugangsdaten</h3>
+              <div className="divide-y divide-border/60">
+                <Row label="Telefonnummer" value={<span className="font-mono">{data.sip_phone_number}</span>} />
+                <Row label="Server" value={<span className="font-mono">{data.sip_server}</span>} />
+                <Row label="Benutzername" value={<span className="font-mono">{data.sip_username}</span>} />
+                <Row
+                  label="Passwort"
+                  value={
+                    data.sip_password ? (
+                      <span className="font-mono">{"•".repeat(data.sip_password.length)}</span>
+                    ) : null
+                  }
+                />
+              </div>
+            </Panel>
           </div>
         </div>
       )}

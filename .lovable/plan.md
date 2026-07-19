@@ -1,27 +1,35 @@
 ## Ziel
-E-Mail im Sidebar-Footer ausblenden und die Sidebar insgesamt visuell aufwerten (Superadmin + Mitarbeiter).
+SIP-Zugangsdaten werden nicht mehr pro Kunde, sondern pro Mitarbeiter gepflegt. Auf `/mitarbeiter/profil` sieht der eingeloggte Mitarbeiter seine eigenen SIP-Daten.
 
-## Änderungen
+## Datenbank (Migration)
+- `employees`: neue Spalten
+  - `sip_phone_number text`
+  - `sip_server text`
+  - `sip_username text`
+  - `sip_password text`
+- `clients`: die 4 SIP-Spalten (`sip_phone_number`, `sip_server`, `sip_username`, `sip_password`) entfernen.
+- Bestehende RLS-Policies auf `employees` bleiben unverändert (Mitarbeiter darf eigene Zeile lesen, Superadmin alles).
 
-### 1. `SidebarUserFooter.tsx`
-- E-Mail-Zeile komplett entfernen.
-- Footer-Card kompakter: Avatar + Name (fett) + kleine Rollen-Badge in Primär-Grün darunter.
-- Logout-Button als Icon-Button rechts, mit Hover-State (rot-tint).
-- Collapsed: nur Avatar mit Rollen-Dot als kleines Indikator-Badge unten rechts.
+## Superadmin — Mitarbeiter-Wizard
+`src/pages/superadmin/MitarbeiterWizard.tsx`:
+- Neuer Step „SIP-Daten" (Telefonnummer, Server, Benutzername, Passwort mit Show/Hide-Toggle).
+- Speichern der Felder in `employees` beim Anlegen und Bearbeiten.
+- `MitarbeiterDetail.tsx`: SIP-Daten als eigener Abschnitt anzeigen (analog zur bisherigen Kunden-Anzeige, mit Copy-Buttons).
 
-### 2. Sidebar-Optik (`superadmin/AppSidebar.tsx` + `mitarbeiter/AppSidebar.tsx`)
-- **Header/Brand**: größerer, klarerer Brand-Block mit dezentem Gradient-Hintergrund, klare Trennung durch Border-Bottom.
-- **Group-Labels**: kleiner, mehr Letter-Spacing, muted-foreground, mehr vertikaler Abstand zu Items.
-- **Menu-Items**:
-  - Default: transparent, Icon in muted-foreground, sanfter `hover:bg-sidebar-accent/60`.
-  - Aktiv: statt runder Pille → abgerundetes Rechteck (`rounded-lg`) mit Primär-Grün-Hintergrund, kräftigem Text, subtiler Schatten und einem 3px-Akzentbalken links. Wirkt hochwertiger als die aktuelle Vollpille und fügt sich besser in Sidebar-Grid ein.
-  - Konsistente Höhe (`h-9`), Icon-Container mit fester Breite für sauberes Alignment.
-- **Spacing**: mehr Padding im Sidebar-Content, Groups mit klarem Abstand.
-- **Border**: rechte Border der Sidebar mit sanftem Verlauf/leichter Schatten für Tiefe.
+## Superadmin — Kunden-Wizard
+`src/pages/superadmin/KundenWizard.tsx`:
+- SIP-Step (aktuell Step 5) komplett entfernen → Wizard zurück auf 4 Steps.
+- Zod-Schema, Defaults und Save-Logik um die 4 SIP-Felder bereinigen.
 
-### 3. Nicht betroffen
-- Routing, Auth-Logik, DB — nur Präsentation.
-- Kunde-Panel (kein Sidebar-Layout).
+## Mitarbeiter — Profil
+`src/pages/mitarbeiter/Profil.tsx`:
+- Assignments/Signed-URL-Logik für SIP-Blöcke pro Kunde entfernen.
+- Neue Panel „SIP-Zugangsdaten (Phonerlite)" mit den Feldern aus `employees` (eine Karte statt einer pro Kunde), Show/Hide + Copy.
+- „Meine Kunden" bleibt informativ ohne SIP-Anzeige (oder wird ganz entfernt — Vorschlag: entfernen, da nicht mehr relevant).
+
+## Aufräumen
+- `useAssignedClients` liefert weiterhin Kundendaten, aber ohne SIP-Felder (waren dort nicht drin — nichts zu ändern).
+- Typen kommen nach der Migration automatisch aus `src/integrations/supabase/types.ts`.
 
 ## Offene Frage
-Aktiv-Style-Präferenz: Ich schlage abgerundetes Rechteck mit linkem Akzentbalken vor (moderner, professioneller als volle Pille). Falls du die Pillen-Form beibehalten willst, sag Bescheid — dann bleibt `rounded-full` und ich verfeinere nur Padding/Schatten.
+Sollen die bereits in `clients` eingetragenen SIP-Daten vor dem Drop verworfen werden, oder soll ich vorher versuchen sie auf die zugewiesenen Mitarbeiter zu übertragen? Da SIP-Zugänge pro Person eindeutig sind, empfehle ich **verwerfen** und im Mitarbeiter-Wizard neu eintragen.
