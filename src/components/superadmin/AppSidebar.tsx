@@ -65,7 +65,8 @@ export function SuperadminSidebar() {
   ) => (
     <SidebarGroup className="px-2 py-2">
       {!collapsed && (
-        <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+        <SidebarGroupLabel className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground/80">
+          <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" />
           {label}
         </SidebarGroupLabel>
       )}
