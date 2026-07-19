@@ -192,6 +192,10 @@ const NULLABLE_STRINGS: Field[] = [
   "tax_id",
   "social_security_number",
   "health_insurance",
+  "sip_phone_number",
+  "sip_server",
+  "sip_username",
+  "sip_password",
 ];
 
 const NULLABLE_DATES: Field[] = ["start_date", "birth_date"];
