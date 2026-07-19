@@ -53,10 +53,6 @@ const draftSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
-  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
-  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 const fullSchema = z.object({
