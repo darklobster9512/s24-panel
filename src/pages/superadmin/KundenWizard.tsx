@@ -127,10 +127,6 @@ const DEFAULTS: FormValues = {
   contact_email: "",
   greeting_text: "",
   forwarding_enabled: false,
-  sip_phone_number: "",
-  sip_server: "",
-  sip_username: "",
-  sip_password: "",
 };
 
 const NULLABLE_STRINGS: Field[] = [
