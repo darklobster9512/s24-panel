@@ -63,20 +63,24 @@ export function SuperadminSidebar() {
     label: string,
     items: { title: string; url: string; icon: typeof LayoutDashboard; end?: boolean }[],
   ) => (
-    <SidebarGroup>
-      {!collapsed && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
+    <SidebarGroup className="px-2 py-2">
+      {!collapsed && (
+        <SidebarGroupLabel className="px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+          {label}
+        </SidebarGroupLabel>
+      )}
       <SidebarGroupContent>
-        <SidebarMenu>
+        <SidebarMenu className="gap-0.5">
           {items.map((item) => (
             <SidebarMenuItem key={item.url}>
               <SidebarMenuButton
                 asChild
                 isActive={isActive(item.url, item.end)}
                 tooltip={item.title}
-                className="data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:rounded-full data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
+                className="group/item relative h-9 rounded-lg font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-semibold data-[active=true]:shadow-[0_2px_10px_-3px_hsl(var(--primary)/0.5)] data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
               >
                 <NavLink to={item.url} end={item.end}>
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-4 w-4 shrink-0" />
                   <span>{item.title}</span>
                 </NavLink>
               </SidebarMenuButton>
@@ -88,10 +92,10 @@ export function SuperadminSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-ink-deep text-primary">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
+      <SidebarHeader className="border-b border-sidebar-border/60">
+        <div className="flex items-center gap-2.5 px-2 py-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-ink-deep to-ink text-primary shadow-sm">
             <Headphones className="h-4 w-4" />
           </div>
           {!collapsed && (
@@ -99,14 +103,14 @@ export function SuperadminSidebar() {
               <span className="text-sm font-semibold tracking-tight">
                 Sekreteriat<span className="text-primary">24</span>
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                 Superadmin
               </span>
             </div>
           )}
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="gap-1 py-2">
         {renderGroup("Allgemein", mainItems)}
         {renderGroup("Betrieb", opsItems)}
         {renderGroup("Finanzen", finItems)}
