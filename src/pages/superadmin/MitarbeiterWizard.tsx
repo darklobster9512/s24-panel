@@ -497,6 +497,7 @@ export default function MitarbeiterWizard({
                       />
                     )}
                     {step === 2 && <StepOptional form={form} />}
+                    {step === 3 && <StepSip form={form} />}
                   </div>
                 </div>
 
