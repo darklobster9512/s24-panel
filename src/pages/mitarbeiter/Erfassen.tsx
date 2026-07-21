@@ -191,6 +191,7 @@ export default function Erfassen() {
     setAnruferName("");
     setAnruferNummer("");
     setAnruferEmail("");
+    setKnownCaller(false);
     setAnliegen("");
     setKategorie("");
     setPrioritaet("normal");
