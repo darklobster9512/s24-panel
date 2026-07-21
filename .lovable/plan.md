@@ -1,49 +1,44 @@
-## /superadmin/notizen an Supabase anbinden (Tabellenansicht)
 
-Ziel: `src/pages/superadmin/Notizen.tsx` von Mockdaten auf Live-Daten aus `call_notes` umstellen, als kompakte Tabelle statt Cards, analog zum Stil von `/superadmin/anrufe`.
+## Ziel
+`/mitarbeiter` (Cockpit) zeigt aktuell hardcodierte Mock-Werte („Willkommen, Sofia", 14 Anrufe heute, 2:48 Ø-Zeit, „Letzte Anrufe" aus Mock). Alles auf Live-Daten des eingeloggten Mitarbeiters umstellen.
 
-### 1. Datenabruf
+## Änderungen in `src/pages/mitarbeiter/Cockpit.tsx`
 
-Query in `Notizen.tsx`:
-- Select aus `call_notes` mit Joins:
-  - `clients (id, company_name, logo_path)` über `client_id`
-  - `employees (id, first_name, last_name)` über `employee_id`
-- Sortierung `created_at desc`, Limit 500.
-- Superadmin-RLS ist bereits vorhanden (Vollzugriff).
+### 1. Begrüßung mit echtem Namen
+- Aktuellen User via `useAuth()` holen.
+- Vornamen aus `employees` (`first_name`) laden, Fallback auf `profiles.full_name` bzw. E-Mail-Prefix.
+- Anzeige: „Willkommen, {Vorname}".
 
-### 2. Tabellen-UI
+### 2. KPI-Karten mit echten Zahlen
+Berechnung serverseitig via Supabase-Queries, gefiltert auf zugewiesene Kunden (`useAssignedClients` liefert IDs) und heutigen Tag (00:00 lokal):
 
-Spalten (Grid-Layout wie in `Anrufe.tsx` / `Abrechnung.tsx`):
+- **Anrufe heute**: `count` aus `sipgate_calls` wo `client_id in (assigned)` und `started_at >= today`. Delta: gestrige Anzahl → „+X vs. gestern".
+- **Ø Gesprächszeit**: Mittelwert `duration_seconds` (nur beendete Anrufe mit Dauer > 0) von heute; formatiert als `m:ss`. Delta: Vergleich zu gestern.
+- **Offene Notizen**: `count` aus `call_notes` wo `employee_id = <mein employee.id>` und `rueckruf_gewuenscht = true` (oder Status offen, falls vorhanden — Feld beim Implementieren im Schema prüfen).
+- **Zugewiesene Kunden**: bleibt `clients.length` aus `useAssignedClients`.
 
-| Zeit | Kunde | Mitarbeiter | Anrufer | Anliegen (truncate) | Kategorie | Priorität | Rückruf |
+Fallback: Wenn keine Daten, „0" bzw. „—" statt Delta.
 
-- Zeit: `dd.MM. HH:mm` aus `created_at`
-- Kunde: Firmenname (+ kleines Logo optional), sonst „—"
-- Mitarbeiter: `first_name last_name` oder „—"
-- Anrufer: `anrufer_name` · monospaced `anrufer_nummer`
-- Anliegen: 1-zeilig truncate, voller Text via `title`-Tooltip
-- Kategorie: Badge (secondary)
-- Priorität: Badge (hoch = destructive, normal = outline, niedrig = muted)
-- Rückruf: „Ja · {zeit}" Badge wenn `rueckruf_gewuenscht`, sonst „—"
+### 3. Panel „Letzte Anrufe"
+- Query: letzte 6 `sipgate_calls` für zugewiesene Kunden, sortiert `started_at desc`.
+- Join/Lookup Kundenname + Logo aus vorhandenem `useAssignedClients`.
+- Status-Badge:
+  - `missed` → rot „Verpasst"
+  - sonst Dauer via `duration_seconds`.
+- Kategorie-Badge nur zeigen, wenn im Datensatz vorhanden (aktuell nicht in `sipgate_calls` — weglassen oder aus verknüpfter `call_notes` ziehen; im Plan: erstmal weglassen, dafür `direction` als Badge „Eingehend/Ausgehend").
 
-### 3. Filter & Suche
+### 4. Panel „Meine Kunden"
+- Bleibt wie bisher (nutzt bereits echte Daten via `useAssignedClients`).
 
-Toolbar über der Tabelle:
-- Suche (client-seitig): Anrufer-Name/-Nummer, Anliegen, Kundenname, Mitarbeitername
-- Kategorie-Select: Alle / Rückruf / Termin / Info / Beschwerde / Weiterleitung
-- Priorität-Select: Alle / hoch / normal / niedrig
-- Kunde-Select: aus geladenen Kunden
-- Mitarbeiter-Select: aus geladenen Mitarbeitern
-- Zeitraum-Select: heute / 7 Tage / 30 Tage / alle
+### 5. Mock-Referenzen entfernen
+- `MOCK_RECENT_CALLS`, `CURRENT_EMPLOYEE` aus dieser Datei nicht mehr importieren.
+- `mitarbeiter-mock.ts` selbst nicht anfassen (wird noch von anderen Seiten genutzt).
 
-### 4. States
+## Technisch
+- Neue Queries via `@tanstack/react-query` (Muster wie in `useAssignedClients` / `use-live-calls`).
+- Loading-States: Skeleton-Werte („—") während Fetch.
+- Keine DB-Migration nötig — alle Felder existieren bereits (`sipgate_calls.started_at`, `duration_seconds`, `client_id`, `status`, `direction`; `call_notes.employee_id`, `rueckruf_gewuenscht`).
 
-- Ladezustand: „Lädt…"
-- Leerer Zustand: „Keine Notizen gefunden."
-
-### 5. Nicht enthalten
-
-- Kein Detail-Drawer / Bearbeitung (später).
-- Kein CSV-Export (kann bei Bedarf analog zu Anrufe nachgezogen werden — sag Bescheid).
-- Keine Realtime-Subscription.
-- Keine Schemaänderung.
+## Nicht Teil des Plans
+- Realtime-Updates der KPIs (kann später via Channel auf `sipgate_calls` ergänzt werden).
+- Änderungen an anderen Mitarbeiter-Seiten.
