@@ -1,40 +1,45 @@
-````text
-Ziel
-sipgate soll die `onAnswer` und `onHangup` Callback-URLs aus der newCall-Antwort wieder akzeptieren.
+## Umsetzung: XML sofort raus + Keep-Warm auf 60 s mit POST-Body
 
-Bestätigte Ursache
-sipgate zeigt beim erfolgreichen `newCall`:
-"Response does not have content type application/xml"
+### 1. Edge Function `sipgate-webhook` – XML antworten, bevor der Body gelesen wird
 
-Aktuell antwortet die Edge Function mit:
-Content-Type: text/xml; charset=utf-8
+In `supabase/functions/sipgate-webhook/index.ts` den Handler-Block am Ende (aktuell Zeilen 332–347) so umbauen, dass `req.text()` **nach** dem Response im Background-Task läuft:
 
-sipgate erwartet aber strikt:
-Content-Type: application/xml
+```ts
+if (req.method !== "POST") return xmlResponse(EMPTY_RESPONSE_XML);
 
-Umsetzung
-1. In `supabase/functions/sipgate-webhook/index.ts` die XML-Antwort ändern:
-   - von `text/xml; charset=utf-8`
-   - auf `application/xml`
+const contentType = req.headers.get("content-type") ?? "";
 
-2. Keepalive-Response unverändert lassen, weil sie nicht von sipgate verarbeitet wird.
+// sipgate hat ~1 s Timeout — Body-Read darf die XML-Antwort nicht blockieren.
+runInBackground(async () => {
+  let bodyText = "";
+  try {
+    bodyText = await req.text();
+  } catch (e) {
+    console.error("[sipgate-webhook] failed to read body", e);
+    return;
+  }
+  await processWebhookBody(bodyText, contentType);
+});
 
-3. Optional minimal verbessern:
-   - `Content-Length` muss nicht gesetzt werden.
-   - XML-Body bleibt exakt gleich:
-     `<Response onAnswer="..." onHangup="..."></Response>`
+return xmlResponse(callbackResponseXml);
+```
 
-4. Edge Function deployen.
+Sonst wird an der Function nichts geändert (kein Umschreiben der Handler-Logik, keine Änderungen an Parsing, DB-Writes, Callback-URLs).
 
-5. Verifizieren:
-   - Test-newCall an die Function senden.
-   - Prüfen, dass Response `200 OK` und `Content-Type: application/xml` liefert.
-   - Danach echten Test-Anruf machen.
-   - Erwartung: sipgate zeigt keinen XML-Error mehr und sendet answer/hangup Events an denselben Webhook.
+### 2. Keep-Warm-Cron auf 60 s mit POST-Body
 
-Datei
-- `supabase/functions/sipgate-webhook/index.ts`
+Den bestehenden `pg_cron`-Job aktualisieren (via `supabase--insert` SQL-Ausführung, weil URL/Key user-spezifisch sind):
 
-Erfolgskriterium
-sipgate akzeptiert die Callback-URLs, und die Folgeevents `answer` und `hangup` erscheinen wieder in den Edge Function Logs.
-````
+- Alten 4-min-Job `sipgate-webhook-keepalive` mit `cron.unschedule(...)` entfernen.
+- Neu anlegen: **jede Minute** ein `net.http_post` an `…/functions/v1/sipgate-webhook?keepalive=1` mit `Content-Type: application/json` und einem kleinen Body (`{"ping": <timestamp>}`), damit Cloudflare den TLS-Tunnel nicht schließt.
+
+Der bestehende Keepalive-Handler in der Function (Zeile 312) returnt bereits `"ok"` für `?keepalive=1` und ignoriert den Body — keine Code-Änderung nötig, nur der Cron.
+
+### Was NICHT angefasst wird
+
+- Kein Frontend-Change.
+- Keine DB-Schema-Änderung.
+- Keine Änderungen an `processWebhookBody`, `persistNewCall`, Lookup-Funktionen, XML-Format, Callback-URL-Bau.
+- Kein Aufräumen alter `sipgate_calls`-Zeilen.
+
+Bereit, in Build-Mode umzusetzen.
