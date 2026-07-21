@@ -17,9 +17,17 @@ export interface LiveCall {
   ended_at: string | null;
 }
 
+const STALE_MS = 15 * 60 * 1000;
+
+function isFresh(startedAt: string) {
+  return Date.now() - new Date(startedAt).getTime() < STALE_MS;
+}
+
 /**
  * Live-Anrufe: klingelnde und angenommene Anrufe.
  * RLS filtert bereits auf zugewiesene Kunden.
+ * Zusätzlicher Client-Guard: Einträge älter als 15 Minuten werden ausgeblendet,
+ * falls sipgate ausnahmsweise kein Hangup schickt.
  */
 export function useLiveCalls() {
   const [calls, setCalls] = useState<LiveCall[]>([]);
@@ -29,10 +37,12 @@ export function useLiveCalls() {
     let cancelled = false;
 
     async function initial() {
+      const cutoff = new Date(Date.now() - STALE_MS).toISOString();
       const { data, error } = await supabase
         .from("sipgate_calls")
         .select("*")
         .in("status", ["ringing", "answered"])
+        .gte("started_at", cutoff)
         .order("started_at", { ascending: false })
         .limit(50);
       if (cancelled) return;
@@ -54,12 +64,15 @@ export function useLiveCalls() {
             if (payload.eventType === "INSERT") {
               const row = payload.new as LiveCall;
               if (row.status !== "ringing" && row.status !== "answered") return prev;
+              if (!isFresh(row.started_at)) return prev;
               if (prev.some((c) => c.id === row.id)) return prev;
               return [row, ...prev];
             }
             if (payload.eventType === "UPDATE") {
               const row = payload.new as LiveCall;
-              const active = row.status === "ringing" || row.status === "answered";
+              const active =
+                (row.status === "ringing" || row.status === "answered") &&
+                isFresh(row.started_at);
               if (!active) return prev.filter((c) => c.id !== row.id);
               const idx = prev.findIndex((c) => c.id === row.id);
               if (idx === -1) return [row, ...prev];
@@ -77,8 +90,16 @@ export function useLiveCalls() {
       )
       .subscribe();
 
+    const interval = setInterval(() => {
+      setCalls((prev) => {
+        const filtered = prev.filter((c) => isFresh(c.started_at));
+        return filtered.length === prev.length ? prev : filtered;
+      });
+    }, 5000);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);
