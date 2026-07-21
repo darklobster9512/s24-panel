@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { Download, FileSignature } from "lucide-react";
 import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useMyContract } from "@/hooks/use-my-contract";
 
 interface EmployeeRow {
   first_name: string | null;
