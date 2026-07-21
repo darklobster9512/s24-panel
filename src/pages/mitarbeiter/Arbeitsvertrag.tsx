@@ -525,12 +525,14 @@ function TF({
   label,
   type = "text",
   className,
+  placeholder,
 }: {
   form: ReturnType<typeof useForm<WizardValues>>;
   name: keyof WizardValues;
   label: string;
   type?: string;
   className?: string;
+  placeholder?: string;
 }) {
   return (
     <FormField
@@ -540,7 +542,7 @@ function TF({
         <FormItem className={className}>
           <FormLabel>{label}</FormLabel>
           <FormControl>
-            <Input type={type} {...field} />
+            <Input type={type} placeholder={placeholder} {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -548,3 +550,86 @@ function TF({
     />
   );
 }
+
+const SUB_STEPS: {
+  title: string;
+  description: string;
+  icon: typeof User;
+  fields: (keyof WizardValues)[];
+}[] = [
+  {
+    title: "Persönliches",
+    description: "Geburt, Herkunft & Familienstand",
+    icon: User,
+    fields: ["birth_date", "birth_place", "nationality", "marital_status"],
+  },
+  {
+    title: "Bankdaten",
+    description: "Konto & Steuer-ID",
+    icon: Landmark,
+    fields: ["iban", "bic", "bank_name", "tax_id"],
+  },
+  {
+    title: "Sozialversicherung",
+    description: "SV-Nummer & Krankenkasse",
+    icon: ShieldCheck,
+    fields: ["social_security_number", "health_insurance"],
+  },
+];
+
+function SubStepper({
+  current,
+  onSelect,
+}: {
+  current: number;
+  onSelect: (i: 0 | 1 | 2) => void;
+}) {
+  return (
+    <ol className="space-y-2">
+      {SUB_STEPS.map((s, i) => {
+        const active = i === current;
+        const done = i < current;
+        const Icon = s.icon;
+        return (
+          <li key={s.title}>
+            <button
+              type="button"
+              onClick={() => onSelect(i as 0 | 1 | 2)}
+              className={
+                "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors " +
+                (active
+                  ? "border-primary bg-primary/10"
+                  : "border-border/60 hover:border-border hover:bg-muted/40")
+              }
+            >
+              <span
+                className={
+                  "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold " +
+                  (active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : done
+                      ? "border-primary bg-primary/20 text-primary"
+                      : "border-border/60 bg-muted text-muted-foreground")
+                }
+              >
+                {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              </span>
+              <span className="flex flex-col">
+                <span
+                  className={
+                    "text-sm font-medium " +
+                    (active ? "text-foreground" : "text-foreground/80")
+                  }
+                >
+                  {i + 1}. {s.title}
+                </span>
+                <span className="text-xs text-muted-foreground">{s.description}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
