@@ -12,14 +12,16 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SIPGATE_WEBHOOK_TOKEN = Deno.env.get("SIPGATE_WEBHOOK_TOKEN")!;
 
-let adminPromise: Promise<ReturnType<typeof createAdminClient>> | null = null;
-
 async function createAdminClient() {
   const { createClient } = await import("npm:@supabase/supabase-js@2");
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
 }
+
+type AdminClient = Awaited<ReturnType<typeof createAdminClient>>;
+
+let adminPromise: Promise<AdminClient> | null = null;
 
 function getAdminClient() {
   adminPromise ??= createAdminClient();
@@ -129,8 +131,14 @@ function escapeXmlAttribute(value: string): string {
 }
 
 function runInBackground(taskFactory: () => Promise<unknown>): void {
-  const task = Promise.resolve().then(taskFactory).catch((error) => {
-    console.error("[sipgate-webhook] background task failed", error);
+  const task = new Promise<void>((resolve) => {
+    setTimeout(() => {
+      taskFactory()
+        .catch((error) => {
+          console.error("[sipgate-webhook] background task failed", error);
+        })
+        .finally(resolve);
+    }, 0);
   });
 
   const edgeRuntime = (globalThis as unknown as {
