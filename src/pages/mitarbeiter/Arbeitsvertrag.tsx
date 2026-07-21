@@ -206,7 +206,7 @@ export default function Arbeitsvertrag() {
           birth_place: values.birth_place || null,
           nationality: values.nationality || null,
           marital_status: values.marital_status || null,
-          iban: values.iban || null,
+          iban: values.iban.replace(/\s/g, "").toUpperCase() || null,
           bic: values.bic || null,
           bank_name: values.bank_name || null,
           tax_id: values.tax_id || null,
