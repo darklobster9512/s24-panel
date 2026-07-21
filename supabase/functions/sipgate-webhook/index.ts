@@ -131,21 +131,11 @@ function escapeXmlAttribute(value: string): string {
 }
 
 function runInBackground(taskFactory: () => Promise<unknown>): void {
-  const task = new Promise<void>((resolve) => {
-    setTimeout(() => {
-      taskFactory()
-        .catch((error) => {
-          console.error("[sipgate-webhook] background task failed", error);
-        })
-        .finally(resolve);
-    }, 0);
-  });
-
-  const edgeRuntime = (globalThis as unknown as {
-    EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void };
-  }).EdgeRuntime;
-
-  edgeRuntime?.waitUntil?.(task);
+  setTimeout(() => {
+    taskFactory().catch((error) => {
+      console.error("[sipgate-webhook] background task failed", error);
+    });
+  }, 0);
 }
 
 async function processWebhookBody(bodyText: string, contentType: string) {
@@ -330,8 +320,15 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return xmlResponse(EMPTY_RESPONSE_XML);
 
   const contentType = req.headers.get("content-type") ?? "";
+  let bodyText = "";
+  try {
+    bodyText = await req.text();
+  } catch (e) {
+    console.error("[sipgate-webhook] failed to read body", e);
+    return xmlResponse(callbackResponseXml);
+  }
+
   runInBackground(async () => {
-    const bodyText = await req.text();
     await processWebhookBody(bodyText, contentType);
   });
 
