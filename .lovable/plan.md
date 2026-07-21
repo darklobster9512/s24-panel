@@ -1,38 +1,35 @@
-## Problem
+## Ziel
+Die sipgate-Fehler „Answer/Hangup callback was skipped because no callback URL was configured“ beheben, damit `answer`- und `hangup`-Events zuverlässig ankommen und `/mitarbeiter/live` den Status korrekt aktualisiert.
 
-sipgate meldet: „Answer callback was skipped because no callback URL was configured". Das bedeutet, sipgate akzeptiert unsere XML-Antwort auf `newCall` nicht als gültige Callback-Registrierung für `onAnswer`/`onHangup`.
+## Aktueller Stand aus Prüfung
+- Die Function antwortet aktuell bei `newCall` mit:
+  `<Response onAnswer="https://.../functions/v1/sipgate-webhook?..." onHangup="https://.../functions/v1/sipgate-webhook?..."></Response>`
+- Die Logs zeigen nur `newCall`-Requests, keine echten `answer`-/`hangup`-Requests.
+- Die sipgate-Doku zeigt die Follow-up-Beispiele als self-closing Root-Tag:
+  `<Response onAnswer="http://.../answer" />` und `<Response onHangup="http://.../hangup" />`
 
-Aus den Logs sehen wir, dass wir aktuell antworten mit:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Response onAnswer="https://.../sipgate-webhook?token=..." onHangup="https://.../sipgate-webhook?token=..."/>
-```
+## Umsetzung
+1. **XML-Response wieder strikt nach sipgate-Beispiel bauen**
+   - Für `newCall` self-closing Root-Tag nutzen:
+     `<Response onAnswer="..." onHangup="..." />`
+   - Content-Type bei `application/xml` lassen.
+   - XML-Prolog beibehalten.
 
-Zwei bekannte Fallstricke bei sipgate.io Push-API:
+2. **Separate Callback-URLs einführen**
+   - `onAnswer` zeigt auf dieselbe Edge Function, aber mit zusätzlichem Query-Parameter `callback=answer`.
+   - `onHangup` zeigt auf dieselbe Edge Function, aber mit `callback=hangup`.
+   - Das macht die URLs für sipgate eindeutiger und erleichtert Logs/Debugging.
 
-1. **Self-closing Tag** — sipgates Parser ist historisch strikt und erwartet oft `<Response ...></Response>` statt `<Response .../>`.
-2. **Fehlender Content-Type / falscher Encoding-Header** — sipgate erwartet `application/xml` (nicht `application/xml; charset=utf-8` in manchen Fällen) und exakt UTF-8 ohne BOM.
-3. **URL-Encoding des `&` im Token-Query-String** — der Token enthält keine Sonderzeichen, aber falls das Attribut das `&` nicht als `&amp;` escaped wäre es ein Problem (bereits gemacht via `escapeXmlAttribute`).
+3. **Event-Fallback ergänzen**
+   - Falls sipgate beim Follow-up-POST aus irgendeinem Grund kein `event` mitsendet, wird `callback=answer` bzw. `callback=hangup` als Fallback genutzt.
+   - Bestehende normale `event=answer`/`event=hangup` Logik bleibt unverändert.
 
-## Fix
+4. **Direkt deployed testen**
+   - Function deployen.
+   - Mit Edge-Function-Testcalls prüfen, dass `newCall` eine XML mit beiden Callback-URLs ausliefert.
+   - Simulierte `answer`- und `hangup`-POSTs gegen die neuen Callback-URLs testen.
 
-Anpassung in `supabase/functions/sipgate-webhook/index.ts`:
-
-1. `<Response>` bei `newCall` als offenes Tag rendern, nicht self-closing:
-   ```xml
-   <Response onAnswer="..." onHangup="..."></Response>
-   ```
-2. Content-Type auf `application/xml` reduzieren (ohne `charset=utf-8` Suffix), da sipgate darauf empfindlich reagieren kann.
-3. Zusätzlich `onAnswer`/`onHangup` mit HTTP-Methode absichern: sipgate erwartet dass die Callback-URL per POST erreichbar ist — unser Handler tut das bereits, aber wir loggen die eingehende Methode für Verifizierung.
-4. Ausgabe der final gesendeten XML-Bytes ins Log, damit wir bei nächstem Testanruf sofort verifizieren können.
-
-## Verifizierung
-
-Nach Deploy:
-- Testanruf durchführen (klingeln → annehmen → auflegen)
-- Edge Function Logs prüfen: es müssen `answer` und `hangup` Events ankommen
-- sipgate Dashboard: „Answer callback was skipped" darf nicht mehr erscheinen
-
-## Technische Details
-
-Nur die Response-Renderfunktion für `newcall` und die Header werden angepasst. Keine DB-Änderungen, keine Frontend-Änderungen.
+5. **Danach echter sipgate-Test**
+   - Du behältst im sipgate-Panel weiterhin nur diese URL als Haupt-WebHook:
+     `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=DEIN_TOKEN`
+   - Nach einem echten Testanruf prüfen wir die Logs auf `event=answer` und `event=hangup`.
