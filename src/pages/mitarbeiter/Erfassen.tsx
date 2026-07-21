@@ -398,10 +398,10 @@ export default function Erfassen() {
           </Panel>
 
           <div className="flex gap-2">
-            <Button onClick={() => save(false)} variant="outline" className="flex-1 gap-2">
+            <Button onClick={() => save(false)} variant="outline" className="flex-1 gap-2" disabled={saving}>
               <PhoneCall className="h-4 w-4" /> Speichern & Neuer Anruf
             </Button>
-            <Button onClick={() => save(true)} className="flex-1 gap-2">
+            <Button onClick={() => save(true)} className="flex-1 gap-2" disabled={saving}>
               <Save className="h-4 w-4" /> Speichern & Schließen
             </Button>
           </div>
