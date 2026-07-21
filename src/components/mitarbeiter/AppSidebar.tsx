@@ -5,7 +5,6 @@ import {
   Radio,
   PhoneCall,
   StickyNote,
-  Ticket,
   BarChart3,
   User,
   Headphones,
@@ -36,7 +35,6 @@ const workItems = [
 
 const docItems = [
   { title: "Notizen", url: "/mitarbeiter/notizen", icon: StickyNote },
-  { title: "Tickets", url: "/mitarbeiter/tickets", icon: Ticket },
 ];
 
 const meItemsBase = [

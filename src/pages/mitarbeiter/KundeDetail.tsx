@@ -4,7 +4,7 @@ import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/Mitarbei
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
-import { MOCK_RECENT_CALLS, MOCK_NOTES, MOCK_TICKETS, fmtRelative, fmtDauer } from "@/lib/mitarbeiter-mock";
+import { MOCK_RECENT_CALLS, MOCK_NOTES, fmtRelative, fmtDauer } from "@/lib/mitarbeiter-mock";
 
 export default function KundeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +16,7 @@ export default function KundeDetail() {
 
   const calls = MOCK_RECENT_CALLS.filter((c) => c.clientId === client.id);
   const notes = MOCK_NOTES.filter((n) => n.clientId === client.id);
-  const tickets = MOCK_TICKETS.filter((t) => t.clientId === client.id);
+  
 
   return (
     <>
@@ -154,32 +154,6 @@ export default function KundeDetail() {
             )}
           </Panel>
 
-          <Panel title="Offene Tickets">
-            {tickets.filter((t) => t.status !== "erledigt").length === 0 ? (
-              <div className="py-3 text-sm text-muted-foreground">Keine offenen Tickets.</div>
-            ) : (
-              <ul className="space-y-2">
-                {tickets
-                  .filter((t) => t.status !== "erledigt")
-                  .map((t) => (
-                    <li key={t.id} className="rounded-lg border border-border/60 p-2 text-sm">
-                      <div className="font-medium">{t.titel}</div>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] capitalize">
-                          {t.status.replace("-", " ")}
-                        </Badge>
-                        <Badge
-                          variant={t.prioritaet === "hoch" ? "destructive" : "secondary"}
-                          className="text-[10px] capitalize"
-                        >
-                          {t.prioritaet}
-                        </Badge>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-            )}
-          </Panel>
         </div>
       </div>
     </>

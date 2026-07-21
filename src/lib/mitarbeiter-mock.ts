@@ -43,16 +43,6 @@ export interface MockNote {
   rueckrufZeit?: string;
 }
 
-export interface MockTicket {
-  id: string;
-  clientId: string;
-  titel: string;
-  status: "offen" | "in-bearbeitung" | "erledigt";
-  prioritaet: "niedrig" | "normal" | "hoch";
-  agent: string;
-  createdAt: string;
-  beschreibung: string;
-}
 
 // Aktuell eingeloggter Mock-Mitarbeiter — IDs der zugewiesenen Kunden
 export const CURRENT_EMPLOYEE = {
@@ -261,48 +251,6 @@ export const MOCK_NOTES: MockNote[] = [
   },
 ];
 
-export const MOCK_TICKETS: MockTicket[] = [
-  {
-    id: "t1",
-    clientId: "c1",
-    titel: "Angebot Wartungsvertrag erstellen",
-    status: "offen",
-    prioritaet: "hoch",
-    agent: "Sofia Weber",
-    createdAt: new Date(Date.now() - 60 * 60_000).toISOString(),
-    beschreibung: "Kunde erwartet Angebot bis Freitag. Umfang: 12 Monate, monatliche Rechnung.",
-  },
-  {
-    id: "t2",
-    clientId: "c3",
-    titel: "Besichtigung Rosenstraße bestätigen",
-    status: "in-bearbeitung",
-    prioritaet: "normal",
-    agent: "Sofia Weber",
-    createdAt: new Date(Date.now() - 5 * 3600_000).toISOString(),
-    beschreibung: "Termin Donnerstag 14:00 — Interessent bringt Partner mit.",
-  },
-  {
-    id: "t3",
-    clientId: "c2",
-    titel: "Patientendaten aktualisieren",
-    status: "erledigt",
-    prioritaet: "niedrig",
-    agent: "Sofia Weber",
-    createdAt: new Date(Date.now() - 24 * 3600_000).toISOString(),
-    beschreibung: "Neue Anschrift von Frau Bauer im System hinterlegt.",
-  },
-  {
-    id: "t4",
-    clientId: "c4",
-    titel: "Cateringanfrage weiterleiten",
-    status: "offen",
-    prioritaet: "normal",
-    agent: "Sofia Weber",
-    createdAt: new Date(Date.now() - 8 * 3600_000).toISOString(),
-    beschreibung: "Firmenfeier für 40 Personen am 20.11. — Anfrage an Lena Fischer.",
-  },
-];
 
 export function fmtTime(iso: string) {
   const d = new Date(iso);

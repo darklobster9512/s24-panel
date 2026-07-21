@@ -66,7 +66,7 @@ export default function Einstellungen() {
             </li>
             <li className="flex items-center justify-between">
               <span className="font-medium">Kunde</span>
-              <span className="text-xs text-muted-foreground">Eigene Anrufe, Notizen, Tickets</span>
+              <span className="text-xs text-muted-foreground">Eigene Anrufe, Notizen</span>
             </li>
           </ul>
         </Panel>

@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { PageHeader, Panel, StatCard } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, Clock, StickyNote, Ticket } from "lucide-react";
+import { PhoneCall, Clock, StickyNote } from "lucide-react";
 
 const DAILY = [
   { d: "Mo", calls: 22, avg: 168 },
@@ -59,11 +59,10 @@ export default function Statistik() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Anrufe" value="135" delta="+12%" icon={<PhoneCall className="h-4 w-4" />} />
         <StatCard label="Ø Dauer" value="2:58" delta="-8s" icon={<Clock className="h-4 w-4" />} />
         <StatCard label="Notizen" value="98" icon={<StickyNote className="h-4 w-4" />} />
-        <StatCard label="Tickets erstellt" value="24" icon={<Ticket className="h-4 w-4" />} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

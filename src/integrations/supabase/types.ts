@@ -69,7 +69,6 @@ export type Database = {
           rueckruf_gewuenscht: boolean
           rueckruf_zeit: string | null
           sipgate_call_id: string | null
-          ticket_erstellen: boolean
           updated_at: string
           weitergeleitet_an: string | null
         }
@@ -88,7 +87,6 @@ export type Database = {
           rueckruf_gewuenscht?: boolean
           rueckruf_zeit?: string | null
           sipgate_call_id?: string | null
-          ticket_erstellen?: boolean
           updated_at?: string
           weitergeleitet_an?: string | null
         }
@@ -107,7 +105,6 @@ export type Database = {
           rueckruf_gewuenscht?: boolean
           rueckruf_zeit?: string | null
           sipgate_call_id?: string | null
-          ticket_erstellen?: boolean
           updated_at?: string
           weitergeleitet_an?: string | null
         }

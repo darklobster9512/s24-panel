@@ -44,7 +44,7 @@ export default function Erfassen() {
   const [kategorie, setKategorie] = useState<string>("");
   const [prioritaet, setPrioritaet] = useState("normal");
   const [weitergeleitetAn, setWeitergeleitetAn] = useState("");
-  const [ticketErstellen, setTicketErstellen] = useState(false);
+  
   const [rueckruf, setRueckruf] = useState(false);
   const [rueckrufZeit, setRueckrufZeit] = useState("");
 
@@ -143,7 +143,7 @@ export default function Erfassen() {
     setKategorie("");
     setPrioritaet("normal");
     setWeitergeleitetAn("");
-    setTicketErstellen(false);
+    
     setRueckruf(false);
     setRueckrufZeit("");
     params.delete("client");
@@ -179,7 +179,7 @@ export default function Erfassen() {
         weitergeleitet_an: kategorie === "Weiterleitung" ? weitergeleitetAn || null : null,
         rueckruf_gewuenscht: rueckruf,
         rueckruf_zeit: rueckruf ? rueckrufZeit || null : null,
-        ticket_erstellen: ticketErstellen,
+        
         dauer_sekunden: elapsed,
       });
       if (error) {
@@ -411,13 +411,6 @@ export default function Erfassen() {
                     onChange={(e) => setRueckrufZeit(e.target.value)}
                   />
                 )}
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={ticketErstellen}
-                    onCheckedChange={(v) => setTicketErstellen(v === true)}
-                  />
-                  Ticket erstellen (Aufgabe für Kunde)
-                </label>
               </div>
             </div>
           </Panel>

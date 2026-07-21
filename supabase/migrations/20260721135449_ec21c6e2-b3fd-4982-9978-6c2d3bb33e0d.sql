@@ -1,0 +1,1 @@
+ALTER TABLE public.call_notes DROP COLUMN IF EXISTS ticket_erstellen;
