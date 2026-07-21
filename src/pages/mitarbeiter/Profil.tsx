@@ -108,6 +108,49 @@ export default function Profil() {
             <Row label="Startdatum" value={formatDate(employee?.start_date ?? null)} />
             <Row label="Status" value="Aktiv" />
           </Panel>
+
+          {contract && (
+            <Panel className="lg:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/15 text-primary">
+                    <FileSignature className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Arbeitsvertrag</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {contract.status === "pending_employee" &&
+                        "Bitte fülle deinen Arbeitsvertrag aus und unterschreibe ihn."}
+                      {contract.status === "pending_admin" &&
+                        "Wartet auf Bestätigung durch das Management."}
+                      {contract.status === "completed" &&
+                        "Dein finaler Arbeitsvertrag steht zum Download bereit."}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">
+                    {contract.status === "pending_employee" && "Offen"}
+                    {contract.status === "pending_admin" && "In Prüfung"}
+                    {contract.status === "completed" && "Abgeschlossen"}
+                  </Badge>
+                  {contract.status === "completed" && pdfUrl ? (
+                    <Button asChild size="sm" className="gap-2">
+                      <a href={pdfUrl} target="_blank" rel="noreferrer">
+                        <Download className="h-4 w-4" /> Herunterladen
+                      </a>
+                    </Button>
+                  ) : contract.status !== "completed" ? (
+                    <Button asChild size="sm" className="gap-2">
+                      <Link to="/mitarbeiter/arbeitsvertrag">
+                        <FileSignature className="h-4 w-4" /> Öffnen
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </Panel>
+          )}
         </div>
       )}
     </>
