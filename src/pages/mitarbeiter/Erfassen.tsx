@@ -53,7 +53,9 @@ export default function Erfassen() {
   const [kategorie, setKategorie] = useState<string>("");
   const [prioritaet, setPrioritaet] = useState("normal");
   const [weitergeleitetAn, setWeitergeleitetAn] = useState("");
-  
+  const [knownCaller, setKnownCaller] = useState(false);
+
+
   const [rueckruf, setRueckruf] = useState(false);
   const [rueckrufZeit, setRueckrufZeit] = useState("");
 
