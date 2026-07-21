@@ -64,10 +64,15 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const token = url.searchParams.get("token");
   if (!SIPGATE_WEBHOOK_TOKEN || token !== SIPGATE_WEBHOOK_TOKEN) {
+    console.warn("[sipgate-webhook] unauthorized", {
+      method: req.method,
+      hasToken: !!token,
+    });
     return new Response("unauthorized", { status: 401 });
   }
 
   if (req.method !== "POST") {
+    console.log("[sipgate-webhook] non-POST request", { method: req.method });
     return new Response("ok", { status: 200 });
   }
 
@@ -76,6 +81,11 @@ Deno.serve(async (req) => {
   let bodyText = "";
   try {
     bodyText = await req.text();
+    console.log("[sipgate-webhook] incoming", {
+      method: req.method,
+      contentType,
+      rawBody: bodyText,
+    });
     if (contentType.includes("application/json")) {
       const j = JSON.parse(bodyText);
       params = new URLSearchParams(
@@ -85,13 +95,24 @@ Deno.serve(async (req) => {
       params = new URLSearchParams(bodyText);
     }
   } catch (e) {
-    console.error("[sipgate-webhook] failed to parse body", e);
+    console.error("[sipgate-webhook] failed to parse body", e, { bodyText });
     return new Response("bad request", { status: 400 });
   }
 
   const fields = parseFields(params);
   const event = (fields.event ?? "").toLowerCase();
   const callId = fields.callId;
+  const origCallId = fields.origCallId ?? fields.originalCallId ?? null;
+  console.log("[sipgate-webhook] parsed", {
+    event,
+    callId,
+    origCallId,
+    direction: fields.direction,
+    from: fields.from,
+    to: fields.to,
+    allFields: fields,
+  });
+
   if (!callId) {
     console.warn("[sipgate-webhook] missing callId", fields);
     return new Response("ok", { status: 200 });
@@ -106,7 +127,7 @@ Deno.serve(async (req) => {
   try {
     if (event === "newcall") {
       const clientId = await lookupClient(toNumber);
-      const { error } = await admin
+      const { data, error } = await admin
         .from("sipgate_calls")
         .upsert(
           {
@@ -121,12 +142,18 @@ Deno.serve(async (req) => {
             raw_payload: fields,
           },
           { onConflict: "sipgate_call_id" },
-        );
-      if (error) console.error("[sipgate-webhook] insert failed", error);
+        )
+        .select();
+      console.log("[sipgate-webhook] newCall result", {
+        callId,
+        clientId,
+        rows: data?.length ?? 0,
+        error,
+      });
     } else if (event === "answer") {
       const sipgateUser = fields.user ?? fields["user[]"] ?? null;
       const empId = await lookupEmployeeBySipgateUser(sipgateUser);
-      const { error } = await admin
+      const { data, error } = await admin
         .from("sipgate_calls")
         .update({
           status: "answered",
@@ -134,27 +161,62 @@ Deno.serve(async (req) => {
           answered_by_employee_id: empId,
           raw_payload: fields,
         })
-        .eq("sipgate_call_id", callId);
-      if (error) console.error("[sipgate-webhook] answer update failed", error);
+        .or(
+          origCallId
+            ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
+            : `sipgate_call_id.eq.${callId}`,
+        )
+        .select();
+      console.log("[sipgate-webhook] answer result", {
+        callId,
+        origCallId,
+        empId,
+        rowsUpdated: data?.length ?? 0,
+        error,
+      });
     } else if (event === "hangup") {
       // Determine missed vs ended based on whether it was answered
       const { data: existing } = await admin
         .from("sipgate_calls")
-        .select("answered_at")
-        .eq("sipgate_call_id", callId)
+        .select("id, answered_at, sipgate_call_id")
+        .or(
+          origCallId
+            ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
+            : `sipgate_call_id.eq.${callId}`,
+        )
+        .limit(1)
         .maybeSingle();
+      console.log("[sipgate-webhook] hangup lookup", {
+        callId,
+        origCallId,
+        existing,
+      });
       const finalStatus = existing?.answered_at ? "ended" : "missed";
-      const { error } = await admin
+      const { data, error } = await admin
         .from("sipgate_calls")
         .update({
           status: finalStatus,
           ended_at: new Date().toISOString(),
           raw_payload: fields,
         })
-        .eq("sipgate_call_id", callId);
-      if (error) console.error("[sipgate-webhook] hangup update failed", error);
+        .or(
+          origCallId
+            ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
+            : `sipgate_call_id.eq.${callId}`,
+        )
+        .select();
+      console.log("[sipgate-webhook] hangup result", {
+        callId,
+        origCallId,
+        finalStatus,
+        rowsUpdated: data?.length ?? 0,
+        error,
+      });
     } else {
-      console.log("[sipgate-webhook] ignored event", event);
+      console.warn("[sipgate-webhook] ignored/unknown event", {
+        event,
+        fields,
+      });
     }
   } catch (e) {
     console.error("[sipgate-webhook] handler error", e);
