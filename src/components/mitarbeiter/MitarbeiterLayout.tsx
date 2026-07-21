@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Outlet, Link } from "react-router-dom";
 import { Loader2, PhoneCall, Circle } from "lucide-react";
 import {
@@ -17,18 +17,41 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAutoAnswerRedirect } from "@/hooks/use-auto-answer-redirect";
 
-type Status = "verfuegbar" | "pause" | "nicht-bereit";
+type Status = "verfuegbar" | "pause" | "nicht-bereit" | "im-gespraech";
 const STATUS_META: Record<Status, { label: string; dot: string; ring: string }> = {
   "verfuegbar": { label: "Verfügbar", dot: "bg-primary", ring: "ring-primary/40" },
   "pause": { label: "Pause", dot: "bg-amber-400", ring: "ring-amber-400/40" },
   "nicht-bereit": { label: "Nicht bereit", dot: "bg-destructive", ring: "ring-destructive/40" },
+  "im-gespraech": { label: "Im Gespräch", dot: "bg-sky-400 animate-pulse", ring: "ring-sky-400/40" },
 };
+
+const MANUAL_STATUSES: Status[] = ["verfuegbar", "pause", "nicht-bereit"];
 
 export default function MitarbeiterLayout() {
   const [status, setStatus] = useState<Status>("verfuegbar");
+  const prevStatusRef = useRef<Status>("verfuegbar");
   useAutoAnswerRedirect();
 
+  useEffect(() => {
+    function onStart() {
+      setStatus((cur) => {
+        if (cur !== "im-gespraech") prevStatusRef.current = cur;
+        return "im-gespraech";
+      });
+    }
+    function onEnd() {
+      setStatus(prevStatusRef.current ?? "verfuegbar");
+    }
+    window.addEventListener("sekreteriat24:call-started", onStart);
+    window.addEventListener("sekreteriat24:call-ended", onEnd);
+    return () => {
+      window.removeEventListener("sekreteriat24:call-started", onStart);
+      window.removeEventListener("sekreteriat24:call-ended", onEnd);
+    };
+  }, []);
+
   const meta = STATUS_META[status];
+  const inCall = status === "im-gespraech";
 
   return (
     <SidebarProvider>
@@ -51,8 +74,21 @@ export default function MitarbeiterLayout() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                {(Object.keys(STATUS_META) as Status[]).map((s) => (
-                  <DropdownMenuItem key={s} onClick={() => setStatus(s)} className="gap-2">
+                {inCall && (
+                  <DropdownMenuItem disabled className="gap-2">
+                    <span className={cn("h-2 w-2 rounded-full", STATUS_META["im-gespraech"].dot)} />
+                    {STATUS_META["im-gespraech"].label}
+                  </DropdownMenuItem>
+                )}
+                {MANUAL_STATUSES.map((s) => (
+                  <DropdownMenuItem
+                    key={s}
+                    onClick={() => {
+                      prevStatusRef.current = s;
+                      if (!inCall) setStatus(s);
+                    }}
+                    className="gap-2"
+                  >
                     <span className={cn("h-2 w-2 rounded-full", STATUS_META[s].dot)} />
                     {STATUS_META[s].label}
                   </DropdownMenuItem>

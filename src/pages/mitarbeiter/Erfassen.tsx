@@ -98,6 +98,16 @@ export default function Erfassen() {
     return () => clearInterval(id);
   }, [running]);
 
+  // Broadcast call-active state so the layout can flip status to "Im Gespräch"
+  useEffect(() => {
+    if (running) {
+      window.dispatchEvent(new CustomEvent("sekreteriat24:call-started"));
+      return () => {
+        window.dispatchEvent(new CustomEvent("sekreteriat24:call-ended"));
+      };
+    }
+  }, [running]);
+
   // Auto-stop timer when sipgate reports hangup for this call
   useEffect(() => {
     function onHangup(e: Event) {
