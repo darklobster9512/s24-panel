@@ -1,32 +1,37 @@
 ## Ziel
+Beim Wechsel der Reiter im `/mitarbeiter`-Panel soll die neue Seite erst erscheinen, wenn alle benötigten Daten geladen sind. Aktuell rendert jede Seite sofort mit Platzhaltern („—", leere Listen) und füllt sich dann nach und nach — was als „nachladen" wahrgenommen wird.
 
-Die Supabase Edge Function `sipgate-webhook` warm halten, damit sipgate `newCall`-Requests nicht mehr in Cold-Start-Timeouts laufen.
+## Ansatz
+Einheitliches Pattern über alle Mitarbeiter-Seiten: **React Query mit Suspense**. Der `<Suspense>`-Fallback existiert bereits in `MitarbeiterLayout` (zentraler Spinner um den `<Outlet />`). Wenn die Seiten ihre Daten via `useSuspenseQuery` laden, hält React die Navigation automatisch zurück und zeigt den Layout-Spinner, bis alles bereit ist.
 
-## Ursache (bestätigt)
+## Änderungen pro Seite
 
-Nicht die DB ist langsam — der Container geht nach ~5–15 Min. Idle in `shutdown` (siehe Logs). Der nächste `newCall` trifft dann einen kalten Container, und sipgates sehr kurzes Timeout-Fenster wird gerissen.
+1. **`src/hooks/use-assigned-clients.ts`**
+   - Auf `useSuspenseQuery` umstellen (inkl. Logo-URLs im selben Query, damit Kunden + Logos atomar geladen werden).
+   - Rückgabe bleibt API-kompatibel, `loading`/`error` entfallen (Suspense/ErrorBoundary übernehmen).
 
-## Umsetzung
+2. **`src/pages/mitarbeiter/Cockpit.tsx`**
+   - `useState` + `useEffect` durch mehrere `useSuspenseQuery` ersetzen: Employee-Profil, Anrufe heute/gestern, letzte Anrufe, offene Rückrufe.
+   - Alle Queries parallel → Seite erscheint erst, wenn alle fertig.
 
-1. **Extensions aktivieren** (`pg_cron`, `pg_net`), falls noch nicht aktiv.
-2. **Cron-Job anlegen** via `supabase--insert`, der alle 4 Minuten die Function pingt:
-   - URL: `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=<SIPGATE_WEBHOOK_TOKEN>`
-   - Methode: `POST` mit leerem/minimalem Body
-   - Damit der Ping nicht als echter Call in `sipgate_calls` landet, wird die Function so angepasst, dass Requests **ohne** `event`-Feld (bzw. mit `event=keepalive`) einfach mit `<Response/>` beantwortet und ignoriert werden.
-3. **`sipgate-webhook/index.ts` minimal anpassen**:
-   - In `processWebhookBody`: wenn `event` leer oder `keepalive` ist → früh returnen, keine DB-Writes, kein Warn-Log.
-4. **Verifizieren**:
-   - Nach Deploy 10 Min. warten, dann Edge-Function-Logs prüfen: es sollten regelmäßig Pings kommen und keine `shutdown`-Events mehr auftauchen.
-   - Test-Call über sipgate machen und Response-Zeit in den sipgate Push-API-Logs prüfen.
+3. **`src/pages/mitarbeiter/Kunden.tsx`**
+   - Nutzt den umgestellten `useAssignedClients`-Hook; lokale `loading`/`error`-Branches entfernen.
+
+4. **`src/pages/mitarbeiter/LiveAnrufe.tsx`, `Notizen.tsx`, `Statistik.tsx`, `KundeDetail.tsx`, `Arbeitsvertrag.tsx`, `Profil.tsx`**
+   - Daten-Fetching auf `useSuspenseQuery` migrieren. Interne Skeleton-/Spinner-Zwischenzustände entfernen — dafür sorgt der zentrale Layout-Fallback.
+   - Realtime-Subscriptions (z.B. LiveAnrufe) bleiben unverändert; nur der Initial-Load nutzt Suspense.
+
+5. **`src/components/mitarbeiter/MitarbeiterLayout.tsx`**
+   - `Suspense`-Fallback minimal aufhübschen (bereits vorhanden) — optional, damit der Übergang sauber wirkt. Header bleibt sichtbar, nur der Main-Bereich zeigt den Loader.
+
+6. **Optionale ErrorBoundary** um den `<Outlet />` für saubere Fehleranzeige, da `useSuspenseQuery` Fehler wirft.
+
+## Nicht-Ziele
+- Kein Refactor der Superadmin-Seiten.
+- Keine Änderung an Datenmodellen, Edge Functions oder RLS.
+- Kein Prefetching auf Sidebar-Hover (könnte später ergänzt werden).
 
 ## Technische Details
-
-- Cron-Ausdruck: `*/4 * * * *` (alle 4 Min. — konservativer als das ~5–15 Min. Idle-Fenster).
-- Der Token bleibt in der URL, damit die bestehende Auth-Prüfung greift; keine neuen Secrets nötig.
-- Fällt der Cron aus, degradiert das System auf das aktuelle Verhalten (Cold Starts bei seltenen Anrufen) — kein Regressionsrisiko.
-- Alternative „echte" Lösungen (Min-Instances) gibt es bei Supabase Edge Functions aktuell nicht; Keep-Warm ist der Standard-Workaround.
-
-## Nicht Teil dieses Plans
-
-- Weitere Latenzoptimierungen im Fast-Path (bereits erledigt).
-- Änderungen am Frontend oder anderen Functions.
+- React Query ist bereits im Projekt aktiv (Auth, Employees, Contracts). Kein neues Package nötig.
+- `useSuspenseQuery` erfordert React 18 (vorhanden). Der bestehende Layout-`<Suspense>` fängt sowohl Lazy-Route-Loading als auch Query-Suspense ab — ein einziger Loader für alles.
+- `queryKey`s werden pro Seite/Filter stabil gehalten, damit React Query Cachet greift und beim Rück-Wechsel keine Ladezeit mehr entsteht (nur beim allerersten Besuch).
