@@ -309,7 +309,7 @@ export default function Erfassen() {
               </Button>
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Timer läuft manuell — starte, sobald du im Softphone angenommen hast.
+              Timer startet automatisch, wenn du den Anruf in der sipgate App annimmst, und stoppt beim Auflegen.
             </p>
           </Panel>
 
