@@ -1,60 +1,93 @@
 ## Ziel
 
-Frontend-Anbindung an sipgate-Webhook abschließen, SIP-Zugangsdaten pro Mitarbeiter wieder entfernen und Kunden-Rufnummern-Eingabe im Wizard sicherstellen — damit `/mitarbeiter/erfassen` den Kunden automatisch anhand der angerufenen Nummer (`to`) auswählt.
+Digitaler Arbeitsvertrags-Workflow: Superadmin weist Vorlage zu → Mitarbeiter füllt Daten aus & signiert → Superadmin bestätigt → PDF wird generiert und für beide Seiten verfügbar.
 
-## Änderungen
+## Datenbank
 
-### 1. SIP-Zugangsdaten pro Mitarbeiter entfernen
-- **DB-Migration**: Spalten `sip_phone_number`, `sip_server`, `sip_username`, `sip_password` aus `public.employees` droppen. `sipgate_user_id` bleibt (wird fürs Mapping der sipgate-User benötigt).
-- **UI**:
-  - `src/pages/superadmin/MitarbeiterWizard.tsx`: SIP-Step/Felder entfernen.
-  - `src/pages/superadmin/MitarbeiterDetail.tsx`: SIP-Sektion entfernen.
-  - `src/pages/mitarbeiter/Profil.tsx`: SIP-Zugangsdaten-Sektion entfernen (die zeigt aktuell die Kunden-SIP-Daten bzw. Mitarbeiter-SIP-Daten — komplett raus, da Softphone lokal konfiguriert wird).
+Neue Tabelle `public.employee_contracts`:
+- `employee_id` (FK → employees, unique — nur ein aktiver Vertrag)
+- `template_id` (FK → contract_templates)
+- `status` enum: `pending_employee` | `pending_admin` | `completed`
+- `employee_signature_data_url` (text, PNG base64 vom Canvas)
+- `signed_at`, `admin_confirmed_at`, `admin_confirmed_by`
+- `pdf_path` (Pfad in `contract-assets` Bucket)
+- Standard-Timestamps
 
-### 2. Kunden-Rufnummern im Wizard
-- Der Step „Rufnummern“ in `KundenWizard.tsx` existiert bereits aus dem letzten Turn und schreibt in `client_phone_numbers`. Kurz verifizieren:
-  - Eingabe akzeptiert mehrere Nummern (Add/Remove).
-  - Normalisierung auf E.164 (`+49...`) beim Speichern — muss zur Normalisierung im Webhook passen.
-  - Beim Bearbeiten werden bestehende Nummern geladen und diff-basiert aktualisiert.
-- Falls Normalisierung fehlt: Helper `normalizeToE164()` einbauen, der `0…` → `+49…` konvertiert.
+RLS-Policies:
+- Mitarbeiter: SELECT/UPDATE nur eigener Vertrag (`employees.user_id = auth.uid()`)
+- Superadmin: Full access
+- Beim „ersetzen" wird bestehender Datensatz gelöscht (inkl. PDF im Storage), dann neu erstellt.
 
-### 3. `/mitarbeiter/live` — Live-Anrufe
-- Ist im letzten Turn bereits umgestellt worden (`useLiveCalls` Hook mit Realtime auf `sipgate_calls`). Verifizieren:
-  - RLS filtert auf zugewiesene Kunden (via `is_client_assigned_to_me`).
-  - Klingelnde Anrufe zuerst, danach kürzlich beendete.
-  - Button „Erfassen starten“ → `navigate('/mitarbeiter/erfassen?call=<id>')`.
+Bucket `contract-assets` existiert bereits — PDFs unter `contracts/<employee_id>.pdf`.
 
-### 4. `/mitarbeiter/erfassen` — Prefill
-- Bei `?call=<id>` in URL:
-  - Anruf aus `sipgate_calls` laden.
-  - `client_id` aus Anruf → Kunde vorauswählen (Card mit Logo).
-  - Anrufer-Telefonnummer (`from`) ins Feld schreiben.
-  - Falls `client_id` null (unbekannte Nummer) → Hinweis, manuelle Auswahl bleibt möglich.
-- Nach Speichern der Notiz/Erfassung: `sipgate_calls.handled_by_employee_id` setzen.
+## Superadmin: Mitarbeiter Wizard/Detail
+
+**Step 2 „Vertrag & Gehalt"** erweitert um:
+- Switch „Arbeitsvertrag zuweisen"
+- Wenn aktiv: Select mit `contract_templates` → speichert in `employee_contracts` mit status `pending_employee`
+- Bei Bearbeiten: aktuellen Zustand anzeigen (Status-Badge, „Vorlage ändern" ersetzt bestehenden Vertrag komplett)
+
+**Neuer Reiter `/superadmin/arbeitsvertraege`**:
+- Liste aller `employee_contracts` mit Status-Filter
+- Detail-Ansicht: Mitarbeiter-Daten (readonly), Vertragsvorschau mit ausgefüllten Platzhaltern, Mitarbeiter-Signatur, Button „Bestätigen & PDF erstellen"
+- Bei Bestätigung: PDF client-seitig generieren (jsPDF + html2canvas) mit Firmenunterschrift + Mitarbeiterunterschrift → in Storage → `pdf_path` speichern → status `completed`
+
+## Mitarbeiter-Bereich
+
+**Sidebar**: Dynamischer Menüpunkt „Arbeitsvertrag" (mit Alert-Icon) erscheint nur wenn `employee_contracts` mit status ≠ `completed` existiert. Bei `completed` verschwindet der Punkt.
+
+**Route `/mitarbeiter/arbeitsvertrag`** — 3-Phasen-Flow:
+1. **Vorschau & Bestätigung**: Vertrag mit unausgefüllten Platzhaltern rendern, Checkbox „Ich habe den Vertrag gelesen", Button „Weiter zu meinen Daten"
+2. **Daten-Wizard**: Alle Felder aus Step 3 „Persönliches" des Mitarbeiter-Wizards (Geburtsdatum, Geburtsort, Nationalität, Familienstand, IBAN, BIC, Bank, Steuer-ID, SV-Nummer, Krankenkasse, Adresse). Speichert direkt in `employees`.
+3. **Signieren**: Vertragsvorlage mit eingesetzten Platzhaltern + Canvas-Unterschrift (react-signature-canvas). Speichert `employee_signature_data_url`, setzt status auf `pending_admin`.
+
+Nach Abschluss: Info-Screen „Warten auf Bestätigung durch Superadmin".
+
+**`/mitarbeiter/profil`**: Bei status `completed` neue Card „Mein Arbeitsvertrag" mit Download-Button (signed URL aus `contract-assets`).
+
+## PDF-Generierung
+
+Client-seitig via `jsPDF` + `html2canvas`:
+- HTML-Div mit gerendertem TipTap-HTML + eingesetzten Platzhaltern
+- Am Ende: Firmenunterschrift (aus `company_signature`) links, Mitarbeiterunterschrift rechts, jeweils als `<img>`
+- `html2canvas` → Canvas → jsPDF (A4, multi-page bei Bedarf)
+- Blob → Upload nach `contract-assets/contracts/<employee_id>.pdf`
+
+## Platzhalter
+
+Bestehende Mapping-Logik aus `src/lib/contract-placeholders.ts` nutzen; Helper `renderTemplate(html, employee)` der `{{ vorname }}` etc. mit Employee-Daten ersetzt. Wird an drei Stellen verwendet: Superadmin-Preview, Mitarbeiter-Signatur-Screen, PDF-Generierung.
 
 ## Technische Details
 
 ```text
-DB:
-  ALTER TABLE public.employees
-    DROP COLUMN sip_phone_number,
-    DROP COLUMN sip_server,
-    DROP COLUMN sip_username,
-    DROP COLUMN sip_password;
+Statusfluss:
+  Superadmin weist Vorlage zu   -> pending_employee
+  Mitarbeiter signiert          -> pending_admin
+  Superadmin bestätigt (+ PDF)  -> completed
 
-Normalisierung (Client + Webhook identisch):
-  "0301234567"   -> "+49301234567"
-  "0049301234"   -> "+49301234"
-  "+49301234"    -> "+49301234"
+Sidebar-Logik (Mitarbeiter):
+  useQuery('my-contract') -> zeigt Menüpunkt wenn status ∈ {pending_employee, pending_admin}
 
-Prefill-Flow /mitarbeiter/erfassen?call=<uuid>:
-  1. select * from sipgate_calls where id = :id
-  2. wenn client_id -> Kunde in State setzen
-  3. from -> caller_number Feld
-  4. on submit -> update sipgate_calls set handled_by_employee_id = <me>
+Ersetzen bestehender Vertrag:
+  DELETE FROM employee_contracts WHERE employee_id = ?
+  DELETE storage-objekt (falls pdf_path vorhanden)
+  INSERT neuer Vertrag
 ```
 
-## Nicht Teil dieses Plans
-- Ausgehende Anrufe (kann später mit derselben Webhook-URL nachgezogen werden).
-- Eigenes Webphone / WebRTC.
-- sipgate-User-IDs automatisch syncen — bleibt manuelles Feld am Mitarbeiter.
+## Neue/geänderte Dateien
+
+- Migration: `employee_contracts` + RLS
+- `src/lib/contract-render.ts` — Platzhalter-Ersetzung + PDF-Generierung
+- `src/pages/superadmin/MitarbeiterWizard.tsx` — Step 2 erweitern
+- `src/pages/superadmin/Arbeitsvertraege.tsx` — neue Übersichts+Detailseite
+- `src/pages/mitarbeiter/Arbeitsvertrag.tsx` — 3-Phasen-Flow
+- `src/pages/mitarbeiter/Profil.tsx` — Download-Card
+- `src/components/mitarbeiter/AppSidebar.tsx` — dynamischer Menüpunkt
+- `src/components/superadmin/AppSidebar.tsx` — Reiter „Arbeitsverträge"
+- `src/App.tsx` — Routen
+- Dependencies: `jspdf`, `html2canvas`, `react-signature-canvas`
+
+## Nicht enthalten
+- Vertrags-Historie (alte Verträge werden ersetzt/gelöscht)
+- Signatur via Upload oder getippt
+- E-Mail-Benachrichtigungen bei Statuswechsel

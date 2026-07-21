@@ -43,6 +43,7 @@ const opsItems = [
 
 const finItems = [
   { title: "Verträge", url: "/superadmin/vertraege", icon: FileSignature },
+  { title: "Arbeitsverträge", url: "/superadmin/arbeitsvertraege", icon: FileSignature },
   { title: "Auszahlungen", url: "/superadmin/auszahlungen", icon: Wallet },
   { title: "Abrechnung", url: "/superadmin/abrechnung", icon: Receipt },
 ];

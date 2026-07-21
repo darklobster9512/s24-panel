@@ -26,6 +26,8 @@ import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageE
 import SuperadminAuszahlungen from "./pages/superadmin/Auszahlungen";
 import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
+import SuperadminArbeitsvertraege from "./pages/superadmin/Arbeitsvertraege";
+import SuperadminArbeitsvertragDetail from "./pages/superadmin/ArbeitsvertragDetail";
 
 const Kunde = lazy(() => import("./pages/Kunde"));
 
@@ -39,6 +41,7 @@ import MitarbeiterNotizen from "./pages/mitarbeiter/Notizen";
 import MitarbeiterTickets from "./pages/mitarbeiter/Tickets";
 import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
 import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
+import MitarbeiterArbeitsvertrag from "./pages/mitarbeiter/Arbeitsvertrag";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -82,6 +85,8 @@ export default function App() {
                     <Route path="tickets" element={<SuperadminTickets />} />
                     <Route path="vertraege" element={<SuperadminVertraege />} />
                     <Route path="vertraege/:templateId" element={<SuperadminVertragsvorlageEditor />} />
+                    <Route path="arbeitsvertraege" element={<SuperadminArbeitsvertraege />} />
+                    <Route path="arbeitsvertraege/:id" element={<SuperadminArbeitsvertragDetail />} />
                     <Route path="auszahlungen" element={<SuperadminAuszahlungen />} />
                     <Route path="abrechnung" element={<SuperadminAbrechnung />} />
                     <Route path="einstellungen" element={<SuperadminEinstellungen />} />
@@ -103,6 +108,7 @@ export default function App() {
                     <Route path="tickets" element={<MitarbeiterTickets />} />
                     <Route path="statistik" element={<MitarbeiterStatistik />} />
                     <Route path="profil" element={<MitarbeiterProfil />} />
+                    <Route path="arbeitsvertrag" element={<MitarbeiterArbeitsvertrag />} />
                   </Route>
                 </Route>
 

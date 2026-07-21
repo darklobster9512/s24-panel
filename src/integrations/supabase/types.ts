@@ -235,6 +235,63 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_contracts: {
+        Row: {
+          admin_confirmed_at: string | null
+          admin_confirmed_by: string | null
+          created_at: string
+          employee_id: string
+          employee_signature_data_url: string | null
+          id: string
+          pdf_path: string | null
+          signed_at: string | null
+          status: Database["public"]["Enums"]["employee_contract_status"]
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_confirmed_at?: string | null
+          admin_confirmed_by?: string | null
+          created_at?: string
+          employee_id: string
+          employee_signature_data_url?: string | null
+          id?: string
+          pdf_path?: string | null
+          signed_at?: string | null
+          status?: Database["public"]["Enums"]["employee_contract_status"]
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_confirmed_at?: string | null
+          admin_confirmed_by?: string | null
+          created_at?: string
+          employee_id?: string
+          employee_signature_data_url?: string | null
+          id?: string
+          pdf_path?: string | null
+          signed_at?: string | null
+          status?: Database["public"]["Enums"]["employee_contract_status"]
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_contracts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           bank_name: string | null
@@ -471,6 +528,10 @@ export type Database = {
     }
     Enums: {
       app_role: "superadmin" | "kunde" | "mitarbeiter"
+      employee_contract_status:
+        | "pending_employee"
+        | "pending_admin"
+        | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -599,6 +660,11 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["superadmin", "kunde", "mitarbeiter"],
+      employee_contract_status: [
+        "pending_employee",
+        "pending_admin",
+        "completed",
+      ],
     },
   },
 } as const
