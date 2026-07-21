@@ -76,6 +76,11 @@ type ContractData = {
   };
 };
 
+function formatIBAN(raw: string): string {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 34);
+  return clean.replace(/(.{4})/g, "$1 ").trim();
+}
+
 const wizardSchema = z.object({
   birth_date: z.string().min(1, "Pflichtfeld"),
   birth_place: z.string().trim().min(1, "Pflichtfeld"),
@@ -156,7 +161,7 @@ export default function Arbeitsvertrag() {
       birth_place: e.birth_place ?? "",
       nationality: e.nationality ?? "",
       marital_status: e.marital_status ?? "",
-      iban: e.iban ?? "",
+      iban: formatIBAN(e.iban ?? ""),
       bic: e.bic ?? "",
       bank_name: e.bank_name ?? "",
       tax_id: e.tax_id ?? "",
@@ -201,7 +206,7 @@ export default function Arbeitsvertrag() {
           birth_place: values.birth_place || null,
           nationality: values.nationality || null,
           marital_status: values.marital_status || null,
-          iban: values.iban || null,
+          iban: values.iban.replace(/\s/g, "").toUpperCase() || null,
           bic: values.bic || null,
           bank_name: values.bank_name || null,
           tax_id: values.tax_id || null,
@@ -392,7 +397,7 @@ export default function Arbeitsvertrag() {
 
                 {subStep === 1 && (
                   <div className="grid gap-4 md:grid-cols-2">
-                    <TF form={form} name="iban" label="IBAN" placeholder="DE00 0000 0000 0000 0000 00" className="md:col-span-2" />
+                    <IBANField form={form} className="md:col-span-2" />
                     <TF form={form} name="bic" label="BIC" placeholder="z.B. DEUTDEFFXXX" />
                     <TF form={form} name="bank_name" label="Bank" placeholder="z.B. Deutsche Bank" />
                     <TF form={form} name="tax_id" label="Steuer-ID" placeholder="11-stellige Steuer-ID" className="md:col-span-2" />
@@ -543,6 +548,35 @@ function TF({
           <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input type={type} placeholder={placeholder} {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function IBANField({
+  form,
+  className,
+}: {
+  form: ReturnType<typeof useForm<WizardValues>>;
+  className?: string;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="iban"
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel>IBAN</FormLabel>
+          <FormControl>
+            <Input
+              placeholder="DE00 0000 0000 0000 0000 00"
+              value={field.value}
+              onChange={(e) => field.onChange(formatIBAN(e.target.value))}
+              onBlur={() => field.onChange(formatIBAN(field.value))}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
