@@ -51,6 +51,7 @@ const draftSchema = z.object({
   personal_phone: z.string().trim().max(50).optional().or(z.literal("")),
   login_local_part: z.string().trim().max(64).optional().or(z.literal("")),
   password_plain: z.string().trim().max(128).optional().or(z.literal("")),
+  sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   contract_type: z.enum(["vollzeit", "teilzeit"]).optional().or(z.literal("")),
   start_date: z.string().optional().or(z.literal("")),
   salary: z.string().optional().or(z.literal("")),
@@ -82,6 +83,7 @@ const fullSchema = z.object({
     .max(64)
     .regex(LOCAL_RE, "Nur Buchstaben, Zahlen, . _ -"),
   password_plain: z.string().trim().min(6, "Mind. 6 Zeichen").max(128),
+  sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   contract_type: z.enum(["vollzeit", "teilzeit"], {
     errorMap: () => ({ message: "Bitte wählen" }),
   }),
@@ -118,6 +120,7 @@ const STEPS: StepDef[] = [
     fields: [
       "login_local_part",
       "password_plain",
+      "sipgate_user_id",
       "contract_type",
       "start_date",
       "salary",
@@ -150,6 +153,7 @@ const DEFAULTS: FormValues = {
   personal_phone: "",
   login_local_part: "",
   password_plain: "",
+  sipgate_user_id: "",
   contract_type: "" as FormValues["contract_type"],
   start_date: "",
   salary: "",
@@ -174,6 +178,7 @@ const NULLABLE_STRINGS: Field[] = [
   "personal_phone",
   "login_local_part",
   "password_plain",
+  "sipgate_user_id",
   "birth_place",
   "nationality",
   "marital_status",
@@ -292,6 +297,7 @@ export default function MitarbeiterWizard({
         personal_phone: d.personal_phone ?? "",
         login_local_part: d.login_local_part ?? "",
         password_plain: d.password_plain ?? "",
+        sipgate_user_id: (d as { sipgate_user_id?: string | null }).sipgate_user_id ?? "",
         contract_type: (d.contract_type as "vollzeit" | "teilzeit") ?? "",
         start_date: d.start_date ?? "",
         salary: d.salary != null ? String(d.salary) : "",
@@ -910,6 +916,14 @@ function StepAccount({
         name="salary"
         label="Gehalt (€ / Monat)"
         placeholder="z. B. 2800"
+        className="md:col-span-2"
+      />
+
+      <TextField
+        form={form}
+        name="sipgate_user_id"
+        label="sipgate User-ID (optional)"
+        placeholder="z. B. w1 oder 4004168w1"
         className="md:col-span-2"
       />
 

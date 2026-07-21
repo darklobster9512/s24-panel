@@ -98,6 +98,31 @@ export default function Erfassen() {
     return () => clearInterval(id);
   }, [running]);
 
+  // Auto-stop timer when sipgate reports hangup for this call
+  useEffect(() => {
+    function onHangup(e: Event) {
+      const detail = (e as CustomEvent).detail as {
+        callId?: string;
+        from?: string | null;
+        to?: string | null;
+      };
+      if (!detail) return;
+      const matchesCall = callId && detail.callId === callId;
+      const normalize = (v?: string | null) =>
+        (v ?? "").replace(/[^\d+]/g, "");
+      const matchesNumbers =
+        !!anruferNummer &&
+        normalize(detail.from) === normalize(anruferNummer);
+      if (!matchesCall && !matchesNumbers) return;
+      if (running) {
+        setRunning(false);
+        toast.info("Anruf beendet — Timer gestoppt");
+      }
+    }
+    window.addEventListener("sipgate:hangup", onHangup);
+    return () => window.removeEventListener("sipgate:hangup", onHangup);
+  }, [callId, anruferNummer, running]);
+
   const client = clientId ? byId(clientId) : undefined;
   const elapsed = useMemo(() => (start ? Math.floor((Date.now() - start) / 1000) : 0), [start, tick, running]);
 
