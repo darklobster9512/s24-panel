@@ -341,12 +341,6 @@ export default function Erfassen() {
                     <PhoneForwarded className="h-3 w-3" />
                     Weiterleitung {client.weiterleitung ? "aktiv" : "inaktiv"}
                   </span>
-                  {client.vatId && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 font-mono text-muted-foreground">
-                      <Hash className="h-3 w-3" />
-                      {client.vatId}
-                    </span>
-                  )}
                 </div>
 
               </div>
