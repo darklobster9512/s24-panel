@@ -1,39 +1,11 @@
-## Kunden-Card auf `/mitarbeiter/erfassen` erweitern
+Ziel: Die USt-ID soll nicht mehr in der Kunden-Info-Card auf der Anruf-Erfassungsseite angezeigt werden.
 
-Die Info-Card links (wenn ein Kunde ausgewählt ist) zeigt aktuell nur Logo, Name, Branche, Begrüßung, Firmeninhalt, Ansprechpartner und Weiterleitungs-Status. Alle weiteren Kundendaten sind bereits über `useAssignedClients` verfügbar und müssen nur noch dargestellt werden.
+Aktueller Zustand (bestätigt via `src/pages/mitarbeiter/Erfassen.tsx`):
+- Unterhalb der Kunden-Card (Reihe mit Weiterleitung-Pille) gibt es eine USt-ID-Pille (`client.vatId`), die mit einem Hash-Icon ausgegeben wird.
 
-### Änderungen in `src/pages/mitarbeiter/Erfassen.tsx`
+Geplante Änderung:
+1. In `src/pages/mitarbeiter/Erfassen.tsx` den Code-Block der USt-ID-Pille (Zeilen 344–349) entfernen.
+2. Das `Hash` Icon aus dem `lucide-react` Import entfernen, falls es danach nicht mehr benötigt wird.
+3. Visuell überprüfen, dass die Kunden-Card nach wie vor Telefon, E-Mail, Website, Adresse, Begrüßung, Firmeninhalt, Ansprechpartner und Weiterleitung-Status anzeigt.
 
-Ausgewählter-Kunde-Zweig (ca. Zeile 246–292) erweitern um folgende Blöcke, jeweils mit passendem Icon (`lucide-react`: `Phone`, `Mail`, `Globe`, `MapPin`, `User`, `Building2`, `Hash`, `PhoneForwarded`):
-
-1. **Kontaktblock** (neu, direkt unter Header):
-   - Telefon (`client.telefon`) — klickbar als `tel:`-Link
-   - E-Mail (`client.email`) — klickbar als `mailto:`-Link
-   - Website (`client.website`) — klickbar mit `target="_blank"`
-   - Adresse (`client.adresse`)
-   Jede Zeile mit Icon links, Wert rechts, Zeilen mit fehlendem Wert werden ausgeblendet.
-
-2. **Begrüßung** — bleibt wie bisher (hervorgehobene Mono-Box).
-
-3. **Firmeninhalt** — bleibt, aber mit Überschrift-Konsistenz.
-
-4. **Ansprechpartner-Block** (erweitert):
-   - Name (`ansprechpartner`)
-   - Telefon (`ansprechpartnerTel`) — klickbar
-   - E-Mail (`ansprechpartnerEmail`) — klickbar
-   Fällt komplett weg, wenn alle drei Felder leer sind.
-
-5. **Meta-Zeile** (unten, kompakt):
-   - Weiterleitung: aktiv / inaktiv (mit farbigem Dot bzw. `PhoneForwarded`-Icon)
-   - USt-ID (`vatId`), falls vorhanden
-
-### Darstellung
-- Klare Sektionsüberschriften im bestehenden `text-[10px] uppercase tracking-wider text-muted-foreground` Stil.
-- Kontakte als kompakte Liste mit `flex items-center gap-2`, Icon `h-3.5 w-3.5 text-muted-foreground`.
-- Links: `hover:text-primary hover:underline`, sonst `text-foreground`.
-- Trennung der Blöcke über dezente `border-t border-border/60 pt-3`.
-- Card scrollt bei Bedarf (bereits durch Panel gehandhabt).
-
-### Nicht enthalten
-- Keine Änderungen an `useAssignedClients`, Datenmodell oder Backend — alle Felder werden bereits gefetcht.
-- Keine Änderungen am Anrufer- oder Timer-Bereich.
+Keine Datenbank- oder API-Änderungen erforderlich; das Feld bleibt in der Datenbank, wird nur nicht mehr im UI gerendert.

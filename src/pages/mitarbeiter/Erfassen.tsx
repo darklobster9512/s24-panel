@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Play, Square, Save, RotateCcw, PhoneCall, Info, Phone, Mail, Globe, MapPin, User, Hash, PhoneForwarded } from "lucide-react";
+import { Play, Square, Save, RotateCcw, PhoneCall, Info, Phone, Mail, Globe, MapPin, User, PhoneForwarded } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
@@ -341,12 +341,6 @@ export default function Erfassen() {
                     <PhoneForwarded className="h-3 w-3" />
                     Weiterleitung {client.weiterleitung ? "aktiv" : "inaktiv"}
                   </span>
-                  {client.vatId && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 font-mono text-muted-foreground">
-                      <Hash className="h-3 w-3" />
-                      {client.vatId}
-                    </span>
-                  )}
                 </div>
 
               </div>
