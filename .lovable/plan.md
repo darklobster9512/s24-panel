@@ -1,51 +1,38 @@
-## Notizen an Supabase anbinden
+## /superadmin/anrufe an Supabase anbinden
 
-Aktuell speichert `/mitarbeiter/erfassen` beim Klick auf „Speichern" nur einen Toast, und `/mitarbeiter/notizen` zeigt Mock-Daten aus `mitarbeiter-mock`. Ziel: echte Persistenz via Supabase, gefiltert auf den eingeloggten Mitarbeiter und seine zugewiesenen Kunden.
+Die Seite zeigt aktuell Mock-Daten. Ziel: alle Anrufe aus `sipgate_calls` als globales Log für Superadmin darstellen, mit Filter, Suche und Status.
 
-### 1. Datenbank
+### 1. RLS / Zugriff
 
-Neue Tabelle `public.call_notes`:
+`sipgate_calls` hat bereits RLS. Sicherstellen (bzw. ergänzen, falls fehlt), dass Superadmin (`has_role(auth.uid(), 'superadmin')`) alle Zeilen lesen darf. Keine Schemaänderung an Spalten nötig — die Tabelle enthält bereits: `direction`, `from_number`, `to_number`, `client_id`, `answered_by_employee_id`, `status`, `caller_name`, `started_at`, `answered_at`, `ended_at`.
 
-- `client_id` → `clients.id`
-- `employee_id` → `employees.id` (der erfassende Mitarbeiter)
-- `sipgate_call_id` → `sipgate_calls.id` (optional, wenn aus Live-Call heraus erfasst)
-- `anrufer_name`, `anrufer_nummer`, `anrufer_email`
-- `anliegen` (Text, required)
-- `kategorie` (Text: Rückruf / Termin / Info / Beschwerde / Weiterleitung)
-- `prioritaet` (Text: niedrig / normal / hoch, default 'normal')
-- `weitergeleitet_an` (Text, optional)
-- `rueckruf_gewuenscht` (bool), `rueckruf_zeit` (Text)
-- `ticket_erstellen` (bool)
-- `dauer_sekunden` (int, aus Timer)
-- Standard `id / created_at / updated_at` + update-Trigger
+### 2. Datenabruf
 
-**GRANTs**: `authenticated` (select/insert/update/delete), `service_role` (all). Kein `anon`.
+Neuer Hook / Query in `src/pages/superadmin/Anrufe.tsx`:
 
-**RLS**:
-- Mitarbeiter sehen/bearbeiten nur ihre eigenen Notizen (`employee_id` gehört zum eingeloggten User via `employees.user_id = auth.uid()`).
-- Superadmin (`has_role(auth.uid(), 'superadmin')`) sieht/verwaltet alle → damit `/superadmin/notizen` später ebenfalls angebunden werden kann.
-- Insert nur erlaubt, wenn `employee_id` zum eigenen User gehört UND der Mitarbeiter dem Kunden zugewiesen ist (`assignments`).
+- Select aus `sipgate_calls` mit Joins:
+  - `clients (id, company_name, logo_path)` über `client_id`
+  - `employees (id, first_name, last_name)` über `answered_by_employee_id` (fallback `handled_by_employee_id`)
+- Sortierung `started_at desc`, initial Limit 200.
+- Realtime-Subscription analog `useLiveCalls`, damit neue Anrufe live auftauchen (optional, aber konsistent).
 
-### 2. `/mitarbeiter/erfassen`
+### 3. UI-Anpassungen in `Anrufe.tsx`
 
-`save(closeAfter)` schreibt echt in `call_notes`:
+- Mock-Array entfernen, echte Daten rendern.
+- Spalten: Zeit (formatiert `dd.MM. HH:mm`), Richtung-Icon (in/out/missed anhand `direction` + `status`), Kunde (Firmenname oder `— Unbekannt —` wenn `client_id` null), Mitarbeiter (Vor-/Nachname oder „—"), Dauer (aus `answered_at`/`ended_at` berechnet, `mm:ss`), Status-Badge (`ringing`/`answered`/`ended`/`missed` mit passenden Varianten und Farben).
+- Suche (bestehendes Input): client-seitig über Nummer, Kundenname, Mitarbeitername.
+- Filter-Buttons als funktionsfähige Dropdowns:
+  - **Zeitraum**: heute / 7 Tage / 30 Tage / alle
+  - **Kunde**: aus geladenen `clients`
+  - **Mitarbeiter**: aus geladenen `employees`
+  - **Richtung**: in / out / verpasst
+- Leerer Zustand + Ladezustand.
+- CSV-Export-Button: aktuell ohne Funktion lassen (nur UI) oder simplen Client-Export der aktuellen Filter — sag Bescheid, was du willst; ich würde einfachen Client-CSV-Export machen.
 
-- `employee_id` aus `employees` via `user_id = auth.uid()` holen.
-- Alle Formularfelder + `dauer_sekunden` (aus Timer) + optional `sipgate_call_id` aus dem `?call=` Query-Param übernehmen.
-- Erfolg: Toast + Reset (bei „Neuer Anruf") bzw. Navigation zu `/mitarbeiter/notizen` (bei „Schließen").
-- Fehler-Toast bei Insert-Error.
+### 4. Nicht enthalten
 
-### 3. `/mitarbeiter/notizen`
+- Kein Detail-Drawer pro Anruf (kann in einem späteren Schritt kommen).
+- Keine Verknüpfung zu Notizen in dieser Ansicht.
+- Keine Änderungen an der Webhook-Edge-Function.
 
-- Mock durch echten Supabase-Query ersetzen (`call_notes` join Kunde/Logo-Handling wie bisher).
-- Filter (Kategorie, Kunde, Suche) client-seitig auf dem geladenen Ergebnis, so wie jetzt.
-- Ergebnis-Rendering an neue Feldnamen anpassen (created_at → relative Zeit, anrufer_name/nummer, kategorie, rueckruf_gewuenscht/zeit).
-- Der Edit-Button (Stift) bleibt vorerst UI-only — kein Bearbeitungs-Dialog in diesem Schritt, sofern du das nicht separat willst.
-
-### 4. Nicht enthalten (bewusst)
-
-- Kein Ticket-Anlegen (`ticket_erstellen` wird nur als Flag gespeichert, keine Tickets-Tabelle).
-- Kein Bearbeiten bestehender Notizen aus der Notizen-Liste.
-- `/superadmin/notizen` bleibt in diesem Schritt Mock — RLS ist aber schon so gebaut, dass es später ohne Migrationsänderung angebunden werden kann.
-
-Sag Bescheid, falls Bearbeiten von Notizen oder das Superadmin-Panel gleich mit rein soll.
+Sag Bescheid, ob CSV-Export gleich mit rein soll oder erst später.
