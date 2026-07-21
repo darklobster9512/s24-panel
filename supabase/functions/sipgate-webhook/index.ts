@@ -307,6 +307,12 @@ async function persistNewCall(fields: Record<string, string>, callId: string, di
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
+
+  // Keep-warm ping (pg_cron). No token needed; just wakes the container.
+  if (url.searchParams.get("keepalive") === "1") {
+    return new Response("ok", { status: 200 });
+  }
+
   const token = url.searchParams.get("token");
   if (!SIPGATE_WEBHOOK_TOKEN || token !== SIPGATE_WEBHOOK_TOKEN) {
     console.warn("[sipgate-webhook] unauthorized", {
