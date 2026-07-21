@@ -471,6 +471,12 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                     {step === 1 && <StepAdresseKontakt form={form} />}
                     {step === 2 && <StepAnsprechpartner form={form} />}
                     {step === 3 && (
+                      <StepRufnummern
+                        phoneNumbers={phoneNumbers}
+                        setPhoneNumbers={setPhoneNumbers}
+                      />
+                    )}
+                    {step === 4 && (
                       <StepKonfig
                         form={form}
                         logoFile={logoFile}
