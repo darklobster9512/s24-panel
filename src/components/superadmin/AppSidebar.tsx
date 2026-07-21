@@ -74,12 +74,12 @@ export function SuperadminSidebar() {
   const { pathname } = useLocation();
 
   const pendingCountQuery = useQuery({
-    queryKey: ["pending-contracts-count"],
+    queryKey: ["open-contracts-count"],
     queryFn: async () => {
       const { count, error } = await (supabase as any)
         .from("employee_contracts")
         .select("id", { count: "exact", head: true })
-        .eq("status", "pending_admin");
+        .neq("status", "completed");
       if (error) throw error;
       return count ?? 0;
     },
