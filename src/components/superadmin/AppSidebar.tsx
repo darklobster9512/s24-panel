@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Building2,
@@ -27,28 +28,43 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { SidebarUserFooter } from "@/components/SidebarUserFooter";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
-const mainItems = [
+type SidebarItem = {
+  title: string;
+  url: string;
+  icon: typeof LayoutDashboard;
+  end?: boolean;
+  badge?: number;
+};
+
+const mainItems: SidebarItem[] = [
   { title: "Übersicht", url: "/superadmin", icon: LayoutDashboard, end: true },
   { title: "Kunden", url: "/superadmin/kunden", icon: Building2 },
   { title: "Mitarbeiter", url: "/superadmin/mitarbeiter", icon: Users },
   { title: "Zuweisungen", url: "/superadmin/zuweisungen", icon: Link2 },
 ];
 
-const opsItems = [
+const opsItems: SidebarItem[] = [
   { title: "Anrufe", url: "/superadmin/anrufe", icon: PhoneCall },
   { title: "Notizen", url: "/superadmin/notizen", icon: StickyNote },
   { title: "Tickets", url: "/superadmin/tickets", icon: Ticket },
 ];
 
-const finItems = [
+const finItems = (pendingCount: number): SidebarItem[] => [
   { title: "Verträge", url: "/superadmin/vertraege", icon: FileSignature },
-  { title: "Arbeitsverträge", url: "/superadmin/arbeitsvertraege", icon: FileSignature },
+  {
+    title: "Arbeitsverträge",
+    url: "/superadmin/arbeitsvertraege",
+    icon: FileSignature,
+    badge: pendingCount,
+  },
   { title: "Auszahlungen", url: "/superadmin/auszahlungen", icon: Wallet },
   { title: "Abrechnung", url: "/superadmin/abrechnung", icon: Receipt },
 ];
 
-const systemItems = [
+const systemItems: SidebarItem[] = [
   { title: "Einstellungen", url: "/superadmin/einstellungen", icon: Settings },
 ];
 
@@ -57,13 +73,24 @@ export function SuperadminSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
 
+  const pendingCountQuery = useQuery({
+    queryKey: ["pending-contracts-count"],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from("employee_contracts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending_admin");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const pendingCount = pendingCountQuery.data ?? 0;
+
   const isActive = (path: string, end?: boolean) =>
     end ? pathname === path : pathname === path || pathname.startsWith(path + "/");
 
-  const renderGroup = (
-    label: string,
-    items: { title: string; url: string; icon: typeof LayoutDashboard; end?: boolean }[],
-  ) => (
+  const renderGroup = (label: string, items: SidebarItem[]) => (
     <SidebarGroup className="px-2 py-2">
       {!collapsed && (
         <SidebarGroupLabel className="mb-2 px-2 text-[11px] font-bold uppercase tracking-[0.12em] text-sidebar-foreground/80">
@@ -81,9 +108,16 @@ export function SuperadminSidebar() {
                 tooltip={item.title}
                 className="group/item relative h-9 rounded-lg font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-semibold data-[active=true]:shadow-[0_2px_10px_-3px_hsl(var(--primary)/0.5)] data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
               >
-                <NavLink to={item.url} end={item.end}>
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span>{item.title}</span>
+                <NavLink to={item.url} end={item.end} className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span>{item.title}</span>
+                  </span>
+                  {!collapsed && item.badge ? (
+                    <Badge className="ml-auto h-5 min-w-5 justify-center rounded-full px-1.5 text-[10px] font-semibold">
+                      {item.badge}
+                    </Badge>
+                  ) : null}
                 </NavLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -115,7 +149,7 @@ export function SuperadminSidebar() {
       <SidebarContent className="gap-1 py-2">
         {renderGroup("Allgemein", mainItems)}
         {renderGroup("Betrieb", opsItems)}
-        {renderGroup("Finanzen", finItems)}
+        {renderGroup("Finanzen", finItems(pendingCount))}
         {renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarUserFooter roleLabel="Superadmin" />
