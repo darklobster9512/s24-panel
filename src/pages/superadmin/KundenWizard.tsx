@@ -213,6 +213,30 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     }
   }, [mode, existing.data, form]);
 
+  // Load existing phone numbers in edit mode
+  useEffect(() => {
+    if (mode !== "edit" || !id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("client_phone_numbers")
+        .select("id, phone_number, label")
+        .eq("client_id", id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      setPhoneNumbers(
+        (data ?? []).map((r) => ({
+          id: r.id,
+          phone_number: r.phone_number,
+          label: r.label ?? "",
+        })),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, id]);
+
   async function uploadLogoIfNeeded() {
     if (!logoFile) return undefined;
     const ext = logoFile.name.split(".").pop() || "png";
@@ -222,6 +246,56 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       .upload(path, logoFile, { upsert: false, contentType: logoFile.type });
     if (upErr) throw upErr;
     return path;
+  }
+
+  function normalizePhoneNumber(raw: string): string {
+    const trimmed = raw.trim().replace(/[^\d+]/g, "");
+    if (!trimmed) return "";
+    if (trimmed.startsWith("+")) return trimmed;
+    if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
+    if (trimmed.startsWith("0")) return "+49" + trimmed.slice(1);
+    return "+" + trimmed;
+  }
+
+  async function syncPhoneNumbers(clientId: string) {
+    // Load current server state
+    const { data: existingRows } = await supabase
+      .from("client_phone_numbers")
+      .select("id, phone_number, label")
+      .eq("client_id", clientId);
+    const serverIds = new Set((existingRows ?? []).map((r) => r.id));
+
+    // Prepare desired rows (skip empty)
+    const desired = phoneNumbers
+      .map((p) => ({
+        ...p,
+        phone_number: normalizePhoneNumber(p.phone_number),
+      }))
+      .filter((p) => p.phone_number.length > 0);
+
+    const keepIds = new Set(desired.filter((d) => d.id).map((d) => d.id!));
+    const toDelete = [...serverIds].filter((sid) => !keepIds.has(sid));
+
+    if (toDelete.length > 0) {
+      await supabase.from("client_phone_numbers").delete().in("id", toDelete);
+    }
+    for (const row of desired) {
+      if (row.id) {
+        await supabase
+          .from("client_phone_numbers")
+          .update({
+            phone_number: row.phone_number,
+            label: row.label || null,
+          })
+          .eq("id", row.id);
+      } else {
+        await supabase.from("client_phone_numbers").insert({
+          client_id: clientId,
+          phone_number: row.phone_number,
+          label: row.label || null,
+        });
+      }
+    }
   }
 
   const submitMutation = useMutation({
