@@ -1,47 +1,32 @@
 ## Ziel
 
-Der `newCall`-Webhook muss für sipgate extrem schnell eine gültige XML-Antwort liefern, damit `onAnswer` und `onHangup` zuverlässig registriert werden.
+Die Supabase Edge Function `sipgate-webhook` warm halten, damit sipgate `newCall`-Requests nicht mehr in Cold-Start-Timeouts laufen.
 
-## Bestätigter Ist-Zustand
+## Ursache (bestätigt)
 
-- Der aktuelle `newCall` um 16:59:27 ist in der Edge Function angekommen.
-- Die Datenbank wurde aktualisiert: der Call steht als `ringing` in `sipgate_calls`.
-- Die Function loggt zwar XML mit `onAnswer` und `onHangup`, aber sipgate meldet trotzdem `Timeout while requesting customer response`.
-- Direkter Test gegen die Function liefert XML korrekt zurück, aber die reale sipgate-Anfrage ist empfindlicher gegen Laufzeit/Response-Verhalten.
+Nicht die DB ist langsam — der Container geht nach ~5–15 Min. Idle in `shutdown` (siehe Logs). Der nächste `newCall` trifft dann einen kalten Container, und sipgates sehr kurzes Timeout-Fenster wird gerissen.
 
-## Fix-Plan
+## Umsetzung
 
-1. **Ultra-Fast-Path für `newCall`**
-   - Bei `event=newCall` nur das Minimum tun:
-     - URL-Token prüfen
-     - Body lesen und `event/callId` minimal erkennen
-     - sofort XML zurückgeben
-   - Keine Datenbankarbeit, kein Client-Lookup, kein ausführliches Logging vor dem Return.
+1. **Extensions aktivieren** (`pg_cron`, `pg_net`), falls noch nicht aktiv.
+2. **Cron-Job anlegen** via `supabase--insert`, der alle 4 Minuten die Function pingt:
+   - URL: `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=<SIPGATE_WEBHOOK_TOKEN>`
+   - Methode: `POST` mit leerem/minimalem Body
+   - Damit der Ping nicht als echter Call in `sipgate_calls` landet, wird die Function so angepasst, dass Requests **ohne** `event`-Feld (bzw. mit `event=keepalive`) einfach mit `<Response/>` beantwortet und ignoriert werden.
+3. **`sipgate-webhook/index.ts` minimal anpassen**:
+   - In `processWebhookBody`: wenn `event` leer oder `keepalive` ist → früh returnen, keine DB-Writes, kein Warn-Log.
+4. **Verifizieren**:
+   - Nach Deploy 10 Min. warten, dann Edge-Function-Logs prüfen: es sollten regelmäßig Pings kommen und keine `shutdown`-Events mehr auftauchen.
+   - Test-Call über sipgate machen und Response-Zeit in den sipgate Push-API-Logs prüfen.
 
-2. **Logging vor dem Return massiv reduzieren**
-   - Die aktuellen `console.log`-Aufrufe vor dem XML-Return werden für `newCall` entfernt oder in den Hintergrund verschoben.
-   - Grund: Logs können in Edge Runtime die Antwort sichtbar verzögern, obwohl der Code logisch schon „fast-path“ ist.
+## Technische Details
 
-3. **DB-Speicherung wirklich nachgelagert ausführen**
-   - `persistNewCall(...)` wird erst nach der XML-Antwort via `EdgeRuntime.waitUntil(...)` eingeplant.
-   - Falls `waitUntil` nicht greift, darf der Datenbankjob nicht den Response blockieren.
-   - Fehler werden nur im Hintergrund geloggt.
+- Cron-Ausdruck: `*/4 * * * *` (alle 4 Min. — konservativer als das ~5–15 Min. Idle-Fenster).
+- Der Token bleibt in der URL, damit die bestehende Auth-Prüfung greift; keine neuen Secrets nötig.
+- Fällt der Cron aus, degradiert das System auf das aktuelle Verhalten (Cold Starts bei seltenen Anrufen) — kein Regressionsrisiko.
+- Alternative „echte" Lösungen (Min-Instances) gibt es bei Supabase Edge Functions aktuell nicht; Keep-Warm ist der Standard-Workaround.
 
-4. **XML kompatibler machen**
-   - `Content-Type: text/xml; charset=utf-8` statt `application/xml`, weil manche Telefonie-Webhooks historisch `text/xml` erwarten.
-   - Kompakter Body ohne unnötige Antwort-Logs:
+## Nicht Teil dieses Plans
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Response onAnswer="..." onHangup="..."></Response>
-```
-
-5. **Answer/Hangup unverändert verarbeiten**
-   - `answer` und `hangup` können weiterhin DB-Updates machen.
-   - Zusätzlich wird dort akzeptiert, wenn sipgate Follow-up Events ohne Body-Event aber mit bekannten Feldern sendet.
-
-6. **Nach dem Fix testen**
-   - Edge Function deployen.
-   - Direkten `newCall`-Request testen und Header/Body prüfen.
-   - Edge Logs prüfen: reale `newCall` Requests müssen mit sehr niedriger Laufzeit antworten.
-   - Hängende `ringing` Testcalls auf `missed` setzen, damit `/mitarbeiter/live` nicht falsch bleibt.
+- Weitere Latenzoptimierungen im Fast-Path (bereits erledigt).
+- Änderungen am Frontend oder anderen Functions.

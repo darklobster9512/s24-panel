@@ -152,6 +152,12 @@ async function processWebhookBody(bodyText: string, contentType: string) {
   const event = eventFromBody;
   const callId = fields.callId;
   const origCallId = fields.origCallId ?? fields.originalCallId ?? null;
+
+  // Keep-warm ping (cron): no event / explicit keepalive → ignore silently.
+  if (!event || event === "keepalive") {
+    return;
+  }
+
   if (!callId) {
     console.warn("[sipgate-webhook] missing callId", fields);
     return;
