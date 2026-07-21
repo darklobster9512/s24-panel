@@ -23,6 +23,15 @@ import { fmtDauer } from "@/lib/mitarbeiter-mock";
 
 const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"] as const;
 
+function normalizePhone(v?: string | null): string {
+  if (!v) return "";
+  const trimmed = v.trim().replace(/[^\d+]/g, "");
+  if (trimmed.startsWith("+")) return "+" + trimmed.slice(1).replace(/\+/g, "");
+  if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
+  if (trimmed.startsWith("0")) return "+49" + trimmed.slice(1);
+  return trimmed;
+}
+
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
