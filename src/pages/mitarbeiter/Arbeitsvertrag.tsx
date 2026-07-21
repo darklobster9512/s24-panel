@@ -362,45 +362,87 @@ export default function Arbeitsvertrag() {
       )}
 
       {phase === "wizard" && (
-        <Panel>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit((v) => saveDataMutation.mutate(v))}
-              className="space-y-5"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <TF form={form} name="birth_date" label="Geburtsdatum" type="date" />
-                <TF form={form} name="birth_place" label="Geburtsort" />
-                <TF form={form} name="nationality" label="Nationalität" />
-                <TF form={form} name="marital_status" label="Familienstand" />
-                <TF form={form} name="iban" label="IBAN" />
-                <TF form={form} name="bic" label="BIC" />
-                <TF form={form} name="bank_name" label="Bank" className="md:col-span-2" />
-                <TF form={form} name="tax_id" label="Steuer-ID" />
-                <TF form={form} name="social_security_number" label="SV-Nummer" />
-                <TF
-                  form={form}
-                  name="health_insurance"
-                  label="Krankenkasse"
-                  className="md:col-span-2"
-                />
-              </div>
-              <div className="flex justify-between border-t border-border/60 pt-4">
-                <Button type="button" variant="ghost" onClick={() => setPhase("preview")}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
-                </Button>
-                <Button type="submit" disabled={saveDataMutation.isPending} className="gap-2">
-                  {saveDataMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          <Panel>
+            <SubStepper current={subStep} onSelect={setSubStep} />
+          </Panel>
+          <Panel>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit((v) => saveDataMutation.mutate(v))}
+                className="space-y-5"
+              >
+                <div>
+                  <h3 className="text-base font-semibold">
+                    {SUB_STEPS[subStep].title}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {SUB_STEPS[subStep].description}
+                  </p>
+                </div>
+
+                {subStep === 0 && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TF form={form} name="birth_date" label="Geburtsdatum" type="date" placeholder="TT.MM.JJJJ" />
+                    <TF form={form} name="birth_place" label="Geburtsort" placeholder="z.B. Berlin" />
+                    <TF form={form} name="nationality" label="Nationalität" placeholder="z.B. Deutsch" />
+                    <TF form={form} name="marital_status" label="Familienstand" placeholder="z.B. ledig, verheiratet" />
+                  </div>
+                )}
+
+                {subStep === 1 && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TF form={form} name="iban" label="IBAN" placeholder="DE00 0000 0000 0000 0000 00" className="md:col-span-2" />
+                    <TF form={form} name="bic" label="BIC" placeholder="z.B. DEUTDEFFXXX" />
+                    <TF form={form} name="bank_name" label="Bank" placeholder="z.B. Deutsche Bank" />
+                    <TF form={form} name="tax_id" label="Steuer-ID" placeholder="11-stellige Steuer-ID" className="md:col-span-2" />
+                  </div>
+                )}
+
+                {subStep === 2 && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TF form={form} name="social_security_number" label="SV-Nummer" placeholder="z.B. 12 345678 A 901" />
+                    <TF form={form} name="health_insurance" label="Krankenkasse" placeholder="z.B. TK, AOK, Barmer" />
+                  </div>
+                )}
+
+                <div className="flex justify-between border-t border-border/60 pt-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      if (subStep === 0) setPhase("preview");
+                      else setSubStep((s) => (s - 1) as 0 | 1 | 2);
+                    }}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
+                  </Button>
+                  {subStep < 2 ? (
+                    <Button
+                      type="button"
+                      className="gap-2"
+                      onClick={async () => {
+                        const ok = await form.trigger(SUB_STEPS[subStep].fields);
+                        if (ok) setSubStep((s) => (s + 1) as 0 | 1 | 2);
+                      }}
+                    >
+                      Weiter <ArrowRight className="h-4 w-4" />
+                    </Button>
                   ) : (
-                    <ArrowRight className="h-4 w-4" />
+                    <Button type="submit" disabled={saveDataMutation.isPending} className="gap-2">
+                      {saveDataMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4" />
+                      )}
+                      Speichern & signieren
+                    </Button>
                   )}
-                  Speichern & weiter
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </Panel>
+                </div>
+              </form>
+            </Form>
+          </Panel>
+        </div>
       )}
 
       {phase === "sign" && (
