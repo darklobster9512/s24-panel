@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { PhoneCall, Clock, StickyNote, Users, PhoneMissed, PhoneIncoming, PhoneOutgoing } from "lucide-react";
 import { PageHeader, Panel, StatCard, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Badge } from "@/components/ui/badge";
@@ -38,58 +38,35 @@ export default function Cockpit() {
   const { clients, isAssigned, logoUrls, ids: assignedIds } = useAssignedClients();
   const { user } = useAuth();
 
-  const [firstName, setFirstName] = useState<string>("");
-  const [employeeId, setEmployeeId] = useState<string | null>(null);
-  const [callsToday, setCallsToday] = useState<number | null>(null);
-  const [callsYesterday, setCallsYesterday] = useState<number | null>(null);
-  const [avgToday, setAvgToday] = useState<number | null>(null);
-  const [avgYesterday, setAvgYesterday] = useState<number | null>(null);
-  const [openNotes, setOpenNotes] = useState<number | null>(null);
-  const [recent, setRecent] = useState<RecentCall[]>([]);
-
-  // Mitarbeiter-Profil laden
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
+  const { data: profile } = useSuspenseQuery({
+    queryKey: ["mitarbeiter-profile", user?.id],
+    queryFn: async () => {
+      if (!user) return { firstName: "", employeeId: null as string | null };
       const { data: emp } = await supabase
         .from("employees")
         .select("id, first_name, last_name")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (cancelled) return;
-      if (emp) {
-        setEmployeeId(emp.id);
-        setFirstName(emp.first_name ?? "");
-      }
-      if (!emp?.first_name) {
+      let firstName = emp?.first_name ?? "";
+      if (!firstName) {
         const { data: prof } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("id", user.id)
           .maybeSingle();
-        if (cancelled) return;
-        if (prof?.full_name) setFirstName(prof.full_name.split(" ")[0]);
-        else setFirstName(user.email?.split("@")[0] ?? "");
+        if (prof?.full_name) firstName = prof.full_name.split(" ")[0];
+        else firstName = user.email?.split("@")[0] ?? "";
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+      return { firstName, employeeId: emp?.id ?? null };
+    },
+  });
 
-  // KPIs + letzte Anrufe
-  useEffect(() => {
-    if (assignedIds.length === 0) {
-      setCallsToday(0);
-      setCallsYesterday(0);
-      setAvgToday(0);
-      setAvgYesterday(0);
-      setRecent([]);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
+  const { data: stats } = useSuspenseQuery({
+    queryKey: ["mitarbeiter-cockpit-stats", assignedIds.join(",")],
+    queryFn: async () => {
+      if (assignedIds.length === 0) {
+        return { callsToday: 0, callsYesterday: 0, avgToday: 0, avgYesterday: 0, recent: [] as RecentCall[] };
+      }
       const todayStart = startOfDay(0);
       const yStart = startOfDay(-1);
 
@@ -113,11 +90,6 @@ export default function Cockpit() {
           .limit(6),
       ]);
 
-      if (cancelled) return;
-
-      setCallsToday(todayRows?.length ?? 0);
-      setCallsYesterday(yRows?.length ?? 0);
-
       const avg = (rows: any[] | null | undefined) => {
         if (!rows || rows.length === 0) return 0;
         const durations = rows
@@ -126,11 +98,13 @@ export default function Cockpit() {
         if (durations.length === 0) return 0;
         return Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
       };
-      setAvgToday(avg(todayRows));
-      setAvgYesterday(avg(yRows));
 
-      setRecent(
-        (recentRows ?? []).map((r) => ({
+      return {
+        callsToday: todayRows?.length ?? 0,
+        callsYesterday: yRows?.length ?? 0,
+        avgToday: avg(todayRows),
+        avgYesterday: avg(yRows),
+        recent: (recentRows ?? []).map((r) => ({
           id: r.id,
           client_id: r.client_id,
           caller_name: r.caller_name,
@@ -142,37 +116,30 @@ export default function Cockpit() {
           ended_at: r.ended_at,
           duration: durationOf(r.started_at, r.ended_at),
         })),
-      );
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [assignedIds.join(",")]);
+      };
+    },
+  });
 
-  // Offene Notizen (Rückruf gewünscht)
-  useEffect(() => {
-    if (!employeeId) return;
-    let cancelled = false;
-    (async () => {
+  const { data: openNotes } = useSuspenseQuery({
+    queryKey: ["mitarbeiter-open-notes", profile.employeeId],
+    queryFn: async () => {
+      if (!profile.employeeId) return 0;
       const { count } = await supabase
         .from("call_notes")
         .select("id", { count: "exact", head: true })
-        .eq("employee_id", employeeId)
+        .eq("employee_id", profile.employeeId)
         .eq("rueckruf_gewuenscht", true);
-      if (!cancelled) setOpenNotes(count ?? 0);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [employeeId]);
+      return count ?? 0;
+    },
+  });
 
-  const callsDelta =
-    callsToday !== null && callsYesterday !== null
-      ? `${callsToday - callsYesterday >= 0 ? "+" : ""}${callsToday - callsYesterday} vs. gestern`
-      : undefined;
+  const { firstName } = profile;
+  const { callsToday, callsYesterday, avgToday, avgYesterday, recent } = stats;
+
+  const callsDelta = `${callsToday - callsYesterday >= 0 ? "+" : ""}${callsToday - callsYesterday} vs. gestern`;
 
   const avgDelta = (() => {
-    if (avgToday === null || avgYesterday === null || avgYesterday === 0) return undefined;
+    if (avgYesterday === 0) return undefined;
     const diff = avgToday - avgYesterday;
     const sign = diff >= 0 ? "+" : "-";
     return `${sign}${fmtDauer(Math.abs(diff))} vs. gestern`;
@@ -188,19 +155,19 @@ export default function Cockpit() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Anrufe heute"
-          value={callsToday === null ? "—" : String(callsToday)}
+          value={String(callsToday)}
           delta={callsDelta}
           icon={<PhoneCall className="h-4 w-4" />}
         />
         <StatCard
           label="Ø Gesprächszeit"
-          value={avgToday === null ? "—" : fmtDauer(avgToday) === "—" ? "0:00" : fmtDauer(avgToday)}
+          value={fmtDauer(avgToday) === "—" ? "0:00" : fmtDauer(avgToday)}
           delta={avgDelta}
           icon={<Clock className="h-4 w-4" />}
         />
         <StatCard
           label="Offene Rückrufe"
-          value={openNotes === null ? "—" : String(openNotes)}
+          value={String(openNotes)}
           icon={<StickyNote className="h-4 w-4" />}
         />
         <StatCard label="Zugewiesene Kunden" value={String(clients.length)} icon={<Users className="h-4 w-4" />} />
