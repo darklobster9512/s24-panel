@@ -1,38 +1,49 @@
-## /superadmin/anrufe an Supabase anbinden
+## /superadmin/notizen an Supabase anbinden (Tabellenansicht)
 
-Die Seite zeigt aktuell Mock-Daten. Ziel: alle Anrufe aus `sipgate_calls` als globales Log für Superadmin darstellen, mit Filter, Suche und Status.
+Ziel: `src/pages/superadmin/Notizen.tsx` von Mockdaten auf Live-Daten aus `call_notes` umstellen, als kompakte Tabelle statt Cards, analog zum Stil von `/superadmin/anrufe`.
 
-### 1. RLS / Zugriff
+### 1. Datenabruf
 
-`sipgate_calls` hat bereits RLS. Sicherstellen (bzw. ergänzen, falls fehlt), dass Superadmin (`has_role(auth.uid(), 'superadmin')`) alle Zeilen lesen darf. Keine Schemaänderung an Spalten nötig — die Tabelle enthält bereits: `direction`, `from_number`, `to_number`, `client_id`, `answered_by_employee_id`, `status`, `caller_name`, `started_at`, `answered_at`, `ended_at`.
-
-### 2. Datenabruf
-
-Neuer Hook / Query in `src/pages/superadmin/Anrufe.tsx`:
-
-- Select aus `sipgate_calls` mit Joins:
+Query in `Notizen.tsx`:
+- Select aus `call_notes` mit Joins:
   - `clients (id, company_name, logo_path)` über `client_id`
-  - `employees (id, first_name, last_name)` über `answered_by_employee_id` (fallback `handled_by_employee_id`)
-- Sortierung `started_at desc`, initial Limit 200.
-- Realtime-Subscription analog `useLiveCalls`, damit neue Anrufe live auftauchen (optional, aber konsistent).
+  - `employees (id, first_name, last_name)` über `employee_id`
+- Sortierung `created_at desc`, Limit 500.
+- Superadmin-RLS ist bereits vorhanden (Vollzugriff).
 
-### 3. UI-Anpassungen in `Anrufe.tsx`
+### 2. Tabellen-UI
 
-- Mock-Array entfernen, echte Daten rendern.
-- Spalten: Zeit (formatiert `dd.MM. HH:mm`), Richtung-Icon (in/out/missed anhand `direction` + `status`), Kunde (Firmenname oder `— Unbekannt —` wenn `client_id` null), Mitarbeiter (Vor-/Nachname oder „—"), Dauer (aus `answered_at`/`ended_at` berechnet, `mm:ss`), Status-Badge (`ringing`/`answered`/`ended`/`missed` mit passenden Varianten und Farben).
-- Suche (bestehendes Input): client-seitig über Nummer, Kundenname, Mitarbeitername.
-- Filter-Buttons als funktionsfähige Dropdowns:
-  - **Zeitraum**: heute / 7 Tage / 30 Tage / alle
-  - **Kunde**: aus geladenen `clients`
-  - **Mitarbeiter**: aus geladenen `employees`
-  - **Richtung**: in / out / verpasst
-- Leerer Zustand + Ladezustand.
-- CSV-Export-Button: aktuell ohne Funktion lassen (nur UI) oder simplen Client-Export der aktuellen Filter — sag Bescheid, was du willst; ich würde einfachen Client-CSV-Export machen.
+Spalten (Grid-Layout wie in `Anrufe.tsx` / `Abrechnung.tsx`):
 
-### 4. Nicht enthalten
+| Zeit | Kunde | Mitarbeiter | Anrufer | Anliegen (truncate) | Kategorie | Priorität | Rückruf |
 
-- Kein Detail-Drawer pro Anruf (kann in einem späteren Schritt kommen).
-- Keine Verknüpfung zu Notizen in dieser Ansicht.
-- Keine Änderungen an der Webhook-Edge-Function.
+- Zeit: `dd.MM. HH:mm` aus `created_at`
+- Kunde: Firmenname (+ kleines Logo optional), sonst „—"
+- Mitarbeiter: `first_name last_name` oder „—"
+- Anrufer: `anrufer_name` · monospaced `anrufer_nummer`
+- Anliegen: 1-zeilig truncate, voller Text via `title`-Tooltip
+- Kategorie: Badge (secondary)
+- Priorität: Badge (hoch = destructive, normal = outline, niedrig = muted)
+- Rückruf: „Ja · {zeit}" Badge wenn `rueckruf_gewuenscht`, sonst „—"
 
-Sag Bescheid, ob CSV-Export gleich mit rein soll oder erst später.
+### 3. Filter & Suche
+
+Toolbar über der Tabelle:
+- Suche (client-seitig): Anrufer-Name/-Nummer, Anliegen, Kundenname, Mitarbeitername
+- Kategorie-Select: Alle / Rückruf / Termin / Info / Beschwerde / Weiterleitung
+- Priorität-Select: Alle / hoch / normal / niedrig
+- Kunde-Select: aus geladenen Kunden
+- Mitarbeiter-Select: aus geladenen Mitarbeitern
+- Zeitraum-Select: heute / 7 Tage / 30 Tage / alle
+
+### 4. States
+
+- Ladezustand: „Lädt…"
+- Leerer Zustand: „Keine Notizen gefunden."
+
+### 5. Nicht enthalten
+
+- Kein Detail-Drawer / Bearbeitung (später).
+- Kein CSV-Export (kann bei Bedarf analog zu Anrufe nachgezogen werden — sag Bescheid).
+- Keine Realtime-Subscription.
+- Keine Schemaänderung.
