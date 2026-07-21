@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { fmtDauer } from "@/lib/mitarbeiter-mock";
 
 const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"] as const;
@@ -24,7 +26,9 @@ const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"]
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
   const { clients, byId, logoUrls } = useAssignedClients();
+  const { user } = useAuth();
   const preselectedId = params.get("client") ?? "";
+  const callId = params.get("call");
 
   const [clientId, setClientId] = useState(preselectedId);
   const [running, setRunning] = useState(false);
@@ -45,6 +49,46 @@ export default function Erfassen() {
   useEffect(() => {
     if (preselectedId) setClientId(preselectedId);
   }, [preselectedId]);
+
+  // Prefill from a live sipgate call
+  useEffect(() => {
+    if (!callId || !user) return;
+    let cancelled = false;
+    (async () => {
+      const { data: call, error } = await supabase
+        .from("sipgate_calls")
+        .select("*")
+        .eq("id", callId)
+        .maybeSingle();
+      if (cancelled || error || !call) return;
+
+      if (call.client_id) setClientId(call.client_id);
+      if (call.from_number) setAnruferNummer(call.from_number);
+      if (call.caller_name) setAnruferName(call.caller_name);
+
+      const baseTime = call.answered_at ?? call.started_at;
+      if (baseTime && (call.status === "ringing" || call.status === "answered")) {
+        setStart(new Date(baseTime).getTime());
+        setRunning(true);
+      }
+
+      // Claim the call as handler
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (emp?.id) {
+        await supabase
+          .from("sipgate_calls")
+          .update({ handled_by_employee_id: emp.id })
+          .eq("id", callId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [callId, user]);
 
   useEffect(() => {
     if (!running) return;
