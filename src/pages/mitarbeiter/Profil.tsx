@@ -75,68 +75,64 @@ export default function Profil() {
     <>
       <PageHeader title="Profil & Vertrag" subtitle="Deine Stammdaten und Vertragsinformationen." />
 
-      {(() => {
-        const _loading = false;
-        return _loading ? null : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Panel title="Persönliche Daten">
-            <Row label="Name" value={fullName} />
-            <Row label="Login E-Mail" value={employee?.login_email ?? user?.email ?? ""} />
-            <Row label="Private E-Mail" value={employee?.personal_email ?? ""} />
-            <Row label="Telefon" value={employee?.personal_phone ?? ""} />
-            <Row label="Rolle" value="Mitarbeiter" />
-          </Panel>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Persönliche Daten">
+          <Row label="Name" value={fullName} />
+          <Row label="Login E-Mail" value={employee?.login_email ?? user?.email ?? ""} />
+          <Row label="Private E-Mail" value={employee?.personal_email ?? ""} />
+          <Row label="Telefon" value={employee?.personal_phone ?? ""} />
+          <Row label="Rolle" value="Mitarbeiter" />
+        </Panel>
 
-          <Panel title="Vertrag">
-            <Row label="Vertragsart" value={employee?.contract_type ?? ""} />
-            <Row label="Startdatum" value={formatDate(employee?.start_date ?? null)} />
-            <Row label="Status" value="Aktiv" />
-          </Panel>
+        <Panel title="Vertrag">
+          <Row label="Vertragsart" value={employee?.contract_type ?? ""} />
+          <Row label="Startdatum" value={formatDate(employee?.start_date ?? null)} />
+          <Row label="Status" value="Aktiv" />
+        </Panel>
 
-          {contract && (
-            <Panel className="lg:col-span-2">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/15 text-primary">
-                    <FileSignature className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold">Arbeitsvertrag</h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {contract.status === "pending_employee" &&
-                        "Bitte fülle deinen Arbeitsvertrag aus und unterschreibe ihn."}
-                      {contract.status === "pending_admin" &&
-                        "Wartet auf Bestätigung durch das Management."}
-                      {contract.status === "completed" &&
-                        "Dein finaler Arbeitsvertrag steht zum Download bereit."}
-                    </p>
-                  </div>
+        {contract && (
+          <Panel className="lg:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/15 text-primary">
+                  <FileSignature className="h-5 w-5" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {contract.status === "pending_employee" && "Offen"}
-                    {contract.status === "pending_admin" && "In Prüfung"}
-                    {contract.status === "completed" && "Abgeschlossen"}
-                  </Badge>
-                  {contract.status === "completed" && pdfUrl ? (
-                    <Button asChild size="sm" className="gap-2">
-                      <a href={pdfUrl} target="_blank" rel="noreferrer">
-                        <Download className="h-4 w-4" /> Herunterladen
-                      </a>
-                    </Button>
-                  ) : contract.status !== "completed" ? (
-                    <Button asChild size="sm" className="gap-2">
-                      <Link to="/mitarbeiter/arbeitsvertrag">
-                        <FileSignature className="h-4 w-4" /> Öffnen
-                      </Link>
-                    </Button>
-                  ) : null}
+                <div>
+                  <h3 className="text-sm font-semibold">Arbeitsvertrag</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {contract.status === "pending_employee" &&
+                      "Bitte fülle deinen Arbeitsvertrag aus und unterschreibe ihn."}
+                    {contract.status === "pending_admin" &&
+                      "Wartet auf Bestätigung durch das Management."}
+                    {contract.status === "completed" &&
+                      "Dein finaler Arbeitsvertrag steht zum Download bereit."}
+                  </p>
                 </div>
               </div>
-            </Panel>
-          )}
-        </div>
-      )}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {contract.status === "pending_employee" && "Offen"}
+                  {contract.status === "pending_admin" && "In Prüfung"}
+                  {contract.status === "completed" && "Abgeschlossen"}
+                </Badge>
+                {contract.status === "completed" && pdfUrl ? (
+                  <Button asChild size="sm" className="gap-2">
+                    <a href={pdfUrl} target="_blank" rel="noreferrer">
+                      <Download className="h-4 w-4" /> Herunterladen
+                    </a>
+                  </Button>
+                ) : contract.status !== "completed" ? (
+                  <Button asChild size="sm" className="gap-2">
+                    <Link to="/mitarbeiter/arbeitsvertrag">
+                      <FileSignature className="h-4 w-4" /> Öffnen
+                    </Link>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </Panel>
+        )}
+      </div>
     </>
   );
 }
