@@ -1,35 +1,32 @@
-## Ziel
-Die sipgate-Fehler „Answer/Hangup callback was skipped because no callback URL was configured“ beheben, damit `answer`- und `hangup`-Events zuverlässig ankommen und `/mitarbeiter/live` den Status korrekt aktualisiert.
+Du hast recht, das muss jetzt sauber gelöst werden. Ich habe den aktuellen Code und die sipgate-Doku geprüft: Die Funktion antwortet zwar mit `onAnswer` und `onHangup`, aber die Callback-URLs enthalten zusätzlich `&callback=answer/hangup`. Genau diesen unnötigen Zusatz entferne ich, damit sipgate eine möglichst einfache, dokumentationsnahe Callback-URL bekommt.
 
-## Aktueller Stand aus Prüfung
-- Die Function antwortet aktuell bei `newCall` mit:
-  `<Response onAnswer="https://.../functions/v1/sipgate-webhook?..." onHangup="https://.../functions/v1/sipgate-webhook?..."></Response>`
-- Die Logs zeigen nur `newCall`-Requests, keine echten `answer`-/`hangup`-Requests.
-- Die sipgate-Doku zeigt die Follow-up-Beispiele als self-closing Root-Tag:
-  `<Response onAnswer="http://.../answer" />` und `<Response onHangup="http://.../hangup" />`
+Plan:
 
-## Umsetzung
-1. **XML-Response wieder strikt nach sipgate-Beispiel bauen**
-   - Für `newCall` self-closing Root-Tag nutzen:
-     `<Response onAnswer="..." onHangup="..." />`
-   - Content-Type bei `application/xml` lassen.
-   - XML-Prolog beibehalten.
+1. Webhook-XML vereinfachen
+   - `onAnswer` und `onHangup` zeigen beide auf dieselbe saubere URL:
+     `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=...`
+   - Kein zusätzliches `&callback=...` mehr in den XML-Attributen.
+   - Die Funktion unterscheidet Answer/Hangup ausschließlich über das von sipgate gesendete `event`-Feld, wie in der Doku beschrieben.
 
-2. **Separate Callback-URLs einführen**
-   - `onAnswer` zeigt auf dieselbe Edge Function, aber mit zusätzlichem Query-Parameter `callback=answer`.
-   - `onHangup` zeigt auf dieselbe Edge Function, aber mit `callback=hangup`.
-   - Das macht die URLs für sipgate eindeutiger und erleichtert Logs/Debugging.
+2. XML-Ausgabe exakt dokumentationsnah machen
+   - Response bleibt:
+     ```xml
+     <?xml version="1.0" encoding="UTF-8"?>
+     <Response onAnswer="..." onHangup="..." />
+     ```
+   - `Content-Type: application/xml` bleibt gesetzt.
+   - Keine zusätzlichen XML-Kommentare, keine extra Attribute, keine Spielereien.
 
-3. **Event-Fallback ergänzen**
-   - Falls sipgate beim Follow-up-POST aus irgendeinem Grund kein `event` mitsendet, wird `callback=answer` bzw. `callback=hangup` als Fallback genutzt.
-   - Bestehende normale `event=answer`/`event=hangup` Logik bleibt unverändert.
+3. Webhook robuster machen
+   - `event=newCall`, `event=answer`, `event=hangup` werden case-insensitive verarbeitet.
+   - `callId` wird für alle Events gleich behandelt.
+   - Hangup beendet auch dann den Call, wenn vorher kein Answer angekommen ist.
 
-4. **Direkt deployed testen**
-   - Function deployen.
-   - Mit Edge-Function-Testcalls prüfen, dass `newCall` eine XML mit beiden Callback-URLs ausliefert.
-   - Simulierte `answer`- und `hangup`-POSTs gegen die neuen Callback-URLs testen.
+4. Live-Status bereinigen
+   - Nach erfolgreichem Fix markiere ich aktuell hängende `ringing`/`answered` Calls als beendet/missed, damit `/mitarbeiter/live` nicht weiter alten Müll zeigt.
 
-5. **Danach echter sipgate-Test**
-   - Du behältst im sipgate-Panel weiterhin nur diese URL als Haupt-WebHook:
-     `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=DEIN_TOKEN`
-   - Nach einem echten Testanruf prüfen wir die Logs auf `event=answer` und `event=hangup`.
+5. Verifikation
+   - Ich teste die Edge Function mit simulierten `newCall`, `answer` und `hangup` POSTs.
+   - Danach prüfe ich per Datenbankabfrage, ob Status korrekt von `ringing` zu `answered` zu `ended/missed` wechselt.
+   - Dann brauchst du nur noch genau diese URL bei sipgate hinterlegt lassen:
+     `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=...`

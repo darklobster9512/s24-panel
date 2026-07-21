@@ -73,11 +73,10 @@ function xmlResponse(body: string, status = 200): Response {
 
 const EMPTY_RESPONSE_XML = "<Response/>";
 
-function getPublicCallbackUrl(callback?: "answer" | "hangup"): string {
+function getPublicCallbackUrl(): string {
   const baseUrl = SUPABASE_URL.replace(/\/+$/, "");
   const callbackUrl = new URL(`${baseUrl}/functions/v1/sipgate-webhook`);
   callbackUrl.searchParams.set("token", SIPGATE_WEBHOOK_TOKEN);
-  if (callback) callbackUrl.searchParams.set("callback", callback);
   return callbackUrl.toString();
 }
 
@@ -102,8 +101,7 @@ Deno.serve(async (req) => {
 
   // Register the public Supabase Edge Function URL, not the forwarded/internal
   // request path. sipgate posts follow-up answer/hangup events to these URLs.
-  const answerCallbackUrl = getPublicCallbackUrl("answer");
-  const hangupCallbackUrl = getPublicCallbackUrl("hangup");
+  const callbackUrl = getPublicCallbackUrl();
 
   if (req.method !== "POST") {
     console.log("[sipgate-webhook] non-POST request", { method: req.method });
@@ -134,18 +132,13 @@ Deno.serve(async (req) => {
   }
 
   const fields = parseFields(params);
-  const callbackFallback = url.searchParams.get("callback")?.toLowerCase();
   const eventFromBody = (fields.event ?? "").toLowerCase();
-  const event = eventFromBody ||
-    (callbackFallback === "answer" || callbackFallback === "hangup"
-      ? callbackFallback
-      : "");
+  const event = eventFromBody;
   const callId = fields.callId;
   const origCallId = fields.origCallId ?? fields.originalCallId ?? null;
   console.log("[sipgate-webhook] parsed", {
     event,
     eventFromBody,
-    callbackFallback,
     callId,
     origCallId,
     direction: fields.direction,
@@ -192,7 +185,7 @@ Deno.serve(async (req) => {
         error,
       });
     } else if (event === "answer") {
-      const sipgateUser = fields.user ?? fields["user[]"] ?? null;
+      const sipgateUser = fields.userId ?? fields["userId[]"] ?? fields.fullUserId ?? fields["fullUserId[]"] ?? null;
       const empId = await lookupEmployeeBySipgateUser(sipgateUser);
       const { data, error } = await admin
         .from("sipgate_calls")
@@ -267,13 +260,13 @@ Deno.serve(async (req) => {
   // For newCall we MUST subscribe to follow-up events via onAnswer/onHangup
   // attributes on the <Response> tag, otherwise sipgate never sends answer/hangup.
   if (event === "newcall") {
-    const escapedAnswerCallbackUrl = escapeXmlAttribute(answerCallbackUrl);
-    const escapedHangupCallbackUrl = escapeXmlAttribute(hangupCallbackUrl);
+    const escapedAnswerCallbackUrl = escapeXmlAttribute(callbackUrl);
+    const escapedHangupCallbackUrl = escapeXmlAttribute(callbackUrl);
     const attrs = `onAnswer="${escapedAnswerCallbackUrl}" onHangup="${escapedHangupCallbackUrl}"`;
     const body = `<Response ${attrs} />`;
     console.log("[sipgate-webhook] newCall response", {
-      hasAnswerCallbackUrl: Boolean(answerCallbackUrl),
-      hasHangupCallbackUrl: Boolean(hangupCallbackUrl),
+      hasAnswerCallbackUrl: Boolean(callbackUrl),
+      hasHangupCallbackUrl: Boolean(callbackUrl),
     });
     return xmlResponse(body);
   }
