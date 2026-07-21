@@ -1,28 +1,33 @@
-# Badge für offene Arbeitsverträge in Superadmin-Sidebar
+# Fix: „unsupported color function oklab" beim PDF-Generieren
 
-## Ziel
-Im Superadmin-Sidebar-Menüpunkt **Arbeitsverträge** soll ein kleiner Badge mit der Anzahl der offenen Arbeitsverträge angezeigt werden — also Verträge mit Status `pending_admin` (warten auf Bestätigung).
+## Ursache
 
-## Datei
-- `src/components/superadmin/AppSidebar.tsx`
+`html2canvas` (v1.x) kann moderne CSS-Farbfunktionen wie `oklab()` / `oklch()` nicht parsen. Unser Design-System (Tailwind v4 Tokens in `src/styles.css`) verwendet aber genau diese Farbfunktionen. Sobald in der Vorschau ein Element mit einer solchen Farbe gerendert wird (Border, Text, Hintergrund), bricht der Canvas-Rendervorgang mit dieser Meldung ab.
 
-## Umsetzung
+## Lösung
 
-1. **Datenabfrage**
-   - In `SuperadminSidebar` eine `useQuery` hinzufügen, die von `employee_contracts` die Anzahl der Zeilen mit `status = 'pending_admin'` abruft.
-   - Query-Key: `["pending-contracts-count"]`.
+Drop-in-Ersatz durch `html2canvas-pro` – ein aktiv gepflegter Fork mit exakt derselben API, der `oklab`, `oklch`, `color()` und `lab()` unterstützt.
 
-2. **Badge-Anzeige**
-   - Die `finItems`-Definition erweitern, sodass einzelne Items ein optionales `badge` (Zahl oder null) erhalten können.
-   - Im `renderGroup`-Loop rechts neben dem Titel ein kleines Badge rendern, wenn `item.badge > 0`.
-   - Stil: kompaktes `Badge` (z. B. shadcn `Badge` oder eigenes `span`) in Akzentfarbe/Primary, abgerundet, mit der Zahl.
-   - Im eingeklappten Sidebar-Zustand (`collapsed`) wird das Badge ausgeblendet, um Platz zu sparen.
+### Änderungen
 
-3. **RLS-Prüfung**
-   - Vor der Umsetzung prüfen, ob die aktuellen RLS-Policies auf `employee_contracts` dem Superadmin das Lesen aller Einträge erlauben. Falls nicht, wird eine passende Policy ergänzt (z. B. über `public.has_role(auth.uid(), 'superadmin')`).
+1. **Dependency**
+   - `html2canvas-pro` hinzufügen
+   - `html2canvas` entfernen (nicht mehr benötigt)
 
-4. **Reaktivität**
-   - Die Anzahl aktualisiert sich automatisch, wenn sich der Status eines Vertrags ändert (z. B. durch Admin-Bestätigung oder Mitarbeiter-Signatur), weil die Query-Invalidierung in den bestehenden Mutations bereits erfolgt.
+2. **`src/pages/superadmin/ArbeitsvertragDetail.tsx`**
+   - Import umstellen:
+     ```ts
+     import html2canvas from "html2canvas-pro";
+     ```
+   - Rest des `confirmMutation`-Codes bleibt unverändert (API ist identisch: `scale`, `backgroundColor`, `useCORS`).
 
-## Ergebnis
-Der Superadmin sieht auf einen Blick, wie viele Arbeitsverträge noch auf seine Bestätigung warten, ohne die Seite besuchen zu müssen.
+## Warum kein manueller Farb-Override?
+
+Alternativ könnte man das Preview-DOM vor dem Rendern in einen Container mit forcierten sRGB-Farben klonen, aber das würde bei jedem neuen Token wieder brechen. `html2canvas-pro` löst das Problem strukturell und dauerhaft.
+
+## Verifikation
+
+- `/superadmin/arbeitsvertraege/:id` öffnen
+- Auf „Bestätigen und PDF generieren" klicken
+- PDF sollte erzeugt, hochgeladen und der Vertrag auf `completed` gesetzt werden
+- Kein Konsolen-Error mehr
