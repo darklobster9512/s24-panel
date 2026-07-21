@@ -1,16 +1,40 @@
-## Anrufer-Gedächtnis: Scoping pro Kunde bestätigen
+````text
+Ziel
+sipgate soll die `onAnswer` und `onHangup` Callback-URLs aus der newCall-Antwort wieder akzeptieren.
 
-Das ist bereits so umgesetzt — ich stelle es hier nochmal klar und prüfe, dass nichts leakt.
+Bestätigte Ursache
+sipgate zeigt beim erfolgreichen `newCall`:
+"Response does not have content type application/xml"
 
-### Aktueller Stand
-- Tabelle `caller_contacts` hat `UNIQUE (client_id, phone_number)` — Einträge sind an den jeweiligen Kunden gebunden.
-- Beim Speichern in `Erfassen.tsx` wird `upsert` mit **beiden** Feldern (`client_id` + normalisierte `phone_number`) gemacht.
-- Beim Autofill wird per `.eq('client_id', ...)` **und** `.eq('phone_number', ...)` gesucht.
+Aktuell antwortet die Edge Function mit:
+Content-Type: text/xml; charset=utf-8
 
-### Was ich zusätzlich absichere
-1. Autofill-Query in `Erfassen.tsx` reviewen und sicherstellen, dass **niemals** ohne `client_id` gefiltert wird (kein Fallback über alle Kunden).
-2. RLS-Policy auf `caller_contacts` prüfen, dass ein Mitarbeiter nur Einträge der ihm zugewiesenen Kunden lesen kann — sonst könnte ein anderer Kunde theoretisch Daten sehen.
-3. „Bekannter Anrufer"-Badge nur zeigen, wenn der Treffer wirklich zum aktuellen `client_id` gehört (Guard beim State-Setzen).
-4. Kurzer manueller Check: gleiche Nummer bei Kunde A speichern → bei Kunde B darf Name/E-Mail leer bleiben und kein Badge erscheinen.
+sipgate erwartet aber strikt:
+Content-Type: application/xml
 
-Keine Schema-Änderung nötig — nur Verifikation und ggf. kleine Guards im Frontend/RLS.
+Umsetzung
+1. In `supabase/functions/sipgate-webhook/index.ts` die XML-Antwort ändern:
+   - von `text/xml; charset=utf-8`
+   - auf `application/xml`
+
+2. Keepalive-Response unverändert lassen, weil sie nicht von sipgate verarbeitet wird.
+
+3. Optional minimal verbessern:
+   - `Content-Length` muss nicht gesetzt werden.
+   - XML-Body bleibt exakt gleich:
+     `<Response onAnswer="..." onHangup="..."></Response>`
+
+4. Edge Function deployen.
+
+5. Verifizieren:
+   - Test-newCall an die Function senden.
+   - Prüfen, dass Response `200 OK` und `Content-Type: application/xml` liefert.
+   - Danach echten Test-Anruf machen.
+   - Erwartung: sipgate zeigt keinen XML-Error mehr und sendet answer/hangup Events an denselben Webhook.
+
+Datei
+- `supabase/functions/sipgate-webhook/index.ts`
+
+Erfolgskriterium
+sipgate akzeptiert die Callback-URLs, und die Folgeevents `answer` und `hangup` erscheinen wieder in den Edge Function Logs.
+````
