@@ -781,6 +781,98 @@ function StepAnsprechpartner({ form }: { form: FR }) {
   );
 }
 
+function StepRufnummern({
+  phoneNumbers,
+  setPhoneNumbers,
+}: {
+  phoneNumbers: { id?: string; phone_number: string; label: string }[];
+  setPhoneNumbers: React.Dispatch<
+    React.SetStateAction<{ id?: string; phone_number: string; label: string }[]>
+  >;
+}) {
+  function addRow() {
+    setPhoneNumbers((prev) => [...prev, { phone_number: "", label: "" }]);
+  }
+  function updateRow(idx: number, patch: Partial<{ phone_number: string; label: string }>) {
+    setPhoneNumbers((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  }
+  function removeRow(idx: number) {
+    setPhoneNumbers((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-dashed border-border/60 bg-card/50 p-4 text-sm text-muted-foreground">
+        <div className="flex items-start gap-2">
+          <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div>
+            <p className="font-medium text-foreground">Zur automatischen Kunden-Erkennung</p>
+            <p className="mt-1 text-xs">
+              Trage alle Rufnummern ein, die im sipgate-Channel auf diesen Kunden geroutet
+              werden. Bei eingehenden Anrufen wird der Kunde anhand der angerufenen Nummer
+              erkannt. Format: <span className="font-mono">+49301234567</span> — 0-Vorwahl
+              wird automatisch normalisiert.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {phoneNumbers.length === 0 ? (
+        <div className="rounded-xl border border-border/60 bg-card/40 py-8 text-center text-sm text-muted-foreground">
+          Noch keine Rufnummern hinterlegt.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {phoneNumbers.map((row, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-1 gap-2 rounded-xl border border-border/60 bg-card p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Rufnummer
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="+49 30 12345678"
+                  value={row.phone_number}
+                  onChange={(e) => updateRow(idx, { phone_number: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Bezeichnung (optional)
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="z. B. Hauptnummer, Support"
+                  value={row.label}
+                  onChange={(e) => updateRow(idx, { label: e.target.value })}
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeRow(idx)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Button type="button" variant="outline" onClick={addRow} className="gap-2">
+        <Plus className="h-4 w-4" /> Rufnummer hinzufügen
+      </Button>
+    </div>
+  );
+}
+
 function StepKonfig({
   form,
   logoFile,
