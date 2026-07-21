@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Play, Square, Save, RotateCcw, PhoneCall, Info } from "lucide-react";
+import { Play, Square, Save, RotateCcw, PhoneCall, Info, Phone, Mail, Globe, MapPin, User, Hash, PhoneForwarded } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
@@ -259,7 +259,36 @@ export default function Erfassen() {
                   </div>
                 </div>
 
-                <div>
+                {(client.telefon || client.email || client.website || client.adresse) && (
+                  <div className="space-y-1.5 border-t border-border/60 pt-3 text-xs">
+                    {client.telefon && (
+                      <a href={`tel:${client.telefon}`} className="flex items-center gap-2 text-foreground hover:text-primary hover:underline">
+                        <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="font-mono">{client.telefon}</span>
+                      </a>
+                    )}
+                    {client.email && (
+                      <a href={`mailto:${client.email}`} className="flex items-center gap-2 text-foreground hover:text-primary hover:underline">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{client.email}</span>
+                      </a>
+                    )}
+                    {client.website && (
+                      <a href={client.website.startsWith("http") ? client.website : `https://${client.website}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-foreground hover:text-primary hover:underline">
+                        <Globe className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{client.website}</span>
+                      </a>
+                    )}
+                    {client.adresse && (
+                      <div className="flex items-start gap-2 text-foreground/90">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span>{client.adresse}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="border-t border-border/60 pt-3">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     Begrüßung
                   </div>
@@ -268,27 +297,58 @@ export default function Erfassen() {
                   </div>
                 </div>
 
-                <div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Firmeninhalt
+                {client.firmeninhalt && (
+                  <div className="border-t border-border/60 pt-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Firmeninhalt
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-foreground/80">
+                      {client.firmeninhalt}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-foreground/80">
-                    {client.firmeninhalt}
-                  </p>
+                )}
+
+                {(client.ansprechpartner || client.ansprechpartnerTel || client.ansprechpartnerEmail) && (
+                  <div className="border-t border-border/60 pt-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Ansprechpartner
+                    </div>
+                    <div className="mt-2 space-y-1.5 text-xs">
+                      {client.ansprechpartner && (
+                        <div className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="font-medium">{client.ansprechpartner}</span>
+                        </div>
+                      )}
+                      {client.ansprechpartnerTel && (
+                        <a href={`tel:${client.ansprechpartnerTel}`} className="flex items-center gap-2 text-foreground hover:text-primary hover:underline">
+                          <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="font-mono">{client.ansprechpartnerTel}</span>
+                        </a>
+                      )}
+                      {client.ansprechpartnerEmail && (
+                        <a href={`mailto:${client.ansprechpartnerEmail}`} className="flex items-center gap-2 text-foreground hover:text-primary hover:underline">
+                          <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{client.ansprechpartnerEmail}</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3 text-[11px]">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 ${client.weiterleitung ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                    <PhoneForwarded className="h-3 w-3" />
+                    Weiterleitung {client.weiterleitung ? "aktiv" : "inaktiv"}
+                  </span>
+                  {client.vatId && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 font-mono text-muted-foreground">
+                      <Hash className="h-3 w-3" />
+                      {client.vatId}
+                    </span>
+                  )}
                 </div>
 
-                <div className="rounded-lg border border-border/60 p-3 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Ansprechpartner</span>
-                    <span className="font-medium">{client.ansprechpartner}</span>
-                  </div>
-                  <div className="mt-1 flex justify-between">
-                    <span className="text-muted-foreground">Weiterleitung</span>
-                    <span className="font-mono">
-                      {client.weiterleitung ? "aktiv" : "—"}
-                    </span>
-                  </div>
-                </div>
               </div>
             )}
           </Panel>
