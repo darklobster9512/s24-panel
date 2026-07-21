@@ -84,7 +84,10 @@ function xmlResponse(body: string, status = 200): Response {
   console.log("[sipgate-webhook] xml response", { status, payload });
   return new Response(payload, {
     status,
-    headers: { "Content-Type": "application/xml" },
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
   });
 }
 
@@ -103,6 +106,46 @@ function escapeXmlAttribute(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function runInBackground(task: Promise<unknown>): void {
+  task.catch((error) => {
+    console.error("[sipgate-webhook] background task failed", error);
+  });
+
+  const edgeRuntime = (globalThis as unknown as {
+    EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void };
+  }).EdgeRuntime;
+
+  edgeRuntime?.waitUntil?.(task);
+}
+
+async function persistNewCall(fields: Record<string, string>, callId: string, direction: "in" | "out", fromNumber: string | null, toNumber: string | null) {
+  const clientId = await lookupClient(toNumber);
+  const { data, error } = await admin
+    .from("sipgate_calls")
+    .upsert(
+      {
+        sipgate_call_id: callId,
+        direction,
+        from_number: fromNumber,
+        to_number: toNumber,
+        client_id: clientId,
+        status: "ringing",
+        started_at: new Date().toISOString(),
+        caller_name: fields.callerName ?? fields.fromName ?? null,
+        raw_payload: fields,
+      },
+      { onConflict: "sipgate_call_id" },
+    )
+    .select();
+
+  console.log("[sipgate-webhook] newCall result", {
+    callId,
+    clientId,
+    rows: data?.length ?? 0,
+    error,
+  });
 }
 
 Deno.serve(async (req) => {
@@ -175,33 +218,24 @@ Deno.serve(async (req) => {
   const fromNumber = normalizeNumber(fields.from);
   const toNumber = normalizeNumber(fields.to);
 
+  // For newCall we MUST return onAnswer/onHangup immediately. Sipgate may skip
+  // follow-up callbacks if DB work delays the XML response.
+  if (event === "newcall") {
+    runInBackground(persistNewCall(fields, callId, direction, fromNumber, toNumber));
+
+    const escapedAnswerCallbackUrl = escapeXmlAttribute(callbackUrl);
+    const escapedHangupCallbackUrl = escapeXmlAttribute(callbackUrl);
+    const body = `<Response onAnswer="${escapedAnswerCallbackUrl}" onHangup="${escapedHangupCallbackUrl}"></Response>`;
+    console.log("[sipgate-webhook] newCall response", {
+      hasAnswerCallbackUrl: Boolean(callbackUrl),
+      hasHangupCallbackUrl: Boolean(callbackUrl),
+      fastPath: true,
+    });
+    return xmlResponse(body);
+  }
+
   try {
-    if (event === "newcall") {
-      const clientId = await lookupClient(toNumber);
-      const { data, error } = await admin
-        .from("sipgate_calls")
-        .upsert(
-          {
-            sipgate_call_id: callId,
-            direction,
-            from_number: fromNumber,
-            to_number: toNumber,
-            client_id: clientId,
-            status: "ringing",
-            started_at: new Date().toISOString(),
-            caller_name: fields.callerName ?? fields.fromName ?? null,
-            raw_payload: fields,
-          },
-          { onConflict: "sipgate_call_id" },
-        )
-        .select();
-      console.log("[sipgate-webhook] newCall result", {
-        callId,
-        clientId,
-        rows: data?.length ?? 0,
-        error,
-      });
-    } else if (event === "answer") {
+    if (event === "answer") {
       // Prefer fullUserId (globally unique), fallback to short userId, then name match
       const empId =
         (await lookupEmployeeBySipgateUser([
@@ -283,20 +317,6 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("[sipgate-webhook] handler error", e);
     return xmlResponse(EMPTY_RESPONSE_XML, 500);
-  }
-
-  // For newCall we MUST subscribe to follow-up events via onAnswer/onHangup
-  // attributes on the <Response> tag, otherwise sipgate never sends answer/hangup.
-  if (event === "newcall") {
-    const escapedAnswerCallbackUrl = escapeXmlAttribute(callbackUrl);
-    const escapedHangupCallbackUrl = escapeXmlAttribute(callbackUrl);
-    const attrs = `onAnswer="${escapedAnswerCallbackUrl}" onHangup="${escapedHangupCallbackUrl}"`;
-    const body = `<Response ${attrs} />`;
-    console.log("[sipgate-webhook] newCall response", {
-      hasAnswerCallbackUrl: Boolean(callbackUrl),
-      hasHangupCallbackUrl: Boolean(callbackUrl),
-    });
-    return xmlResponse(body);
   }
 
   return xmlResponse(EMPTY_RESPONSE_XML);
