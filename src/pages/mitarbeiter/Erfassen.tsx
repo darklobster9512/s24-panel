@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Play, Square, Save, RotateCcw, PhoneCall, Info, Phone, Mail, Globe, MapPin, User, Hash, PhoneForwarded } from "lucide-react";
+import { Play, Square, Save, RotateCcw, PhoneCall, Info, Phone, Mail, Globe, MapPin, User, PhoneForwarded } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
