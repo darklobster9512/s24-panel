@@ -1,40 +1,47 @@
-## Diagnose
+## Ziel
 
-Der Call von **16:42:30/16:42:31** ist bei der Edge Function angekommen und wurde mit **HTTP 200** beantwortet. Im Log steht auch korrekt:
+Der `newCall`-Webhook muss für sipgate extrem schnell eine gültige XML-Antwort liefern, damit `onAnswer` und `onHangup` zuverlässig registriert werden.
 
-```text
-<Response onAnswer="...sipgate-webhook?..." onHangup="...sipgate-webhook?..." />
-```
+## Bestätigter Ist-Zustand
 
-Der kritische Punkt: Die Function brauchte für diesen Request ca. **1499ms**. Aktuell macht `newCall` erst Datenbank-Operationen und gibt danach die XML-Callback-URLs zurück. Wenn sipgate die XML-Antwort zeitlich/inhaltlich nicht schnell genug akzeptiert, registriert sipgate keine `onAnswer`/`onHangup` Callback-URLs und zeigt dann genau diese Meldung.
+- Der aktuelle `newCall` um 16:59:27 ist in der Edge Function angekommen.
+- Die Datenbank wurde aktualisiert: der Call steht als `ringing` in `sipgate_calls`.
+- Die Function loggt zwar XML mit `onAnswer` und `onHangup`, aber sipgate meldet trotzdem `Timeout while requesting customer response`.
+- Direkter Test gegen die Function liefert XML korrekt zurück, aber die reale sipgate-Anfrage ist empfindlicher gegen Laufzeit/Response-Verhalten.
 
 ## Fix-Plan
 
-1. **`newCall` fast-path einbauen**
-   - Bei `event=newCall` sofort die XML-Antwort mit `onAnswer` und `onHangup` erzeugen.
-   - Keine Datenbank-Abfragen vor der XML-Antwort.
-   - Dadurch bekommt sipgate die Callback-URLs maximal schnell.
+1. **Ultra-Fast-Path für `newCall`**
+   - Bei `event=newCall` nur das Minimum tun:
+     - URL-Token prüfen
+     - Body lesen und `event/callId` minimal erkennen
+     - sofort XML zurückgeben
+   - Keine Datenbankarbeit, kein Client-Lookup, kein ausführliches Logging vor dem Return.
 
-2. **DB-Schreibarbeit nach hinten schieben**
-   - Das Speichern des neuen Calls (`sipgate_calls.upsert`) läuft im Hintergrund via `EdgeRuntime.waitUntil(...)`.
-   - Falls `waitUntil` nicht verfügbar ist, wird ein sicherer Fallback genutzt.
-   - Fehler beim Speichern werden geloggt, blockieren aber nie die sipgate XML-Antwort.
+2. **Logging vor dem Return massiv reduzieren**
+   - Die aktuellen `console.log`-Aufrufe vor dem XML-Return werden für `newCall` entfernt oder in den Hintergrund verschoben.
+   - Grund: Logs können in Edge Runtime die Antwort sichtbar verzögern, obwohl der Code logisch schon „fast-path“ ist.
 
-3. **XML robuster machen**
-   - `Content-Type` auf `application/xml; charset=utf-8` setzen.
-   - Zusätzlich `Cache-Control: no-store` setzen.
-   - XML minimal halten:
+3. **DB-Speicherung wirklich nachgelagert ausführen**
+   - `persistNewCall(...)` wird erst nach der XML-Antwort via `EdgeRuntime.waitUntil(...)` eingeplant.
+   - Falls `waitUntil` nicht greift, darf der Datenbankjob nicht den Response blockieren.
+   - Fehler werden nur im Hintergrund geloggt.
+
+4. **XML kompatibler machen**
+   - `Content-Type: text/xml; charset=utf-8` statt `application/xml`, weil manche Telefonie-Webhooks historisch `text/xml` erwarten.
+   - Kompakter Body ohne unnötige Antwort-Logs:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Response onAnswer="..." onHangup="..."></Response>
 ```
 
-4. **Answer/Hangup unverändert weiterverarbeiten**
-   - `answer` und `hangup` dürfen weiterhin DB-Updates machen, weil dort keine neuen Callback-URLs registriert werden müssen.
-   - Status-Mapping bleibt: `answer` -> intern `answered`, `hangup` -> intern `ended`/`missed`.
+5. **Answer/Hangup unverändert verarbeiten**
+   - `answer` und `hangup` können weiterhin DB-Updates machen.
+   - Zusätzlich wird dort akzeptiert, wenn sipgate Follow-up Events ohne Body-Event aber mit bekannten Feldern sendet.
 
-5. **Test danach**
-   - Deployed Edge Function direkt mit einem simulierten `newCall` testen.
-   - Prüfen, ob Antwort sofort XML mit beiden Callback-URLs enthält.
-   - Danach aktuellen Edge-Function-Log und HTTP-Latenz prüfen.
+6. **Nach dem Fix testen**
+   - Edge Function deployen.
+   - Direkten `newCall`-Request testen und Header/Body prüfen.
+   - Edge Logs prüfen: reale `newCall` Requests müssen mit sehr niedriger Laufzeit antworten.
+   - Hängende `ringing` Testcalls auf `missed` setzen, damit `/mitarbeiter/live` nicht falsch bleibt.
