@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -13,14 +13,14 @@ export type MyContract = {
 /** Loads the active arbeitsvertrag for the currently signed-in employee (if any). */
 export function useMyContract() {
   const { user, role } = useAuth();
-  return useSuspenseQuery<MyContract | null>({
-    queryKey: ["my-contract", user?.id ?? "anon", role],
+  return useQuery({
+    enabled: !!user && role === "mitarbeiter",
+    queryKey: ["my-contract", user?.id],
     queryFn: async () => {
-      if (!user || role !== "mitarbeiter") return null;
       const { data: emp } = await supabase
         .from("employees")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .maybeSingle();
       if (!emp) return null;
       const { data: ec } = await (supabase as any)
