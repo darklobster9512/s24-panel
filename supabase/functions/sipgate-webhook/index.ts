@@ -107,7 +107,7 @@ function xmlResponse(body: string, status = 200): Response {
   return new Response(payload, {
     status,
     headers: {
-      "Content-Type": "text/xml; charset=utf-8",
+      "Content-Type": "application/xml",
       "Cache-Control": "no-store",
     },
   });
