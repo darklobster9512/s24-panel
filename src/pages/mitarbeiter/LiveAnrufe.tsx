@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PhoneIncoming, Info, Radio, Loader2 } from "lucide-react";
+import { PhoneIncoming, Info, Radio } from "lucide-react";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ function useTicker() {
 export default function LiveAnrufe() {
   useTicker();
   const { byId, logoUrls } = useAssignedClients();
-  const { calls, loading } = useLiveCalls();
+  const { calls } = useLiveCalls();
 
   return (
     <>
@@ -45,13 +45,7 @@ export default function LiveAnrufe() {
         </p>
       </div>
 
-      {loading ? (
-        <Panel>
-          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Lade Live-Anrufe…
-          </div>
-        </Panel>
-      ) : calls.length === 0 ? (
+      {calls.length === 0 ? (
         <Panel>
           <div className="py-12 text-center text-sm text-muted-foreground">
             Aktuell keine eingehenden Anrufe.

@@ -7,7 +7,6 @@ import {
   Globe,
   MapPin,
   ArrowRight,
-  Loader2,
   Building2,
 } from "lucide-react";
 import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
