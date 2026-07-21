@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export interface AssignedClient {
   id: string;
@@ -27,51 +28,37 @@ function buildAdresse(street: string | null, plz: string | null, city: string | 
   return [street, line2].filter(Boolean).join(", ");
 }
 
+type Result = {
+  clients: AssignedClient[];
+  logoUrls: Record<string, string>;
+};
+
 export function useAssignedClients() {
-  const [clients, setClients] = useState<AssignedClient[]>([]);
-  const [logoUrls, setLogoUrls] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      // Assignments → clients (nested). RLS filtert automatisch auf auth.uid().
-      const { data, error: qErr } = await supabase
-        .from("assignments")
-        .select(
-          `client:clients (
-            id, company_name, industry, phone, logo_url,
-            company_description, greeting_text, forwarding_enabled,
-            contact_person, contact_phone, contact_email,
-            email, website, street, postal_code, city, vat_id, is_draft
-          )`,
-        );
-
-      if (cancelled) return;
-
-      if (qErr) {
-        setError(qErr.message);
-        setClients([]);
-        setLoading(false);
-        return;
-      }
+  const { data } = useSuspenseQuery<Result>({
+    queryKey: ["assigned-clients", user?.id ?? "anon"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("assignments").select(
+        `client:clients (
+          id, company_name, industry, phone, logo_url,
+          company_description, greeting_text, forwarding_enabled,
+          contact_person, contact_phone, contact_email,
+          email, website, street, postal_code, city, vat_id, is_draft
+        )`,
+      );
+      if (error) throw error;
 
       const rows = (data ?? [])
         .map((r: any) => r.client)
         .filter((c: any) => c && !c.is_draft);
 
-      // Dedupe (falls mehrere assignment-Zeilen für gleichen Kunden existieren)
       const seen = new Set<string>();
-      const mapped: AssignedClient[] = [];
+      const clients: AssignedClient[] = [];
       for (const c of rows) {
         if (seen.has(c.id)) continue;
         seen.add(c.id);
-        mapped.push({
+        clients.push({
           id: c.id,
           name: c.company_name ?? "Unbenannter Kunde",
           branche: c.industry,
@@ -93,12 +80,8 @@ export function useAssignedClients() {
         });
       }
 
-      setClients(mapped);
-      setLoading(false);
-
-      // Signed URLs für Logos (privater Bucket)
       const urlEntries = await Promise.all(
-        mapped
+        clients
           .filter((c) => c.logoPath)
           .map(async (c) => {
             const { data: signed } = await supabase.storage
@@ -107,27 +90,20 @@ export function useAssignedClients() {
             return [c.id, signed?.signedUrl ?? ""] as const;
           }),
       );
-      if (!cancelled) {
-        setLogoUrls(Object.fromEntries(urlEntries.filter(([, u]) => u)));
-      }
-    }
+      const logoUrls = Object.fromEntries(urlEntries.filter(([, u]) => u));
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      return { clients, logoUrls };
+    },
+  });
 
-  return useMemo(
-    () => ({
-      clients,
-      logoUrls,
-      loading,
-      error,
-      byId: (id: string) => clients.find((c) => c.id === id),
-      isAssigned: (id: string) => clients.some((c) => c.id === id),
-      ids: clients.map((c) => c.id),
-    }),
-    [clients, logoUrls, loading, error],
-  );
+  const { clients, logoUrls } = data;
+  return {
+    clients,
+    logoUrls,
+    loading: false as const,
+    error: null as null,
+    byId: (id: string) => clients.find((c) => c.id === id),
+    isAssigned: (id: string) => clients.some((c) => c.id === id),
+    ids: clients.map((c) => c.id),
+  };
 }

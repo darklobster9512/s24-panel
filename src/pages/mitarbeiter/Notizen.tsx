@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Search, Clock } from "lucide-react";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Input } from "@/components/ui/input";
@@ -36,27 +37,18 @@ export default function Notizen() {
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Alle");
   const [clientFilter, setClientFilter] = useState("alle");
-  const [notesData, setNotesData] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
+  const { data: notesData } = useSuspenseQuery({
+    queryKey: ["mitarbeiter-notes", user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("call_notes")
         .select("id, client_id, anrufer_name, anrufer_nummer, anliegen, kategorie, prioritaet, rueckruf_gewuenscht, rueckruf_zeit, created_at")
         .order("created_at", { ascending: false });
-      if (cancelled) return;
-      if (error) console.error(error);
-      setNotesData((data as Note[] | null) ?? []);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+      if (error) throw error;
+      return (data as Note[] | null) ?? [];
+    },
+  });
 
   const notes = useMemo(() => {
     return notesData
@@ -108,9 +100,7 @@ export default function Notizen() {
           </Select>
         </div>
 
-        {loading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Lädt…</div>
-        ) : notes.length === 0 ? (
+        {notes.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             Keine Notizen gefunden.
           </div>

@@ -7,7 +7,6 @@ import {
   Globe,
   MapPin,
   ArrowRight,
-  Loader2,
   Building2,
 } from "lucide-react";
 import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
@@ -42,7 +41,7 @@ function CardLogo({
 }
 
 export default function Kunden() {
-  const { clients, logoUrls, loading, error } = useAssignedClients();
+  const { clients, logoUrls } = useAssignedClients();
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -82,15 +81,7 @@ export default function Kunden() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-          </div>
-        ) : error ? (
-          <div className="py-12 text-center text-sm text-destructive">
-            Fehler beim Laden: {error}
-          </div>
-        ) : clients.length === 0 ? (
+        {clients.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             Dir wurden noch keine Kunden zugewiesen.
           </div>

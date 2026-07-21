@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface LiveCall {
@@ -23,20 +24,10 @@ function isFresh(startedAt: string) {
   return Date.now() - new Date(startedAt).getTime() < STALE_MS;
 }
 
-/**
- * Live-Anrufe: klingelnde und angenommene Anrufe.
- * RLS filtert bereits auf zugewiesene Kunden.
- * Zusätzlicher Client-Guard: Einträge älter als 15 Minuten werden ausgeblendet,
- * falls sipgate ausnahmsweise kein Hangup schickt.
- */
 export function useLiveCalls() {
-  const [calls, setCalls] = useState<LiveCall[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function initial() {
+  const { data: initial } = useSuspenseQuery<LiveCall[]>({
+    queryKey: ["live-calls-initial"],
+    queryFn: async () => {
       const cutoff = new Date(Date.now() - STALE_MS).toISOString();
       const { data, error } = await supabase
         .from("sipgate_calls")
@@ -45,15 +36,15 @@ export function useLiveCalls() {
         .gte("started_at", cutoff)
         .order("started_at", { ascending: false })
         .limit(50);
-      if (cancelled) return;
-      if (error) {
-        console.error("[useLiveCalls] initial load failed:", error.message);
-      }
-      setCalls((data as LiveCall[]) ?? []);
-      setLoading(false);
-    }
-    initial();
+      if (error) throw error;
+      return (data as LiveCall[]) ?? [];
+    },
+    staleTime: 0,
+  });
 
+  const [calls, setCalls] = useState<LiveCall[]>(initial);
+
+  useEffect(() => {
     const channel = supabase
       .channel("sipgate_calls_live")
       .on(
@@ -98,11 +89,10 @@ export function useLiveCalls() {
     }, 5000);
 
     return () => {
-      cancelled = true;
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, []);
 
-  return { calls, loading };
+  return { calls, loading: false as const };
 }

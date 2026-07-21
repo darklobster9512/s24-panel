@@ -8,10 +8,9 @@ import { MOCK_RECENT_CALLS, MOCK_NOTES, fmtRelative, fmtDauer } from "@/lib/mita
 
 export default function KundeDetail() {
   const { id } = useParams<{ id: string }>();
-  const { byId, logoUrls, loading } = useAssignedClients();
+  const { byId, logoUrls } = useAssignedClients();
   const client = id ? byId(id) : undefined;
 
-  if (loading) return null;
   if (!client) return <Navigate to="/mitarbeiter/kunden" replace />;
 
   const calls = MOCK_RECENT_CALLS.filter((c) => c.clientId === client.id);

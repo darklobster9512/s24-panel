@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -7,6 +8,7 @@ import { PageHeader, Panel, StatCard } from "@/components/mitarbeiter/Mitarbeite
 import { Button } from "@/components/ui/button";
 import { PhoneCall, Clock, StickyNote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 const TIMEFRAMES = ["Woche", "Monat", "Quartal"] as const;
 type TF = (typeof TIMEFRAMES)[number];
@@ -50,34 +52,27 @@ function labelForDay(d: Date) {
 
 export default function Statistik() {
   const [tf, setTf] = useState<TF>("Woche");
-  const [loading, setLoading] = useState(true);
-  const [employeeId, setEmployeeId] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const [calls, setCalls] = useState<any[]>([]);
-  const [prevCalls, setPrevCalls] = useState<any[]>([]);
-  const [notes, setNotes] = useState<any[]>([]);
-  const [prevNotes, setPrevNotes] = useState<any[]>([]);
-  const [clientMap, setClientMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    (async () => {
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes.user?.id;
-      if (!uid) return;
+  const { data: employeeId } = useSuspenseQuery({
+    queryKey: ["stat-employee-id", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
       const { data: emp } = await supabase
         .from("employees")
         .select("id")
-        .eq("user_id", uid)
+        .eq("user_id", user.id)
         .maybeSingle();
-      if (emp?.id) setEmployeeId(emp.id);
-    })();
-  }, []);
+      return emp?.id ?? null;
+    },
+  });
 
-  useEffect(() => {
-    if (!employeeId) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
+  const { data: statData } = useSuspenseQuery({
+    queryKey: ["stat-data", employeeId, tf],
+    queryFn: async () => {
+      if (!employeeId) {
+        return { calls: [] as any[], prevCalls: [] as any[], notes: [] as any[], prevNotes: [] as any[], clientMap: {} as Record<string, string> };
+      }
       const { days } = tfConfig(tf);
       const now = new Date();
       const from = new Date(now.getTime() - days * 86400000);
@@ -98,27 +93,26 @@ export default function Statistik() {
           .order("created_at", { ascending: true }),
         supabase.from("clients").select("id,unternehmensname"),
       ]);
-      if (cancelled) return;
 
       const cutoff = from.getTime();
       const allCalls = callsRes.data ?? [];
       const allNotes = notesRes.data ?? [];
-      setCalls(allCalls.filter((c) => new Date(c.started_at).getTime() >= cutoff));
-      setPrevCalls(allCalls.filter((c) => new Date(c.started_at).getTime() < cutoff));
-      setNotes(allNotes.filter((n) => new Date(n.created_at).getTime() >= cutoff));
-      setPrevNotes(allNotes.filter((n) => new Date(n.created_at).getTime() < cutoff));
-
       const cm: Record<string, string> = {};
       (clientsRes.data ?? []).forEach((c: any) => {
         cm[c.id] = c.unternehmensname ?? "—";
       });
-      setClientMap(cm);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [employeeId, tf]);
+      return {
+        calls: allCalls.filter((c) => new Date(c.started_at).getTime() >= cutoff),
+        prevCalls: allCalls.filter((c) => new Date(c.started_at).getTime() < cutoff),
+        notes: allNotes.filter((n) => new Date(n.created_at).getTime() >= cutoff),
+        prevNotes: allNotes.filter((n) => new Date(n.created_at).getTime() < cutoff),
+        clientMap: cm,
+      };
+    },
+  });
+
+  const { calls, prevCalls, notes, prevNotes, clientMap } = statData;
+  const loading = false;
 
   const kpis = useMemo(() => {
     const totalCalls = calls.length;

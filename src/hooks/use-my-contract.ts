@@ -17,7 +17,6 @@ export function useMyContract() {
     enabled: !!user && role === "mitarbeiter",
     queryKey: ["my-contract", user?.id],
     queryFn: async () => {
-      // Employees table row for me
       const { data: emp } = await supabase
         .from("employees")
         .select("id")
