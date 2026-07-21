@@ -100,9 +100,7 @@ export default function Notizen() {
           </Select>
         </div>
 
-        {loading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Lädt…</div>
-        ) : notes.length === 0 ? (
+        {notes.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             Keine Notizen gefunden.
           </div>
