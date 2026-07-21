@@ -869,48 +869,4 @@ function StepOptional({ form }: { form: FR }) {
   );
 }
 
-function StepSip({ form }: { form: FR }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-        Diese Zugangsdaten werden im Mitarbeiter-Panel für PhonerLite angezeigt.
-      </div>
-      <div className="grid gap-5 md:grid-cols-2">
-        <TextField form={form} name="sip_phone_number" label="Telefonnummer" placeholder="+49 30 1234567" />
-        <TextField form={form} name="sip_server" label="Server" placeholder="sip.provider.de" />
-        <TextField form={form} name="sip_username" label="Benutzername" placeholder="user123" />
-        <FormField
-          control={form.control}
-          name="sip_password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Passwort</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    type={show ? "text" : "password"}
-                    placeholder="••••••••"
-                    {...field}
-                    value={(field.value as string) ?? ""}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-                    aria-label={show ? "Passwort verbergen" : "Passwort anzeigen"}
-                  >
-                    {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-    </div>
-  );
-}
 
