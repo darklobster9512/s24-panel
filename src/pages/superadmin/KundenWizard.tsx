@@ -327,14 +327,20 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
+        await syncPhoneNumbers(id);
       } else {
-        const { error } = await supabase.from("clients").insert({
-          ...base,
-          is_draft: false,
-          logo_url: logo_url ?? null,
-          created_by: user.id,
-        });
+        const { data, error } = await supabase
+          .from("clients")
+          .insert({
+            ...base,
+            is_draft: false,
+            logo_url: logo_url ?? null,
+            created_by: user.id,
+          })
+          .select("id")
+          .single();
         if (error) throw error;
+        await syncPhoneNumbers(data.id as string);
       }
     },
     onSuccess: () => {
@@ -361,6 +367,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
+        await syncPhoneNumbers(id);
         return { id };
       } else {
         const { data, error } = await supabase
@@ -374,6 +381,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
           .select("id")
           .single();
         if (error) throw error;
+        await syncPhoneNumbers(data.id as string);
         return { id: data.id as string };
       }
     },
