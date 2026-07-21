@@ -148,6 +148,138 @@ function runInBackground(taskFactory: () => Promise<unknown>): void {
   edgeRuntime?.waitUntil?.(task);
 }
 
+async function processWebhookBody(bodyText: string, contentType: string) {
+  let params: URLSearchParams;
+  try {
+    params = parseBodyToParams(bodyText, contentType);
+  } catch (e) {
+    console.error("[sipgate-webhook] failed to parse background body", e, { bodyText });
+    return;
+  }
+
+  const fields = parseFields(params);
+  const eventFromBody = (fields.event ?? "").toLowerCase();
+  const event = eventFromBody;
+  const callId = fields.callId;
+  const origCallId = fields.origCallId ?? fields.originalCallId ?? null;
+  if (!callId) {
+    console.warn("[sipgate-webhook] missing callId", fields);
+    return;
+  }
+
+  const direction = (fields.direction ?? "in").toLowerCase() === "out"
+    ? "out"
+    : "in";
+  const fromNumber = normalizeNumber(fields.from);
+  const toNumber = normalizeNumber(fields.to);
+
+  if (event === "newcall") {
+    console.log("[sipgate-webhook] newCall background", {
+      callId,
+      direction,
+      from: fields.from,
+      to: fields.to,
+    });
+    await persistNewCall(fields, callId, direction, fromNumber, toNumber);
+    return;
+  }
+
+  console.log("[sipgate-webhook] parsed", {
+    event,
+    eventFromBody,
+    callId,
+    origCallId,
+    direction: fields.direction,
+    from: fields.from,
+    to: fields.to,
+    allFields: fields,
+  });
+
+  const admin = await getAdminClient();
+
+  if (event === "answer") {
+    const empId =
+      (await lookupEmployeeBySipgateUser([
+        fields.fullUserId,
+        fields["fullUserId[]"],
+        fields.userId,
+        fields["userId[]"],
+      ])) ??
+      (await lookupEmployeeByName(fields.user ?? fields["user[]"] ?? null));
+    const updatePayload: Record<string, unknown> = {
+      status: "answered",
+      answered_at: new Date().toISOString(),
+      raw_payload: fields,
+    };
+    if (empId) {
+      updatePayload.answered_by_employee_id = empId;
+      updatePayload.handled_by_employee_id = empId;
+    }
+    const { data, error } = await admin
+      .from("sipgate_calls")
+      .update(updatePayload)
+      .or(
+        origCallId
+          ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
+          : `sipgate_call_id.eq.${callId}`,
+      )
+      .select();
+    console.log("[sipgate-webhook] answer result", {
+      callId,
+      origCallId,
+      empId,
+      rowsUpdated: data?.length ?? 0,
+      error,
+    });
+    return;
+  }
+
+  if (event === "hangup") {
+    const { data: existing } = await admin
+      .from("sipgate_calls")
+      .select("id, answered_at, sipgate_call_id")
+      .or(
+        origCallId
+          ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
+          : `sipgate_call_id.eq.${callId}`,
+      )
+      .limit(1)
+      .maybeSingle();
+    console.log("[sipgate-webhook] hangup lookup", {
+      callId,
+      origCallId,
+      existing,
+    });
+    const finalStatus = existing?.answered_at ? "ended" : "missed";
+    const { data, error } = await admin
+      .from("sipgate_calls")
+      .update({
+        status: finalStatus,
+        ended_at: new Date().toISOString(),
+        raw_payload: fields,
+      })
+      .or(
+        origCallId
+          ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
+          : `sipgate_call_id.eq.${callId}`,
+      )
+      .select();
+    console.log("[sipgate-webhook] hangup result", {
+      callId,
+      origCallId,
+      finalStatus,
+      rowsUpdated: data?.length ?? 0,
+      error,
+    });
+    return;
+  }
+
+  console.warn("[sipgate-webhook] ignored/unknown event", {
+    event,
+    fields,
+  });
+}
+
 async function persistNewCall(fields: Record<string, string>, callId: string, direction: "in" | "out", fromNumber: string | null, toNumber: string | null) {
   const clientId = await lookupClient(toNumber);
   const admin = await getAdminClient();
@@ -191,150 +323,17 @@ Deno.serve(async (req) => {
   // Register the public Supabase Edge Function URL, not the forwarded/internal
   // request path. sipgate posts follow-up answer/hangup events to these URLs.
   const callbackUrl = getPublicCallbackUrl();
+  const escapedAnswerCallbackUrl = escapeXmlAttribute(callbackUrl);
+  const escapedHangupCallbackUrl = escapeXmlAttribute(callbackUrl);
+  const callbackResponseXml = `<Response onAnswer="${escapedAnswerCallbackUrl}" onHangup="${escapedHangupCallbackUrl}"></Response>`;
 
   if (req.method !== "POST") return xmlResponse(EMPTY_RESPONSE_XML);
 
   const contentType = req.headers.get("content-type") ?? "";
-  let params: URLSearchParams;
-  let bodyText = "";
-  try {
-    bodyText = await req.text();
-    params = parseBodyToParams(bodyText, contentType);
-  } catch (e) {
-    console.error("[sipgate-webhook] failed to parse body", e, { bodyText });
-    return xmlResponse(EMPTY_RESPONSE_XML, 400);
-  }
-
-  const fields = parseFields(params);
-  const eventFromBody = (fields.event ?? "").toLowerCase();
-  const event = eventFromBody;
-  const callId = fields.callId;
-  const origCallId = fields.origCallId ?? fields.originalCallId ?? null;
-  if (!callId) {
-    console.warn("[sipgate-webhook] missing callId", fields);
-    return xmlResponse(EMPTY_RESPONSE_XML);
-  }
-
-  const direction = (fields.direction ?? "in").toLowerCase() === "out"
-    ? "out"
-    : "in";
-  const fromNumber = normalizeNumber(fields.from);
-  const toNumber = normalizeNumber(fields.to);
-
-  // For newCall we MUST return onAnswer/onHangup immediately. Sipgate may skip
-  // follow-up callbacks if DB work delays the XML response.
-  if (event === "newcall") {
-    runInBackground(async () => {
-      console.log("[sipgate-webhook] newCall background", {
-        callId,
-        direction,
-        from: fields.from,
-        to: fields.to,
-      });
-      await persistNewCall(fields, callId, direction, fromNumber, toNumber);
-    });
-
-    const escapedAnswerCallbackUrl = escapeXmlAttribute(callbackUrl);
-    const escapedHangupCallbackUrl = escapeXmlAttribute(callbackUrl);
-    const body = `<Response onAnswer="${escapedAnswerCallbackUrl}" onHangup="${escapedHangupCallbackUrl}"></Response>`;
-    return xmlResponse(body);
-  }
-
-  console.log("[sipgate-webhook] parsed", {
-    event,
-    eventFromBody,
-    callId,
-    origCallId,
-    direction: fields.direction,
-    from: fields.from,
-    to: fields.to,
-    allFields: fields,
+  runInBackground(async () => {
+    const bodyText = await req.text();
+    await processWebhookBody(bodyText, contentType);
   });
 
-  try {
-    if (event === "answer") {
-      // Prefer fullUserId (globally unique), fallback to short userId, then name match
-      const empId =
-        (await lookupEmployeeBySipgateUser([
-          fields.fullUserId,
-          fields["fullUserId[]"],
-          fields.userId,
-          fields["userId[]"],
-        ])) ??
-        (await lookupEmployeeByName(fields.user ?? fields["user[]"] ?? null));
-      const updatePayload: Record<string, unknown> = {
-        status: "answered",
-        answered_at: new Date().toISOString(),
-        raw_payload: fields,
-      };
-      if (empId) {
-        updatePayload.answered_by_employee_id = empId;
-        updatePayload.handled_by_employee_id = empId;
-      }
-      const { data, error } = await admin
-        .from("sipgate_calls")
-        .update(updatePayload)
-        .or(
-          origCallId
-            ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
-            : `sipgate_call_id.eq.${callId}`,
-        )
-        .select();
-      console.log("[sipgate-webhook] answer result", {
-        callId,
-        origCallId,
-        empId,
-        rowsUpdated: data?.length ?? 0,
-        error,
-      });
-    } else if (event === "hangup") {
-      // Determine missed vs ended based on whether it was answered
-      const { data: existing } = await admin
-        .from("sipgate_calls")
-        .select("id, answered_at, sipgate_call_id")
-        .or(
-          origCallId
-            ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
-            : `sipgate_call_id.eq.${callId}`,
-        )
-        .limit(1)
-        .maybeSingle();
-      console.log("[sipgate-webhook] hangup lookup", {
-        callId,
-        origCallId,
-        existing,
-      });
-      const finalStatus = existing?.answered_at ? "ended" : "missed";
-      const { data, error } = await admin
-        .from("sipgate_calls")
-        .update({
-          status: finalStatus,
-          ended_at: new Date().toISOString(),
-          raw_payload: fields,
-        })
-        .or(
-          origCallId
-            ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
-            : `sipgate_call_id.eq.${callId}`,
-        )
-        .select();
-      console.log("[sipgate-webhook] hangup result", {
-        callId,
-        origCallId,
-        finalStatus,
-        rowsUpdated: data?.length ?? 0,
-        error,
-      });
-    } else {
-      console.warn("[sipgate-webhook] ignored/unknown event", {
-        event,
-        fields,
-      });
-    }
-  } catch (e) {
-    console.error("[sipgate-webhook] handler error", e);
-    return xmlResponse(EMPTY_RESPONSE_XML, 500);
-  }
-
-  return xmlResponse(EMPTY_RESPONSE_XML);
+  return xmlResponse(callbackResponseXml);
 });
