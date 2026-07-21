@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Play, Square, Save, RotateCcw, PhoneCall, Info } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
@@ -25,6 +25,7 @@ const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"]
 
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const { clients, byId, logoUrls } = useAssignedClients();
   const { user } = useAuth();
   const preselectedId = params.get("client") ?? "";
@@ -34,6 +35,7 @@ export default function Erfassen() {
   const [running, setRunning] = useState(false);
   const [start, setStart] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   const [anruferName, setAnruferName] = useState("");
   const [anruferNummer, setAnruferNummer] = useState("");
@@ -124,11 +126,51 @@ export default function Erfassen() {
     setParams(params, { replace: true });
     setClientId("");
   }
-  function save(closeAfter: boolean) {
+  async function save(closeAfter: boolean) {
     if (!clientId) return toast.error("Bitte Kunde auswählen.");
     if (!anliegen.trim()) return toast.error("Bitte Anliegen eintragen.");
-    toast.success(closeAfter ? "Anruf gespeichert." : "Anruf gespeichert — neuer Anruf.");
-    if (!closeAfter) reset();
+    if (!user) return toast.error("Nicht angemeldet.");
+    setSaving(true);
+    try {
+      const { data: emp, error: empErr } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (empErr || !emp?.id) {
+        toast.error("Mitarbeiter-Profil nicht gefunden.");
+        return;
+      }
+      const { error } = await supabase.from("call_notes").insert({
+        client_id: clientId,
+        employee_id: emp.id,
+        sipgate_call_id: callId ?? null,
+        anrufer_name: anruferName || null,
+        anrufer_nummer: anruferNummer || null,
+        anrufer_email: anruferEmail || null,
+        anliegen: anliegen.trim(),
+        kategorie: kategorie || null,
+        prioritaet,
+        weitergeleitet_an: kategorie === "Weiterleitung" ? weitergeleitetAn || null : null,
+        rueckruf_gewuenscht: rueckruf,
+        rueckruf_zeit: rueckruf ? rueckrufZeit || null : null,
+        ticket_erstellen: ticketErstellen,
+        dauer_sekunden: elapsed,
+      });
+      if (error) {
+        console.error(error);
+        toast.error("Speichern fehlgeschlagen: " + error.message);
+        return;
+      }
+      toast.success(closeAfter ? "Anruf gespeichert." : "Anruf gespeichert — neuer Anruf.");
+      if (closeAfter) {
+        navigate("/mitarbeiter/notizen");
+      } else {
+        reset();
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -356,10 +398,10 @@ export default function Erfassen() {
           </Panel>
 
           <div className="flex gap-2">
-            <Button onClick={() => save(false)} variant="outline" className="flex-1 gap-2">
+            <Button onClick={() => save(false)} variant="outline" className="flex-1 gap-2" disabled={saving}>
               <PhoneCall className="h-4 w-4" /> Speichern & Neuer Anruf
             </Button>
-            <Button onClick={() => save(true)} className="flex-1 gap-2">
+            <Button onClick={() => save(true)} className="flex-1 gap-2" disabled={saving}>
               <Save className="h-4 w-4" /> Speichern & Schließen
             </Button>
           </div>

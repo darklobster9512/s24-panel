@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
-import { Search, Pencil, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Clock } from "lucide-react";
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,30 +11,67 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
-import { MOCK_NOTES, fmtRelative } from "@/lib/mitarbeiter-mock";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { fmtRelative } from "@/lib/mitarbeiter-mock";
 
 const KATEGORIEN = ["Alle", "Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"];
 
+type Note = {
+  id: string;
+  client_id: string;
+  anrufer_name: string | null;
+  anrufer_nummer: string | null;
+  anliegen: string;
+  kategorie: string | null;
+  prioritaet: string;
+  rueckruf_gewuenscht: boolean;
+  rueckruf_zeit: string | null;
+  created_at: string;
+};
+
 export default function Notizen() {
-  const { isAssigned, byId, clients, logoUrls } = useAssignedClients();
+  const { byId, clients, logoUrls } = useAssignedClients();
+  const { user } = useAuth();
   const [q, setQ] = useState("");
   const [kat, setKat] = useState("Alle");
   const [clientFilter, setClientFilter] = useState("alle");
+  const [notesData, setNotesData] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("call_notes")
+        .select("id, client_id, anrufer_name, anrufer_nummer, anliegen, kategorie, prioritaet, rueckruf_gewuenscht, rueckruf_zeit, created_at")
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (error) console.error(error);
+      setNotesData((data as Note[] | null) ?? []);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const notes = useMemo(() => {
-    return MOCK_NOTES.filter((n) => isAssigned(n.clientId))
+    return notesData
       .filter((n) => kat === "Alle" || n.kategorie === kat)
-      .filter((n) => clientFilter === "alle" || n.clientId === clientFilter)
+      .filter((n) => clientFilter === "alle" || n.client_id === clientFilter)
       .filter((n) => {
         if (!q.trim()) return true;
         const needle = q.toLowerCase();
-        const client = byId(n.clientId);
-        return [n.anruferName, n.anruferNummer, n.text, client?.name ?? ""]
+        const client = byId(n.client_id);
+        return [n.anrufer_name ?? "", n.anrufer_nummer ?? "", n.anliegen, client?.name ?? ""]
           .join(" ")
           .toLowerCase()
           .includes(needle);
       });
-  }, [q, kat, clientFilter, isAssigned, byId]);
+  }, [notesData, q, kat, clientFilter, byId]);
 
   return (
     <>
@@ -72,14 +108,16 @@ export default function Notizen() {
           </Select>
         </div>
 
-        {notes.length === 0 ? (
+        {loading ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">Lädt…</div>
+        ) : notes.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             Keine Notizen gefunden.
           </div>
         ) : (
           <ul className="space-y-3">
             {notes.map((n) => {
-              const client = byId(n.clientId);
+              const client = byId(n.client_id);
               return (
                 <li
                   key={n.id}
@@ -90,28 +128,34 @@ export default function Notizen() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{client?.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            · {n.anruferName} · <span className="font-mono">{n.anruferNummer}</span>
-                          </span>
+                          <span className="font-medium">{client?.name ?? "Unbekannter Kunde"}</span>
+                          {(n.anrufer_name || n.anrufer_nummer) && (
+                            <span className="text-xs text-muted-foreground">
+                              · {n.anrufer_name ?? "—"} {n.anrufer_nummer && <>· <span className="font-mono">{n.anrufer_nummer}</span></>}
+                            </span>
+                          )}
                         </div>
                         <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" /> {fmtRelative(n.createdAt)}
+                          <Clock className="h-3 w-3" /> {fmtRelative(n.created_at)}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-foreground/90">{n.text}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-foreground/90">{n.anliegen}</p>
                       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                        <Badge variant="secondary" className="text-[10px]">{n.kategorie}</Badge>
-                        {n.rueckrufGewuenscht && (
+                        {n.kategorie && (
+                          <Badge variant="secondary" className="text-[10px]">{n.kategorie}</Badge>
+                        )}
+                        {n.prioritaet && n.prioritaet !== "normal" && (
+                          <Badge variant="outline" className="text-[10px] capitalize">
+                            Prio: {n.prioritaet}
+                          </Badge>
+                        )}
+                        {n.rueckruf_gewuenscht && (
                           <Badge variant="outline" className="text-[10px]">
-                            Rückruf {n.rueckrufZeit && `· ${n.rueckrufZeit}`}
+                            Rückruf {n.rueckruf_zeit && `· ${n.rueckruf_zeit}`}
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
                   </div>
                 </li>
               );

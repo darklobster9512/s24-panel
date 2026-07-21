@@ -53,6 +53,88 @@ export type Database = {
           },
         ]
       }
+      call_notes: {
+        Row: {
+          anliegen: string
+          anrufer_email: string | null
+          anrufer_name: string | null
+          anrufer_nummer: string | null
+          client_id: string
+          created_at: string
+          dauer_sekunden: number
+          employee_id: string
+          id: string
+          kategorie: string | null
+          prioritaet: string
+          rueckruf_gewuenscht: boolean
+          rueckruf_zeit: string | null
+          sipgate_call_id: string | null
+          ticket_erstellen: boolean
+          updated_at: string
+          weitergeleitet_an: string | null
+        }
+        Insert: {
+          anliegen: string
+          anrufer_email?: string | null
+          anrufer_name?: string | null
+          anrufer_nummer?: string | null
+          client_id: string
+          created_at?: string
+          dauer_sekunden?: number
+          employee_id: string
+          id?: string
+          kategorie?: string | null
+          prioritaet?: string
+          rueckruf_gewuenscht?: boolean
+          rueckruf_zeit?: string | null
+          sipgate_call_id?: string | null
+          ticket_erstellen?: boolean
+          updated_at?: string
+          weitergeleitet_an?: string | null
+        }
+        Update: {
+          anliegen?: string
+          anrufer_email?: string | null
+          anrufer_name?: string | null
+          anrufer_nummer?: string | null
+          client_id?: string
+          created_at?: string
+          dauer_sekunden?: number
+          employee_id?: string
+          id?: string
+          kategorie?: string | null
+          prioritaet?: string
+          rueckruf_gewuenscht?: boolean
+          rueckruf_zeit?: string | null
+          sipgate_call_id?: string | null
+          ticket_erstellen?: boolean
+          updated_at?: string
+          weitergeleitet_an?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_notes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_notes_sipgate_call_id_fkey"
+            columns: ["sipgate_call_id"]
+            isOneToOne: false
+            referencedRelation: "sipgate_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_phone_numbers: {
         Row: {
           client_id: string
