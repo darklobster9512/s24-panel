@@ -103,6 +103,37 @@ export default function Erfassen() {
     };
   }, [callId, user]);
 
+  // Lookup known caller contact by phone (per client) and prefill empty fields
+  useEffect(() => {
+    if (!clientId) return;
+    const normalized = normalizePhone(anruferNummer);
+    if (!normalized || normalized.length < 4) {
+      setKnownCaller(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("caller_contacts")
+        .select("caller_name, caller_email")
+        .eq("client_id", clientId)
+        .eq("phone_number", normalized)
+        .maybeSingle();
+      if (cancelled || error || !data) {
+        if (!cancelled) setKnownCaller(false);
+        return;
+      }
+      setKnownCaller(true);
+      setAnruferName((prev) => (prev.trim() ? prev : data.caller_name ?? ""));
+      setAnruferEmail((prev) => (prev.trim() ? prev : data.caller_email ?? ""));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, anruferNummer]);
+
+
+
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
