@@ -32,7 +32,7 @@ export function useLiveCalls() {
       const { data, error } = await supabase
         .from("sipgate_calls")
         .select("*")
-        .in("status", ["ringing", "answered"])
+        .eq("status", "ringing")
         .gte("started_at", cutoff)
         .order("started_at", { ascending: false })
         .limit(50);
@@ -54,16 +54,14 @@ export function useLiveCalls() {
           setCalls((prev) => {
             if (payload.eventType === "INSERT") {
               const row = payload.new as LiveCall;
-              if (row.status !== "ringing" && row.status !== "answered") return prev;
+              if (row.status !== "ringing") return prev;
               if (!isFresh(row.started_at)) return prev;
               if (prev.some((c) => c.id === row.id)) return prev;
               return [row, ...prev];
             }
             if (payload.eventType === "UPDATE") {
               const row = payload.new as LiveCall;
-              const active =
-                (row.status === "ringing" || row.status === "answered") &&
-                isFresh(row.started_at);
+              const active = row.status === "ringing" && isFresh(row.started_at);
               if (!active) return prev.filter((c) => c.id !== row.id);
               const idx = prev.findIndex((c) => c.id === row.id);
               if (idx === -1) return [row, ...prev];
