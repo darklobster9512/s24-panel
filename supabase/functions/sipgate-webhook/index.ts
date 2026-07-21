@@ -202,16 +202,27 @@ Deno.serve(async (req) => {
         error,
       });
     } else if (event === "answer") {
-      const sipgateUser = fields.userId ?? fields["userId[]"] ?? fields.fullUserId ?? fields["fullUserId[]"] ?? null;
-      const empId = await lookupEmployeeBySipgateUser(sipgateUser);
+      // Prefer fullUserId (globally unique), fallback to short userId, then name match
+      const empId =
+        (await lookupEmployeeBySipgateUser([
+          fields.fullUserId,
+          fields["fullUserId[]"],
+          fields.userId,
+          fields["userId[]"],
+        ])) ??
+        (await lookupEmployeeByName(fields.user ?? fields["user[]"] ?? null));
+      const updatePayload: Record<string, unknown> = {
+        status: "answered",
+        answered_at: new Date().toISOString(),
+        raw_payload: fields,
+      };
+      if (empId) {
+        updatePayload.answered_by_employee_id = empId;
+        updatePayload.handled_by_employee_id = empId;
+      }
       const { data, error } = await admin
         .from("sipgate_calls")
-        .update({
-          status: "answered",
-          answered_at: new Date().toISOString(),
-          answered_by_employee_id: empId,
-          raw_payload: fields,
-        })
+        .update(updatePayload)
         .or(
           origCallId
             ? `sipgate_call_id.eq.${callId},sipgate_call_id.eq.${origCallId}`
