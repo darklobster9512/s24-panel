@@ -332,15 +332,16 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return xmlResponse(EMPTY_RESPONSE_XML);
 
   const contentType = req.headers.get("content-type") ?? "";
-  let bodyText = "";
-  try {
-    bodyText = await req.text();
-  } catch (e) {
-    console.error("[sipgate-webhook] failed to read body", e);
-    return xmlResponse(callbackResponseXml);
-  }
 
+  // sipgate hat ~1s Timeout — Body-Read darf die XML-Antwort nicht blockieren.
   runInBackground(async () => {
+    let bodyText = "";
+    try {
+      bodyText = await req.text();
+    } catch (e) {
+      console.error("[sipgate-webhook] failed to read body", e);
+      return;
+    }
     await processWebhookBody(bodyText, contentType);
   });
 
