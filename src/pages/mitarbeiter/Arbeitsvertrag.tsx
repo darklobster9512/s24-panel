@@ -397,7 +397,7 @@ export default function Arbeitsvertrag() {
 
                 {subStep === 1 && (
                   <div className="grid gap-4 md:grid-cols-2">
-                    <TF form={form} name="iban" label="IBAN" placeholder="DE00 0000 0000 0000 0000 00" className="md:col-span-2" />
+                    <IBANField form={form} className="md:col-span-2" />
                     <TF form={form} name="bic" label="BIC" placeholder="z.B. DEUTDEFFXXX" />
                     <TF form={form} name="bank_name" label="Bank" placeholder="z.B. Deutsche Bank" />
                     <TF form={form} name="tax_id" label="Steuer-ID" placeholder="11-stellige Steuer-ID" className="md:col-span-2" />
