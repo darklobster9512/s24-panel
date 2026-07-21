@@ -112,7 +112,6 @@ Deno.serve(async (req) => {
       params = new URLSearchParams(bodyText);
     }
   } catch (e) {
-  } catch (e) {
     console.error("[sipgate-webhook] failed to parse body", e, { bodyText });
     return xmlResponse(EMPTY_RESPONSE_XML, 400);
   }
