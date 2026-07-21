@@ -11,9 +11,13 @@ import {
   ArrowRight,
   CheckCircle2,
   FileSignature,
+  Check,
   Loader2,
   PenLine,
   RotateCcw,
+  User,
+  Landmark,
+  ShieldCheck,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
