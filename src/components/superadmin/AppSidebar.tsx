@@ -7,7 +7,6 @@ import {
   Link2,
   PhoneCall,
   StickyNote,
-  Ticket,
   FileSignature,
   Wallet,
   Receipt,
@@ -49,7 +48,6 @@ const mainItems: SidebarItem[] = [
 const opsItems: SidebarItem[] = [
   { title: "Anrufe", url: "/superadmin/anrufe", icon: PhoneCall },
   { title: "Notizen", url: "/superadmin/notizen", icon: StickyNote },
-  { title: "Tickets", url: "/superadmin/tickets", icon: Ticket },
 ];
 
 const finItems = (pendingCount: number): SidebarItem[] => [

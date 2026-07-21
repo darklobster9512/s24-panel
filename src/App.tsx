@@ -20,7 +20,7 @@ import SuperadminMitarbeiterDetail from "./pages/superadmin/MitarbeiterDetail";
 import SuperadminZuweisungen from "./pages/superadmin/Zuweisungen";
 import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
-import SuperadminTickets from "./pages/superadmin/Tickets";
+
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
 import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageEditor";
 import SuperadminAuszahlungen from "./pages/superadmin/Auszahlungen";
@@ -38,7 +38,7 @@ import MitarbeiterKundeDetail from "./pages/mitarbeiter/KundeDetail";
 import MitarbeiterLive from "./pages/mitarbeiter/LiveAnrufe";
 import MitarbeiterErfassen from "./pages/mitarbeiter/Erfassen";
 import MitarbeiterNotizen from "./pages/mitarbeiter/Notizen";
-import MitarbeiterTickets from "./pages/mitarbeiter/Tickets";
+
 import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
 import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
 import MitarbeiterArbeitsvertrag from "./pages/mitarbeiter/Arbeitsvertrag";
@@ -82,7 +82,7 @@ export default function App() {
                     <Route path="zuweisungen" element={<SuperadminZuweisungen />} />
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
                     <Route path="notizen" element={<SuperadminNotizen />} />
-                    <Route path="tickets" element={<SuperadminTickets />} />
+                    
                     <Route path="vertraege" element={<SuperadminVertraege />} />
                     <Route path="vertraege/:templateId" element={<SuperadminVertragsvorlageEditor />} />
                     <Route path="arbeitsvertraege" element={<SuperadminArbeitsvertraege />} />
@@ -105,7 +105,7 @@ export default function App() {
                     <Route path="live" element={<MitarbeiterLive />} />
                     <Route path="erfassen" element={<MitarbeiterErfassen />} />
                     <Route path="notizen" element={<MitarbeiterNotizen />} />
-                    <Route path="tickets" element={<MitarbeiterTickets />} />
+                    
                     <Route path="statistik" element={<MitarbeiterStatistik />} />
                     <Route path="profil" element={<MitarbeiterProfil />} />
                     <Route path="arbeitsvertrag" element={<MitarbeiterArbeitsvertrag />} />
