@@ -138,6 +138,10 @@ function runInBackground(taskFactory: () => Promise<unknown>): void {
   }, 0);
 }
 
+const PUBLIC_CALLBACK_URL = getPublicCallbackUrl();
+const ESCAPED_CALLBACK_URL = escapeXmlAttribute(PUBLIC_CALLBACK_URL);
+const CALLBACK_RESPONSE_XML = `<Response onAnswer="${ESCAPED_CALLBACK_URL}" onHangup="${ESCAPED_CALLBACK_URL}"></Response>`;
+
 async function processWebhookBody(bodyText: string, contentType: string) {
   let params: URLSearchParams;
   try {
@@ -322,13 +326,6 @@ Deno.serve(async (req) => {
     return new Response("unauthorized", { status: 401 });
   }
 
-  // Register the public Supabase Edge Function URL, not the forwarded/internal
-  // request path. sipgate posts follow-up answer/hangup events to these URLs.
-  const callbackUrl = getPublicCallbackUrl();
-  const escapedAnswerCallbackUrl = escapeXmlAttribute(callbackUrl);
-  const escapedHangupCallbackUrl = escapeXmlAttribute(callbackUrl);
-  const callbackResponseXml = `<Response onAnswer="${escapedAnswerCallbackUrl}" onHangup="${escapedHangupCallbackUrl}"></Response>`;
-
   if (req.method !== "POST") return xmlResponse(EMPTY_RESPONSE_XML);
 
   const contentType = req.headers.get("content-type") ?? "";
@@ -345,5 +342,5 @@ Deno.serve(async (req) => {
     await processWebhookBody(bodyText, contentType);
   });
 
-  return xmlResponse(callbackResponseXml);
+  return xmlResponse(CALLBACK_RESPONSE_XML);
 });
