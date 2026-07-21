@@ -556,6 +556,35 @@ function TF({
   );
 }
 
+function IBANField({
+  form,
+  className,
+}: {
+  form: ReturnType<typeof useForm<WizardValues>>;
+  className?: string;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="iban"
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel>IBAN</FormLabel>
+          <FormControl>
+            <Input
+              placeholder="DE00 0000 0000 0000 0000 00"
+              value={field.value}
+              onChange={(e) => field.onChange(formatIBAN(e.target.value))}
+              onBlur={() => field.onChange(formatIBAN(field.value))}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
 const SUB_STEPS: {
   title: string;
   description: string;
