@@ -239,6 +239,25 @@ export default function Erfassen() {
         toast.error("Speichern fehlgeschlagen: " + error.message);
         return;
       }
+
+      // Remember caller by phone number (per client) so next call auto-fills
+      const normalizedPhone = normalizePhone(anruferNummer);
+      if (normalizedPhone && (anruferName.trim() || anruferEmail.trim())) {
+        const { error: ccErr } = await supabase
+          .from("caller_contacts")
+          .upsert(
+            {
+              client_id: clientId,
+              phone_number: normalizedPhone,
+              caller_name: anruferName.trim() || null,
+              caller_email: anruferEmail.trim() || null,
+              last_seen_at: new Date().toISOString(),
+            },
+            { onConflict: "client_id,phone_number" },
+          );
+        if (ccErr) console.warn("caller_contacts upsert failed", ccErr);
+      }
+
       toast.success(closeAfter ? "Anruf gespeichert." : "Anruf gespeichert — neuer Anruf.");
       if (closeAfter) {
         navigate("/mitarbeiter/notizen");
