@@ -25,6 +25,7 @@ const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"]
 
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const { clients, byId, logoUrls } = useAssignedClients();
   const { user } = useAuth();
   const preselectedId = params.get("client") ?? "";
@@ -34,6 +35,7 @@ export default function Erfassen() {
   const [running, setRunning] = useState(false);
   const [start, setStart] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   const [anruferName, setAnruferName] = useState("");
   const [anruferNummer, setAnruferNummer] = useState("");
