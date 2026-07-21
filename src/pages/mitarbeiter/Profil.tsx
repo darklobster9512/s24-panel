@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Download, FileSignature } from "lucide-react";
 import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,10 +37,24 @@ function formatDate(iso: string | null) {
 
 export default function Profil() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [employee, setEmployee] = useState<EmployeeRow | null>(null);
   const { data: contract } = useMyContract();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  const { data: employee } = useSuspenseQuery<EmployeeRow | null>({
+    queryKey: ["mitarbeiter-profil", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("employees")
+        .select(
+          "first_name, last_name, login_email, personal_email, personal_phone, contract_type, start_date",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as EmployeeRow | null) ?? null;
+    },
+  });
 
   useEffect(() => {
     (async () => {
@@ -56,44 +69,15 @@ export default function Profil() {
     })();
   }, [contract?.pdf_path]);
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("employees")
-        .select(
-          "first_name, last_name, login_email, personal_email, personal_phone, contract_type, start_date",
-        )
-        .eq("user_id", user!.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (error) toast.error("Mitarbeiterdaten konnten nicht geladen werden");
-      setEmployee((data as EmployeeRow | null) ?? null);
-      setLoading(false);
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
   const fullName = [employee?.first_name, employee?.last_name].filter(Boolean).join(" ") || "—";
 
   return (
     <>
       <PageHeader title="Profil & Vertrag" subtitle="Deine Stammdaten und Vertragsinformationen." />
 
-      {loading ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-40" />
-          <Skeleton className="h-40" />
-        </div>
-      ) : (
+      {(() => {
+        const _loading = false;
+        return _loading ? null : (
         <div className="grid gap-6 lg:grid-cols-2">
           <Panel title="Persönliche Daten">
             <Row label="Name" value={fullName} />
