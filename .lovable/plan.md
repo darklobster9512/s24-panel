@@ -1,50 +1,51 @@
-# sipgate-Webhook: Folge-Events per XML-Response abonnieren
+## Befund
 
-## Kontext — was ist Push API vs. REST API
+Ja, dein sipgate-Log bestätigt den Fehler eindeutig.
 
-sipgate hat zwei unabhängige Produkte:
+sipgate sendet `answer` und `hangup`, aber an diese von uns zurückgegebene URL:
 
-- **REST API** (`api.sipgate.com`) — Polling/Client-initiiert. Nutzen wir **nicht**.
-- **Push API = das „Webhooks"-Feature** — sipgate pusht POST-Requests an unsere URL. **Genau das nutzen wir bereits.** Die technischen Docs dazu liegen unter `developer.sipgate.io/push-api` (im sipgate-Menü als „Push API" gelistet, auf der Landingpage `sipgate.io/webhooks` beworben — beides derselbe Mechanismus).
-
-Es sind also keine API-Credentials, kein REST-Client und keine zusätzlichen Panel-Einstellungen nötig. Reine Erweiterung unseres bestehenden Webhook-Endpunkts.
-
-## Ursache des aktuellen Bugs
-
-Aus der Push-API-Referenz wörtlich:
-
-> „In your response to the new call event POST request, you can subscribe to receive following events of the concerned call. Specify these urls via xml-attributes in the response-tag."
->
-> - `onAnswer` — POST beim Annehmen
-> - `onHangup` — POST beim Beenden
-
-Beispiel aus der Doku:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<Response onAnswer="https://…/webhook" onHangup="https://…/webhook"/>
+```text
+http://erwuhvouxkaxczzbjrle.supabase.co/sipgate-webhook?token=...
 ```
 
-Unser Endpoint antwortet aktuell mit leerem 200er → sipgate sendet keine Folge-Events → Status bleibt auf „ringing"/„Wartezeit" hängen. Genau das Symptom im Cockpit.
+Diese URL ist falsch für Supabase Edge Functions und endet deshalb mit `404`.
 
-## Änderungen — ausschließlich in `supabase/functions/sipgate-webhook/index.ts`
+Richtig ist:
 
-1. **`xmlResponse(body)`-Helper**: setzt `Content-Type: application/xml`, liefert XML-Prolog + Body.
-2. **Callback-URL aus dem eingehenden `req.url` rekonstruieren** (inkl. `?token=<TOKEN>`), damit dieselbe Function für alle Events wiederverwendet wird und keine URL hardcoded ist.
-3. **`newCall`-Zweig**: nach DB-Upsert antworten mit
-   ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-   <Response onAnswer="…?token=…" onHangup="…?token=…"/>
+```text
+https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=...
+```
+
+`newCall` kommt bei uns an, aber unsere XML-Antwort registriert die Folgeevents auf dem falschen Pfad. Deshalb sieht sipgate `answer` und `hangup`, unsere Function aber nicht.
+
+## Plan
+
+1. **Callback-URL in der Edge Function fixen**
+   - In `supabase/functions/sipgate-webhook/index.ts` die Callback-URL nicht mehr aus `url.origin + url.pathname` bauen.
+   - Stattdessen aus `SUPABASE_URL` die korrekte öffentliche Function-URL erzeugen:
+
+   ```text
+   ${SUPABASE_URL}/functions/v1/sipgate-webhook?token=...
    ```
-4. **`answer`/`hangup`/unbekannte Events**: mit leerem `<Response/>`-XML antworten (statt leerem Body) — laut Doku wird valides XML erwartet.
-5. Parser, DB-Writes und Logging bleiben unverändert, inkl. `origCallId`-Fallback.
 
-Kein `<Dial>` oder andere Actions — wir wollen den Anruf nicht umleiten, nur Events empfangen. Ein `<Response>` ohne Kinder ist laut Doku zulässig („kein-Action-Zweig").
+   - Damit wird automatisch `https` und der korrekte `/functions/v1/...` Pfad verwendet.
 
-## Verifikation
+2. **XML-Antwort sauber halten**
+   - Bei `newCall` zurückgeben:
 
-1. Nach Deploy einen Testanruf: klingeln → annehmen → auflegen.
-2. `sipgate-webhook`-Logs müssen in Reihenfolge zeigen: `event: "newcall"` → `event: "answer"` → `event: "hangup"`.
-3. `/mitarbeiter/live` + `/superadmin/anrufe`: Status wechselt live „Wartezeit" → „Aktiv" → „Beendet" (bzw. „Verpasst", wenn nicht angenommen).
-4. Falls trotzdem keine Folge-Events kommen: Response-Body im sipgate-Log prüfen und ggf. XML-Namespace `xmlns="http://schemas.sipgate.io/webhookserver/xml/schema/2015"` ergänzen (Doku zeigt ihn im Beispiel, sagt aber nicht explizit „required").
+   ```xml
+   <Response onAnswer="https://.../functions/v1/sipgate-webhook?token=..." onHangup="https://.../functions/v1/sipgate-webhook?token=..."/>
+   ```
 
-Keine DB-Migration, keine Frontend-Änderung, keine sipgate-Panel-Änderung deinerseits.
+   - `onData` entfernen, weil wir es für diesen Flow nicht brauchen.
+
+3. **Bestehende Statuslogik weiterverwenden**
+   - `answer` setzt `sipgate_calls.status = answered`.
+   - `hangup` setzt `status = ended` oder `missed`.
+   - Matching über `callId` bleibt, weil dein sipgate-Log zeigt, dass `answer` und `hangup` dieselbe `callId` wie `newCall` senden.
+
+4. **Deploy und Test**
+   - Edge Function deployen.
+   - Mit einem simulierten `newCall` prüfen, dass die XML-Antwort die richtige URL enthält.
+   - Danach echten Testanruf machen.
+   - In den Logs müssen danach `answer result` und `hangup result` auftauchen statt sipgate-404.

@@ -71,6 +71,21 @@ function xmlResponse(body: string, status = 200): Response {
 
 const EMPTY_RESPONSE_XML = "<Response/>";
 
+function getPublicCallbackUrl(): string {
+  const baseUrl = SUPABASE_URL.replace(/\/+$/, "");
+  return `${baseUrl}/functions/v1/sipgate-webhook?token=${encodeURIComponent(
+    SIPGATE_WEBHOOK_TOKEN,
+  )}`;
+}
+
+function escapeXmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const token = url.searchParams.get("token");
@@ -82,11 +97,9 @@ Deno.serve(async (req) => {
     return new Response("unauthorized", { status: 401 });
   }
 
-  // Reconstruct the callback URL (this same endpoint incl. token) so sipgate
-  // will POST answer/hangup follow-up events back to us.
-  const callbackUrl = `${url.origin}${url.pathname}?token=${encodeURIComponent(
-    SIPGATE_WEBHOOK_TOKEN,
-  )}`;
+  // Register the public Supabase Edge Function URL, not the forwarded/internal
+  // request path. sipgate posts follow-up answer/hangup events to this URL.
+  const callbackUrl = getPublicCallbackUrl();
 
   if (req.method !== "POST") {
     console.log("[sipgate-webhook] non-POST request", { method: req.method });
@@ -243,8 +256,8 @@ Deno.serve(async (req) => {
   // For newCall we MUST subscribe to follow-up events via onAnswer/onHangup
   // attributes on the <Response> tag, otherwise sipgate never sends answer/hangup.
   if (event === "newcall") {
-    const attrs =
-      `onAnswer="${callbackUrl}" onHangup="${callbackUrl}" onData="${callbackUrl}"`;
+    const escapedCallbackUrl = escapeXmlAttribute(callbackUrl);
+    const attrs = `onAnswer="${escapedCallbackUrl}" onHangup="${escapedCallbackUrl}"`;
     const body = `<Response ${attrs}/>`;
     console.log("[sipgate-webhook] newCall response", { callbackUrl });
     return xmlResponse(body);
