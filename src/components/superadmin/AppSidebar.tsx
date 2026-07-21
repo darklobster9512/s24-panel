@@ -44,9 +44,14 @@ const opsItems = [
   { title: "Tickets", url: "/superadmin/tickets", icon: Ticket },
 ];
 
-const finItems = [
+const finItems = (pendingCount: number) => [
   { title: "Verträge", url: "/superadmin/vertraege", icon: FileSignature },
-  { title: "Arbeitsverträge", url: "/superadmin/arbeitsvertraege", icon: FileSignature },
+  {
+    title: "Arbeitsverträge",
+    url: "/superadmin/arbeitsvertraege",
+    icon: FileSignature,
+    badge: pendingCount,
+  },
   { title: "Auszahlungen", url: "/superadmin/auszahlungen", icon: Wallet },
   { title: "Abrechnung", url: "/superadmin/abrechnung", icon: Receipt },
 ];
