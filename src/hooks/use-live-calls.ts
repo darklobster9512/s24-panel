@@ -32,7 +32,7 @@ export function useLiveCalls() {
       const { data, error } = await supabase
         .from("sipgate_calls")
         .select("*")
-        .in("status", ["ringing", "answered"])
+        .eq("status", "ringing")
         .gte("started_at", cutoff)
         .order("started_at", { ascending: false })
         .limit(50);
