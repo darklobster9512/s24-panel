@@ -63,9 +63,11 @@ function parseFields(params: URLSearchParams): Record<string, string> {
 const XML_PROLOG = '<?xml version="1.0" encoding="UTF-8"?>';
 
 function xmlResponse(body: string, status = 200): Response {
-  return new Response(`${XML_PROLOG}\n${body}`, {
+  const payload = `${XML_PROLOG}\n${body}`;
+  console.log("[sipgate-webhook] xml response", { status, payload });
+  return new Response(payload, {
     status,
-    headers: { "Content-Type": "application/xml; charset=utf-8" },
+    headers: { "Content-Type": "application/xml" },
   });
 }
 
