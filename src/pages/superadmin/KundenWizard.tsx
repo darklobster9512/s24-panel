@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText, Plus, Trash2, Phone } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -105,6 +105,12 @@ const STEPS: StepDef[] = [
     fields: ["contact_person", "contact_phone", "contact_email"],
   },
   {
+    title: "Rufnummern",
+    description:
+      "sipgate-Rufnummern, unter denen der Kunde erreichbar ist. Sie werden zur automatischen Kunden-Erkennung bei eingehenden Anrufen genutzt.",
+    fields: [],
+  },
+  {
     title: "Konfiguration",
     description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
     fields: ["greeting_text", "forwarding_enabled"],
@@ -162,6 +168,9 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [phoneNumbers, setPhoneNumbers] = useState<
+    { id?: string; phone_number: string; label: string }[]
+  >([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(draftSchema),
@@ -204,6 +213,30 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     }
   }, [mode, existing.data, form]);
 
+  // Load existing phone numbers in edit mode
+  useEffect(() => {
+    if (mode !== "edit" || !id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("client_phone_numbers")
+        .select("id, phone_number, label")
+        .eq("client_id", id)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      setPhoneNumbers(
+        (data ?? []).map((r) => ({
+          id: r.id,
+          phone_number: r.phone_number,
+          label: r.label ?? "",
+        })),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, id]);
+
   async function uploadLogoIfNeeded() {
     if (!logoFile) return undefined;
     const ext = logoFile.name.split(".").pop() || "png";
@@ -213,6 +246,56 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       .upload(path, logoFile, { upsert: false, contentType: logoFile.type });
     if (upErr) throw upErr;
     return path;
+  }
+
+  function normalizePhoneNumber(raw: string): string {
+    const trimmed = raw.trim().replace(/[^\d+]/g, "");
+    if (!trimmed) return "";
+    if (trimmed.startsWith("+")) return trimmed;
+    if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
+    if (trimmed.startsWith("0")) return "+49" + trimmed.slice(1);
+    return "+" + trimmed;
+  }
+
+  async function syncPhoneNumbers(clientId: string) {
+    // Load current server state
+    const { data: existingRows } = await supabase
+      .from("client_phone_numbers")
+      .select("id, phone_number, label")
+      .eq("client_id", clientId);
+    const serverIds = new Set((existingRows ?? []).map((r) => r.id));
+
+    // Prepare desired rows (skip empty)
+    const desired = phoneNumbers
+      .map((p) => ({
+        ...p,
+        phone_number: normalizePhoneNumber(p.phone_number),
+      }))
+      .filter((p) => p.phone_number.length > 0);
+
+    const keepIds = new Set(desired.filter((d) => d.id).map((d) => d.id!));
+    const toDelete = [...serverIds].filter((sid) => !keepIds.has(sid));
+
+    if (toDelete.length > 0) {
+      await supabase.from("client_phone_numbers").delete().in("id", toDelete);
+    }
+    for (const row of desired) {
+      if (row.id) {
+        await supabase
+          .from("client_phone_numbers")
+          .update({
+            phone_number: row.phone_number,
+            label: row.label || null,
+          })
+          .eq("id", row.id);
+      } else {
+        await supabase.from("client_phone_numbers").insert({
+          client_id: clientId,
+          phone_number: row.phone_number,
+          label: row.label || null,
+        });
+      }
+    }
   }
 
   const submitMutation = useMutation({
@@ -244,14 +327,20 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
+        await syncPhoneNumbers(id);
       } else {
-        const { error } = await supabase.from("clients").insert({
-          ...base,
-          is_draft: false,
-          logo_url: logo_url ?? null,
-          created_by: user.id,
-        });
+        const { data, error } = await supabase
+          .from("clients")
+          .insert({
+            ...base,
+            is_draft: false,
+            logo_url: logo_url ?? null,
+            created_by: user.id,
+          })
+          .select("id")
+          .single();
         if (error) throw error;
+        await syncPhoneNumbers(data.id as string);
       }
     },
     onSuccess: () => {
@@ -278,6 +367,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
+        await syncPhoneNumbers(id);
         return { id };
       } else {
         const { data, error } = await supabase
@@ -291,6 +381,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
           .select("id")
           .single();
         if (error) throw error;
+        await syncPhoneNumbers(data.id as string);
         return { id: data.id as string };
       }
     },
@@ -380,6 +471,12 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                     {step === 1 && <StepAdresseKontakt form={form} />}
                     {step === 2 && <StepAnsprechpartner form={form} />}
                     {step === 3 && (
+                      <StepRufnummern
+                        phoneNumbers={phoneNumbers}
+                        setPhoneNumbers={setPhoneNumbers}
+                      />
+                    )}
+                    {step === 4 && (
                       <StepKonfig
                         form={form}
                         logoFile={logoFile}
@@ -680,6 +777,98 @@ function StepAnsprechpartner({ form }: { form: FR }) {
         type="email"
         placeholder="max@muster.de"
       />
+    </div>
+  );
+}
+
+function StepRufnummern({
+  phoneNumbers,
+  setPhoneNumbers,
+}: {
+  phoneNumbers: { id?: string; phone_number: string; label: string }[];
+  setPhoneNumbers: React.Dispatch<
+    React.SetStateAction<{ id?: string; phone_number: string; label: string }[]>
+  >;
+}) {
+  function addRow() {
+    setPhoneNumbers((prev) => [...prev, { phone_number: "", label: "" }]);
+  }
+  function updateRow(idx: number, patch: Partial<{ phone_number: string; label: string }>) {
+    setPhoneNumbers((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  }
+  function removeRow(idx: number) {
+    setPhoneNumbers((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-dashed border-border/60 bg-card/50 p-4 text-sm text-muted-foreground">
+        <div className="flex items-start gap-2">
+          <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div>
+            <p className="font-medium text-foreground">Zur automatischen Kunden-Erkennung</p>
+            <p className="mt-1 text-xs">
+              Trage alle Rufnummern ein, die im sipgate-Channel auf diesen Kunden geroutet
+              werden. Bei eingehenden Anrufen wird der Kunde anhand der angerufenen Nummer
+              erkannt. Format: <span className="font-mono">+49301234567</span> — 0-Vorwahl
+              wird automatisch normalisiert.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {phoneNumbers.length === 0 ? (
+        <div className="rounded-xl border border-border/60 bg-card/40 py-8 text-center text-sm text-muted-foreground">
+          Noch keine Rufnummern hinterlegt.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {phoneNumbers.map((row, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-1 gap-2 rounded-xl border border-border/60 bg-card p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+            >
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Rufnummer
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm font-mono outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="+49 30 12345678"
+                  value={row.phone_number}
+                  onChange={(e) => updateRow(idx, { phone_number: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Bezeichnung (optional)
+                </label>
+                <input
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="z. B. Hauptnummer, Support"
+                  value={row.label}
+                  onChange={(e) => updateRow(idx, { label: e.target.value })}
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeRow(idx)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Button type="button" variant="outline" onClick={addRow} className="gap-2">
+        <Plus className="h-4 w-4" /> Rufnummer hinzufügen
+      </Button>
     </div>
   );
 }

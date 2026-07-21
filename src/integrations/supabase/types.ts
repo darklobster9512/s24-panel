@@ -53,6 +53,41 @@ export type Database = {
           },
         ]
       }
+      client_phone_numbers: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          label: string | null
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_phone_numbers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           city: string | null
@@ -227,6 +262,7 @@ export type Database = {
           sip_phone_number: string | null
           sip_server: string | null
           sip_username: string | null
+          sipgate_user_id: string | null
           social_security_number: string | null
           start_date: string | null
           tax_id: string | null
@@ -259,6 +295,7 @@ export type Database = {
           sip_phone_number?: string | null
           sip_server?: string | null
           sip_username?: string | null
+          sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
           tax_id?: string | null
@@ -291,6 +328,7 @@ export type Database = {
           sip_phone_number?: string | null
           sip_server?: string | null
           sip_username?: string | null
+          sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
           tax_id?: string | null
@@ -325,6 +363,85 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sipgate_calls: {
+        Row: {
+          answered_at: string | null
+          answered_by_employee_id: string | null
+          caller_name: string | null
+          client_id: string | null
+          created_at: string
+          direction: string
+          ended_at: string | null
+          from_number: string | null
+          handled_by_employee_id: string | null
+          id: string
+          raw_payload: Json | null
+          sipgate_call_id: string
+          started_at: string
+          status: string
+          to_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string | null
+          answered_by_employee_id?: string | null
+          caller_name?: string | null
+          client_id?: string | null
+          created_at?: string
+          direction: string
+          ended_at?: string | null
+          from_number?: string | null
+          handled_by_employee_id?: string | null
+          id?: string
+          raw_payload?: Json | null
+          sipgate_call_id: string
+          started_at?: string
+          status?: string
+          to_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string | null
+          answered_by_employee_id?: string | null
+          caller_name?: string | null
+          client_id?: string | null
+          created_at?: string
+          direction?: string
+          ended_at?: string | null
+          from_number?: string | null
+          handled_by_employee_id?: string | null
+          id?: string
+          raw_payload?: Json | null
+          sipgate_call_id?: string
+          started_at?: string
+          status?: string
+          to_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sipgate_calls_answered_by_employee_id_fkey"
+            columns: ["answered_by_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sipgate_calls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sipgate_calls_handled_by_employee_id_fkey"
+            columns: ["handled_by_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
