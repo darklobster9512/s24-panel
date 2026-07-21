@@ -152,6 +152,12 @@ async function processWebhookBody(bodyText: string, contentType: string) {
   const event = eventFromBody;
   const callId = fields.callId;
   const origCallId = fields.origCallId ?? fields.originalCallId ?? null;
+
+  // Keep-warm ping (cron): no event / explicit keepalive → ignore silently.
+  if (!event || event === "keepalive") {
+    return;
+  }
+
   if (!callId) {
     console.warn("[sipgate-webhook] missing callId", fields);
     return;
@@ -301,6 +307,12 @@ async function persistNewCall(fields: Record<string, string>, callId: string, di
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
+
+  // Keep-warm ping (pg_cron). No token needed; just wakes the container.
+  if (url.searchParams.get("keepalive") === "1") {
+    return new Response("ok", { status: 200 });
+  }
+
   const token = url.searchParams.get("token");
   if (!SIPGATE_WEBHOOK_TOKEN || token !== SIPGATE_WEBHOOK_TOKEN) {
     console.warn("[sipgate-webhook] unauthorized", {
