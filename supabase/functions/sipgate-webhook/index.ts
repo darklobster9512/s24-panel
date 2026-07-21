@@ -60,6 +60,17 @@ function parseFields(params: URLSearchParams): Record<string, string> {
   return out;
 }
 
+const XML_PROLOG = '<?xml version="1.0" encoding="UTF-8"?>';
+
+function xmlResponse(body: string, status = 200): Response {
+  return new Response(`${XML_PROLOG}\n${body}`, {
+    status,
+    headers: { "Content-Type": "application/xml; charset=utf-8" },
+  });
+}
+
+const EMPTY_RESPONSE_XML = "<Response/>";
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const token = url.searchParams.get("token");
@@ -71,9 +82,15 @@ Deno.serve(async (req) => {
     return new Response("unauthorized", { status: 401 });
   }
 
+  // Reconstruct the callback URL (this same endpoint incl. token) so sipgate
+  // will POST answer/hangup follow-up events back to us.
+  const callbackUrl = `${url.origin}${url.pathname}?token=${encodeURIComponent(
+    SIPGATE_WEBHOOK_TOKEN,
+  )}`;
+
   if (req.method !== "POST") {
     console.log("[sipgate-webhook] non-POST request", { method: req.method });
-    return new Response("ok", { status: 200 });
+    return xmlResponse(EMPTY_RESPONSE_XML);
   }
 
   const contentType = req.headers.get("content-type") ?? "";
@@ -96,7 +113,7 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("[sipgate-webhook] failed to parse body", e, { bodyText });
-    return new Response("bad request", { status: 400 });
+    return xmlResponse(EMPTY_RESPONSE_XML, 400);
   }
 
   const fields = parseFields(params);
@@ -115,7 +132,7 @@ Deno.serve(async (req) => {
 
   if (!callId) {
     console.warn("[sipgate-webhook] missing callId", fields);
-    return new Response("ok", { status: 200 });
+    return xmlResponse(EMPTY_RESPONSE_XML);
   }
 
   const direction = (fields.direction ?? "in").toLowerCase() === "out"
@@ -220,8 +237,18 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("[sipgate-webhook] handler error", e);
-    return new Response("error", { status: 500 });
+    return xmlResponse(EMPTY_RESPONSE_XML, 500);
   }
 
-  return new Response("", { status: 200 });
+  // For newCall we MUST subscribe to follow-up events via onAnswer/onHangup
+  // attributes on the <Response> tag, otherwise sipgate never sends answer/hangup.
+  if (event === "newcall") {
+    const attrs =
+      `onAnswer="${callbackUrl}" onHangup="${callbackUrl}" onData="${callbackUrl}"`;
+    const body = `<Response ${attrs}/>`;
+    console.log("[sipgate-webhook] newCall response", { callbackUrl });
+    return xmlResponse(body);
+  }
+
+  return xmlResponse(EMPTY_RESPONSE_XML);
 });
