@@ -9,6 +9,7 @@ import {
   BarChart3,
   User,
   Headphones,
+  FileSignature,
 } from "lucide-react";
 
 import {
@@ -24,6 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { SidebarUserFooter } from "@/components/SidebarUserFooter";
+import { useMyContract } from "@/hooks/use-my-contract";
 
 const workItems = [
   { title: "Cockpit", url: "/mitarbeiter", icon: LayoutDashboard, end: true },
@@ -37,7 +39,7 @@ const docItems = [
   { title: "Tickets", url: "/mitarbeiter/tickets", icon: Ticket },
 ];
 
-const meItems = [
+const meItemsBase = [
   { title: "Meine Statistik", url: "/mitarbeiter/statistik", icon: BarChart3 },
   { title: "Profil & Vertrag", url: "/mitarbeiter/profil", icon: User },
 ];
@@ -46,6 +48,23 @@ export function MitarbeiterSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
+  const { data: contract } = useMyContract();
+
+  const meItems = [
+    ...(contract && contract.status !== "completed"
+      ? [
+          {
+            title:
+              contract.status === "pending_employee"
+                ? "Arbeitsvertrag ausfüllen"
+                : "Arbeitsvertrag (Prüfung)",
+            url: "/mitarbeiter/arbeitsvertrag",
+            icon: FileSignature,
+          },
+        ]
+      : []),
+    ...meItemsBase,
+  ];
 
   const isActive = (path: string, end?: boolean) =>
     end ? pathname === path : pathname === path || pathname.startsWith(path + "/");

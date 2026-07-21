@@ -54,6 +54,8 @@ const draftSchema = z.object({
   contract_type: z.enum(["vollzeit", "teilzeit"]).optional().or(z.literal("")),
   start_date: z.string().optional().or(z.literal("")),
   salary: z.string().optional().or(z.literal("")),
+  assign_contract: z.boolean().optional(),
+  contract_template_id: z.string().optional().or(z.literal("")),
   birth_date: z.string().optional().or(z.literal("")),
   birth_place: z.string().trim().max(120).optional().or(z.literal("")),
   nationality: z.string().trim().max(80).optional().or(z.literal("")),
@@ -85,6 +87,8 @@ const fullSchema = z.object({
   }),
   start_date: z.string().min(1, "Pflichtfeld"),
   salary: z.string().min(1, "Pflichtfeld"),
+  assign_contract: z.boolean().optional(),
+  contract_template_id: z.string().optional().or(z.literal("")),
   birth_date: z.string().optional().or(z.literal("")),
   birth_place: z.string().trim().max(120).optional().or(z.literal("")),
   nationality: z.string().trim().max(80).optional().or(z.literal("")),
@@ -95,10 +99,6 @@ const fullSchema = z.object({
   tax_id: z.string().trim().max(40).optional().or(z.literal("")),
   social_security_number: z.string().trim().max(40).optional().or(z.literal("")),
   health_insurance: z.string().trim().max(120).optional().or(z.literal("")),
-  sip_phone_number: z.string().trim().max(50).optional().or(z.literal("")),
-  sip_server: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_username: z.string().trim().max(200).optional().or(z.literal("")),
-  sip_password: z.string().trim().max(200).optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof draftSchema>;
@@ -114,13 +114,15 @@ const STEPS: StepDef[] = [
   },
   {
     title: "Account & Vertrag",
-    description: "Login-Daten für das Panel sowie Vertragsdetails.",
+    description: "Login-Daten, Vertragsdetails und Arbeitsvertrag-Vorlage.",
     fields: [
       "login_local_part",
       "password_plain",
       "contract_type",
       "start_date",
       "salary",
+      "assign_contract",
+      "contract_template_id",
     ],
   },
   {
@@ -151,6 +153,8 @@ const DEFAULTS: FormValues = {
   contract_type: "" as FormValues["contract_type"],
   start_date: "",
   salary: "",
+  assign_contract: false,
+  contract_template_id: "",
   birth_date: "",
   birth_place: "",
   nationality: "",
@@ -194,6 +198,9 @@ function generatePassword(len = 8) {
 
 function normalize(values: FormValues, isDraft: boolean) {
   const out: Record<string, unknown> = { ...values };
+  // Remove non-column fields
+  delete out.assign_contract;
+  delete out.contract_template_id;
   for (const key of NULLABLE_STRINGS) {
     const v = out[key];
     if (typeof v === "string" && v.trim() === "") out[key] = null;
@@ -202,16 +209,12 @@ function normalize(values: FormValues, isDraft: boolean) {
     const v = out[key];
     if (typeof v === "string" && v.trim() === "") out[key] = null;
   }
-  // salary → number or null
   const rawSalary = (values.salary ?? "").toString().replace(",", ".").trim();
   out.salary = rawSalary === "" ? null : Number(rawSalary);
-  // contract_type "" → null
   if (out.contract_type === "") out.contract_type = null;
-  // login_email
   const local = (values.login_local_part ?? "").toString().trim();
   out.login_email = local === "" ? null : `${local}${EMAIL_SUFFIX}`;
   if (isDraft) {
-    // ensure password kept but nullable
     if (out.password_plain === "") out.password_plain = null;
   }
   return out;
@@ -250,9 +253,38 @@ export default function MitarbeiterWizard({
 
   const accountExists = !!existing.data?.user_id;
 
+  // Load active templates for the assignment select
+  const templatesQuery = useQuery({
+    queryKey: ["contract-templates-active"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("contract_templates")
+        .select("id,title,version,is_active")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { id: string; title: string; version: number; is_active: boolean }[];
+    },
+  });
+
+  // Load existing employee_contract for this employee (edit mode)
+  const existingContract = useQuery({
+    enabled: mode === "edit" && !!id,
+    queryKey: ["employee-contract", id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("employee_contracts")
+        .select("id,template_id,status")
+        .eq("employee_id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; template_id: string; status: string } | null;
+    },
+  });
+
   useEffect(() => {
     if (mode === "edit" && existing.data) {
       const d = existing.data;
+      const ec = existingContract.data;
       form.reset({
         first_name: d.first_name ?? "",
         last_name: d.last_name ?? "",
@@ -263,6 +295,8 @@ export default function MitarbeiterWizard({
         contract_type: (d.contract_type as "vollzeit" | "teilzeit") ?? "",
         start_date: d.start_date ?? "",
         salary: d.salary != null ? String(d.salary) : "",
+        assign_contract: !!ec,
+        contract_template_id: ec?.template_id ?? "",
         birth_date: d.birth_date ?? "",
         birth_place: d.birth_place ?? "",
         nationality: d.nationality ?? "",
@@ -275,7 +309,48 @@ export default function MitarbeiterWizard({
         health_insurance: d.health_insurance ?? "",
       });
     }
-  }, [mode, existing.data, form]);
+  }, [mode, existing.data, existingContract.data, form]);
+
+  async function syncContractAssignment(employeeId: string, values: FormValues) {
+    const assign = !!values.assign_contract;
+    const templateId = (values.contract_template_id ?? "").trim();
+    if (assign && templateId) {
+      // upsert: if exists → update template & reset to pending_employee; else insert
+      const { data: existingRow } = await (supabase as any)
+        .from("employee_contracts")
+        .select("id,template_id")
+        .eq("employee_id", employeeId)
+        .maybeSingle();
+      if (existingRow) {
+        if ((existingRow as any).template_id !== templateId) {
+          const { error } = await (supabase as any)
+            .from("employee_contracts")
+            .update({
+              template_id: templateId,
+              status: "pending_employee",
+              employee_signature_data_url: null,
+              signed_at: null,
+              admin_confirmed_at: null,
+              admin_confirmed_by: null,
+              pdf_path: null,
+            })
+            .eq("id", (existingRow as any).id);
+          if (error) throw error;
+        }
+      } else {
+        const { error } = await (supabase as any)
+          .from("employee_contracts")
+          .insert({ employee_id: employeeId, template_id: templateId });
+        if (error) throw error;
+      }
+    } else {
+      // remove any existing assignment
+      await (supabase as any)
+        .from("employee_contracts")
+        .delete()
+        .eq("employee_id", employeeId);
+    }
+  }
 
   const submitMutation = useMutation({
     mutationFn: async (values: FormValues) => {
@@ -343,6 +418,11 @@ export default function MitarbeiterWizard({
         }
       }
 
+      // Sync arbeitsvertrag assignment
+      if (employeeId) {
+        await syncContractAssignment(employeeId, values);
+      }
+
       return { login_email };
     },
     onSuccess: (res) => {
@@ -376,6 +456,7 @@ export default function MitarbeiterWizard({
           .update(updatePayload as EmployeeUpdate)
           .eq("id", id);
         if (error) throw error;
+        await syncContractAssignment(id, values);
         return { id };
       } else {
         const { data, error } = await supabase
@@ -384,7 +465,9 @@ export default function MitarbeiterWizard({
           .select("id")
           .single();
         if (error) throw error;
-        return { id: data.id as string };
+        const newId = data.id as string;
+        await syncContractAssignment(newId, values);
+        return { id: newId };
       }
     },
     onSuccess: (res) => {
@@ -473,6 +556,7 @@ export default function MitarbeiterWizard({
                         showPw={showPw}
                         setShowPw={setShowPw}
                         accountLocked={accountExists}
+                        templates={templatesQuery.data ?? []}
                       />
                     )}
                     {step === 2 && <StepOptional form={form} />}
@@ -704,11 +788,13 @@ function StepAccount({
   showPw,
   setShowPw,
   accountLocked,
+  templates,
 }: {
   form: FR;
   showPw: boolean;
   setShowPw: (v: boolean) => void;
   accountLocked: boolean;
+  templates: { id: string; title: string; version: number; is_active: boolean }[];
 }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
@@ -826,6 +912,82 @@ function StepAccount({
         placeholder="z. B. 2800"
         className="md:col-span-2"
       />
+
+      <ContractAssignField form={form} templates={templates} />
+    </div>
+  );
+}
+
+function ContractAssignField({
+  form,
+  templates,
+}: {
+  form: FR;
+  templates: { id: string; title: string; version: number; is_active: boolean }[];
+}) {
+  const assign = !!form.watch("assign_contract");
+  return (
+    <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <FormField
+        control={form.control}
+        name="assign_contract"
+        render={({ field }) => (
+          <FormItem className="flex items-start gap-3 space-y-0">
+            <FormControl>
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+              />
+            </FormControl>
+            <div className="min-w-0">
+              <FormLabel className="cursor-pointer text-sm font-medium">
+                Arbeitsvertrag zuweisen
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Der Mitarbeiter wird aufgefordert, seine Daten auszufüllen und den
+                Vertrag digital zu unterschreiben.
+              </p>
+            </div>
+          </FormItem>
+        )}
+      />
+
+      {assign && (
+        <FormField
+          control={form.control}
+          name="contract_template_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Vertragsvorlage</FormLabel>
+              <Select
+                value={(field.value as string) || undefined}
+                onValueChange={field.onChange}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Bitte Vorlage wählen" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {templates.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Keine Vorlagen vorhanden
+                    </div>
+                  )}
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.title} (v{t.version}) {t.is_active ? "" : "— Entwurf"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 }
