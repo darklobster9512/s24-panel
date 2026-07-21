@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
   if (event === "newcall") {
     const escapedCallbackUrl = escapeXmlAttribute(callbackUrl);
     const attrs = `onAnswer="${escapedCallbackUrl}" onHangup="${escapedCallbackUrl}"`;
-    const body = `<Response ${attrs}/>`;
+    const body = `<Response ${attrs}></Response>`;
     console.log("[sipgate-webhook] newCall response", { callbackUrl });
     return xmlResponse(body);
   }
