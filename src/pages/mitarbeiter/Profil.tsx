@@ -40,6 +40,21 @@ export default function Profil() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [employee, setEmployee] = useState<EmployeeRow | null>(null);
+  const { data: contract } = useMyContract();
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      if (contract?.pdf_path) {
+        const { data } = await supabase.storage
+          .from("contract-assets")
+          .createSignedUrl(contract.pdf_path, 3600);
+        setPdfUrl(data?.signedUrl ?? null);
+      } else {
+        setPdfUrl(null);
+      }
+    })();
+  }, [contract?.pdf_path]);
 
   useEffect(() => {
     if (!user) return;
