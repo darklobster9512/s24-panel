@@ -1,33 +1,31 @@
-Das Ticket-System wird vollständig aus dem Portal entfernt — sowohl Mitarbeiter- als auch Superadmin-Bereich, inkl. Routen, Sidebar-Einträgen, Mock-Daten und der Ticket-Checkbox auf der Erfassungs-Seite.
+## Ziel
+`/mitarbeiter/statistik` mit echten Daten aus `call_notes` und `sipgate_calls` befüllen, gefiltert auf den eingeloggten Mitarbeiter (`employee_id` bzw. `handled_by_employee_id`). Zeitraum-Umschalter (Woche/Monat/Quartal) wirkt live.
 
-### 1. Routen & Seiten entfernen
-- `src/App.tsx`:
-  - Imports `SuperadminTickets` und `MitarbeiterTickets` entfernen.
-  - Routen `path="tickets"` unter `/superadmin` und `/mitarbeiter` entfernen.
-- Dateien löschen:
-  - `src/pages/superadmin/Tickets.tsx`
-  - `src/pages/mitarbeiter/Tickets.tsx`
+## Datenquellen
+- **KPIs & Charts basierend auf Anrufen**: `sipgate_calls` gefiltert per `handled_by_employee_id = mein employee.id`, im gewählten Zeitraum (`started_at >=` Start).
+  - Anrufe gesamt: Count
+  - Ø Dauer: Durchschnitt aus `ended_at - answered_at` (nur answered)
+  - Anrufe pro Tag (Bar): Gruppierung nach Tag im Zeitraum
+  - Ø Dauer pro Tag (Line): Durchschnitt pro Tag
+- **Notizen & Kategorien**: `call_notes` gefiltert per `employee_id = mein employee.id`.
+  - Notizen-KPI: Count im Zeitraum
+  - Verteilung nach Kategorie (Pie): group by `kategorie`
+  - Anrufe pro Kunde (Bar): Count `call_notes` group by `client_id`, join Kundenname aus `clients`
 
-### 2. Sidebar-Einträge entfernen
-- `src/components/mitarbeiter/AppSidebar.tsx`: „Tickets"-Eintrag und `Ticket`-Icon-Import entfernen.
-- `src/components/superadmin/AppSidebar.tsx`: „Tickets"-Eintrag und `Ticket`-Icon-Import entfernen.
+## Delta-Werte (KPI-Karten)
+Vergleich mit vorheriger, gleichlanger Periode (z. B. letzte Woche vs. vorletzte). Anzeige als „+12 %" bzw. „-8s" analog aktuell. Wenn keine Vorperiodendaten vorhanden → kein Delta.
 
-### 3. Ticket-Bezüge in anderen Seiten entfernen
-- `src/pages/mitarbeiter/Erfassen.tsx`:
-  - State `ticketErstellen` inkl. `setTicketErstellen`, das Checkbox-UI („Ticket erstellen (Aufgabe für Kunde)") und der Payload-Key `ticket_erstellen` beim Insert in `call_notes` entfernen.
-- `src/pages/mitarbeiter/KundeDetail.tsx`:
-  - Panel „Offene Tickets" komplett entfernen inkl. Filter/Import von `MOCK_TICKETS`.
-- `src/pages/mitarbeiter/Statistik.tsx`:
-  - `StatCard` „Tickets erstellt" und `Ticket`-Icon-Import entfernen.
-- `src/pages/superadmin/Einstellungen.tsx`:
-  - Text „Eigene Anrufe, Notizen, Tickets" auf „Eigene Anrufe, Notizen" kürzen.
-- `src/lib/mitarbeiter-mock.ts`:
-  - Interface `MockTicket` und Array `MOCK_TICKETS` entfernen.
+## Zeitraum-Logik
+- **Woche**: letzte 7 Tage, Tages-Buckets (Mo–So)
+- **Monat**: letzte 30 Tage, Tages-Buckets
+- **Quartal**: letzte 90 Tage, Wochen-Buckets
 
-### 4. Datenbank-Schema aufräumen
-- Migration: Spalte `ticket_erstellen` aus `public.call_notes` entfernen (`ALTER TABLE public.call_notes DROP COLUMN ticket_erstellen`).
-- Keine weiteren Tabellen zu droppen (es gibt keine separate `tickets`-Tabelle).
+## Umsetzung
+- `src/pages/mitarbeiter/Statistik.tsx`: State + `useEffect`, lädt bei Änderung von `tf` frisch. Eigene `employees.id` per `user_id = auth.uid()` einmalig auflösen.
+- Ladezustand: Skeleton-Cards und Chart-Placeholder.
+- Leerzustand: Panels zeigen dezenten Hinweis „Noch keine Daten in diesem Zeitraum".
+- Keine neue Tabelle, keine Migration nötig — RLS-Policies existieren bereits (Mitarbeiter sieht eigene `call_notes` und über `handled_by_employee_id` seine `sipgate_calls`).
 
-### 5. Verifikation
-- Build (`bun run build`) muss ohne TS-Fehler durchlaufen.
-- `rg -i ticket src/ supabase/` sollte danach keine relevanten Treffer mehr liefern.
+## Nicht enthalten
+- Kein CSV-Export, keine Filter über Zeitraum-Buttons hinaus.
+- Keine Änderung an der Superadmin-Statistikansicht.
