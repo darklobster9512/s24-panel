@@ -1,21 +1,38 @@
-## Ziel
+## Problem
 
-Alle verbuggten / hängengebliebenen Live-Anrufe aus `sipgate_calls` entfernen, damit das `/mitarbeiter/live` Cockpit und `/superadmin/anrufe` wieder sauber sind.
+sipgate meldet: „Answer callback was skipped because no callback URL was configured". Das bedeutet, sipgate akzeptiert unsere XML-Antwort auf `newCall` nicht als gültige Callback-Registrierung für `onAnswer`/`onHangup`.
 
-## Schritte
+Aus den Logs sehen wir, dass wir aktuell antworten mit:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Response onAnswer="https://.../sipgate-webhook?token=..." onHangup="https://.../sipgate-webhook?token=..."/>
+```
 
-1. **Offene Calls identifizieren**
-   - Alle Zeilen in `public.sipgate_calls` abfragen, deren `status` nicht `hangup` oder `completed` ist.
-   - Anzahl und IDs der betroffenen Calls anzeigen.
+Zwei bekannte Fallstricke bei sipgate.io Push-API:
 
-2. **Bereinigung durchführen**
-   - Die identifizierten hängengebliebenen Calls entweder löschen oder auf einen Endstatus (`completed`) setzen.
-   - Vorschlag: Löschen, da der Nutzer sagt „entfernen" und die Calls verbuggt sind.
+1. **Self-closing Tag** — sipgates Parser ist historisch strikt und erwartet oft `<Response ...></Response>` statt `<Response .../>`.
+2. **Fehlender Content-Type / falscher Encoding-Header** — sipgate erwartet `application/xml` (nicht `application/xml; charset=utf-8` in manchen Fällen) und exakt UTF-8 ohne BOM.
+3. **URL-Encoding des `&` im Token-Query-String** — der Token enthält keine Sonderzeichen, aber falls das Attribut das `&` nicht als `&amp;` escaped wäre es ein Problem (bereits gemacht via `escapeXmlAttribute`).
 
-3. **Ergebnis prüfen**
-   - Nach der Bereinigung nochmal prüfen, dass keine offenen Calls mehr vorhanden sind.
-   - `/mitarbeiter/live` und `/superadmin/anrufe` sollten keine verbuggten Einträge mehr anzeigen.
+## Fix
 
-## Hinweis
+Anpassung in `supabase/functions/sipgate-webhook/index.ts`:
 
-Dies ist eine reine Datenbereinigung. Keine Code- oder Schema-Änderungen nötig.
+1. `<Response>` bei `newCall` als offenes Tag rendern, nicht self-closing:
+   ```xml
+   <Response onAnswer="..." onHangup="..."></Response>
+   ```
+2. Content-Type auf `application/xml` reduzieren (ohne `charset=utf-8` Suffix), da sipgate darauf empfindlich reagieren kann.
+3. Zusätzlich `onAnswer`/`onHangup` mit HTTP-Methode absichern: sipgate erwartet dass die Callback-URL per POST erreichbar ist — unser Handler tut das bereits, aber wir loggen die eingehende Methode für Verifizierung.
+4. Ausgabe der final gesendeten XML-Bytes ins Log, damit wir bei nächstem Testanruf sofort verifizieren können.
+
+## Verifizierung
+
+Nach Deploy:
+- Testanruf durchführen (klingeln → annehmen → auflegen)
+- Edge Function Logs prüfen: es müssen `answer` und `hangup` Events ankommen
+- sipgate Dashboard: „Answer callback was skipped" darf nicht mehr erscheinen
+
+## Technische Details
+
+Nur die Response-Renderfunktion für `newcall` und die Header werden angepasst. Keine DB-Änderungen, keine Frontend-Änderungen.
