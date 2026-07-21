@@ -162,7 +162,7 @@ export default function Arbeitsvertrag() {
 
   const renderedHtml = useMemo(() => {
     const c = q.data;
-    if (!c) return "";
+    if (!c || !c.template) return "";
     const values = form.watch();
     const e = c.employee;
     return renderContractHtml(c.template.content_html, {
