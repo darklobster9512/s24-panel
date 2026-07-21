@@ -132,6 +132,47 @@ export type Database = {
           },
         ]
       }
+      caller_contacts: {
+        Row: {
+          caller_email: string | null
+          caller_name: string | null
+          client_id: string
+          created_at: string
+          id: string
+          last_seen_at: string
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          caller_email?: string | null
+          caller_name?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          caller_email?: string | null
+          caller_name?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caller_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_phone_numbers: {
         Row: {
           client_id: string
