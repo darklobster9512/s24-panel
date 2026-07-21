@@ -95,6 +95,7 @@ export default function Arbeitsvertrag() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [phase, setPhase] = useState<PhaseState>("preview");
+  const [subStep, setSubStep] = useState<0 | 1 | 2>(0);
   const sigRef = useRef<SignatureCanvas>(null);
   const [pdfSignedUrl, setPdfSignedUrl] = useState<string | null>(null);
 
