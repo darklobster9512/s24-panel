@@ -156,7 +156,7 @@ export default function Arbeitsvertrag() {
       birth_place: e.birth_place ?? "",
       nationality: e.nationality ?? "",
       marital_status: e.marital_status ?? "",
-      iban: e.iban ?? "",
+      iban: formatIBAN(e.iban ?? ""),
       bic: e.bic ?? "",
       bank_name: e.bank_name ?? "",
       tax_id: e.tax_id ?? "",
