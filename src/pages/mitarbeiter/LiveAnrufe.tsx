@@ -25,7 +25,7 @@ export default function LiveAnrufe() {
     <>
       <PageHeader
         title="Live-Anrufe"
-        subtitle="Eingehende Anrufe für deine zugewiesenen Kunden — in Echtzeit."
+        subtitle="Nimm eingehende Anrufe direkt in der sipgate App an — das Portal leitet dich automatisch weiter."
         actions={
           <Badge variant="secondary" className="gap-1.5">
             <span className="relative flex h-2 w-2">
