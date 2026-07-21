@@ -439,7 +439,16 @@ export default function Erfassen() {
             </p>
           </Panel>
 
-          <Panel title="Anrufer">
+          <Panel
+            title="Anrufer"
+            action={
+              knownCaller ? (
+                <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/10 text-primary">
+                  <User className="h-3 w-3" /> Bekannter Anrufer
+                </Badge>
+              ) : undefined
+            }
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="an-name">Name</Label>
