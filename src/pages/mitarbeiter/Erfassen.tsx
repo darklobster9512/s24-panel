@@ -23,6 +23,15 @@ import { fmtDauer } from "@/lib/mitarbeiter-mock";
 
 const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"] as const;
 
+function normalizePhone(v?: string | null): string {
+  if (!v) return "";
+  const trimmed = v.trim().replace(/[^\d+]/g, "");
+  if (trimmed.startsWith("+")) return "+" + trimmed.slice(1).replace(/\+/g, "");
+  if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
+  if (trimmed.startsWith("0")) return "+49" + trimmed.slice(1);
+  return trimmed;
+}
+
 export default function Erfassen() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -44,7 +53,9 @@ export default function Erfassen() {
   const [kategorie, setKategorie] = useState<string>("");
   const [prioritaet, setPrioritaet] = useState("normal");
   const [weitergeleitetAn, setWeitergeleitetAn] = useState("");
-  
+  const [knownCaller, setKnownCaller] = useState(false);
+
+
   const [rueckruf, setRueckruf] = useState(false);
   const [rueckrufZeit, setRueckrufZeit] = useState("");
 
@@ -91,6 +102,37 @@ export default function Erfassen() {
       cancelled = true;
     };
   }, [callId, user]);
+
+  // Lookup known caller contact by phone (per client) and prefill empty fields
+  useEffect(() => {
+    if (!clientId) return;
+    const normalized = normalizePhone(anruferNummer);
+    if (!normalized || normalized.length < 4) {
+      setKnownCaller(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("caller_contacts")
+        .select("caller_name, caller_email")
+        .eq("client_id", clientId)
+        .eq("phone_number", normalized)
+        .maybeSingle();
+      if (cancelled || error || !data) {
+        if (!cancelled) setKnownCaller(false);
+        return;
+      }
+      setKnownCaller(true);
+      setAnruferName((prev) => (prev.trim() ? prev : data.caller_name ?? ""));
+      setAnruferEmail((prev) => (prev.trim() ? prev : data.caller_email ?? ""));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, anruferNummer]);
+
+
 
   useEffect(() => {
     if (!running) return;
@@ -149,6 +191,7 @@ export default function Erfassen() {
     setAnruferName("");
     setAnruferNummer("");
     setAnruferEmail("");
+    setKnownCaller(false);
     setAnliegen("");
     setKategorie("");
     setPrioritaet("normal");
@@ -197,6 +240,25 @@ export default function Erfassen() {
         toast.error("Speichern fehlgeschlagen: " + error.message);
         return;
       }
+
+      // Remember caller by phone number (per client) so next call auto-fills
+      const normalizedPhone = normalizePhone(anruferNummer);
+      if (normalizedPhone && (anruferName.trim() || anruferEmail.trim())) {
+        const { error: ccErr } = await supabase
+          .from("caller_contacts")
+          .upsert(
+            {
+              client_id: clientId,
+              phone_number: normalizedPhone,
+              caller_name: anruferName.trim() || null,
+              caller_email: anruferEmail.trim() || null,
+              last_seen_at: new Date().toISOString(),
+            },
+            { onConflict: "client_id,phone_number" },
+          );
+        if (ccErr) console.warn("caller_contacts upsert failed", ccErr);
+      }
+
       toast.success(closeAfter ? "Anruf gespeichert." : "Anruf gespeichert — neuer Anruf.");
       if (closeAfter) {
         navigate("/mitarbeiter/notizen");
@@ -377,7 +439,16 @@ export default function Erfassen() {
             </p>
           </Panel>
 
-          <Panel title="Anrufer">
+          <Panel
+            title="Anrufer"
+            action={
+              knownCaller ? (
+                <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/10 text-primary">
+                  <User className="h-3 w-3" /> Bekannter Anrufer
+                </Badge>
+              ) : undefined
+            }
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="an-name">Name</Label>
