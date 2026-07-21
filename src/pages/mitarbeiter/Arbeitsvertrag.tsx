@@ -76,6 +76,11 @@ type ContractData = {
   };
 };
 
+function formatIBAN(raw: string): string {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 34);
+  return clean.replace(/(.{4})/g, "$1 ").trim();
+}
+
 const wizardSchema = z.object({
   birth_date: z.string().min(1, "Pflichtfeld"),
   birth_place: z.string().trim().min(1, "Pflichtfeld"),
