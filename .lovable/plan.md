@@ -1,15 +1,33 @@
-Zwei kleine Copy-Updates im Mitarbeiter-Bereich, damit die Hinweise zum neuen Auto-Redirect-/Auto-Stop-Workflow passen:
+Das Ticket-System wird vollständig aus dem Portal entfernt — sowohl Mitarbeiter- als auch Superadmin-Bereich, inkl. Routen, Sidebar-Einträgen, Mock-Daten und der Ticket-Checkbox auf der Erfassungs-Seite.
 
-1. Erfassen-Seite — Timer-Hinweis anpassen
-   - Datei: `src/pages/mitarbeiter/Erfassen.tsx` (Zeile ~312)
-   - Aktuell: „Timer läuft manuell — starte, sobald du im Softphone angenommen hast."
-   - Problem: Der Timer startet jetzt automatisch, wenn ein eingehender sipgate-Call gematched wird, und stoppt automatisch bei Hangup.
-   - Neu: Hinweis, dass der Timer automatisch startet/stoppt, wenn der Anruf in der sipgate App angenommen und beendet wird.
+### 1. Routen & Seiten entfernen
+- `src/App.tsx`:
+  - Imports `SuperadminTickets` und `MitarbeiterTickets` entfernen.
+  - Routen `path="tickets"` unter `/superadmin` und `/mitarbeiter` entfernen.
+- Dateien löschen:
+  - `src/pages/superadmin/Tickets.tsx`
+  - `src/pages/mitarbeiter/Tickets.tsx`
 
-2. Live-Anrufe-Seite — Untertitel anpassen
-   - Datei: `src/pages/mitarbeiter/LiveAnrufe.tsx` (Zeile ~28)
-   - Aktuell: „Eingehende Anrufe für deine zugewiesenen Kunden — in Echtzeit."
-   - Problem: Es fehlt die Anweisung, die Anrufe in der sipgate App anzunehmen; stattdessen wird nur „Echtzeit" betont.
-   - Neu: Kurze Anweisung, dass die Sekretärin eingehende Calls direkt in der sipgate App annehmen muss, damit das Portal automatisch weiterleitet.
+### 2. Sidebar-Einträge entfernen
+- `src/components/mitarbeiter/AppSidebar.tsx`: „Tickets"-Eintrag und `Ticket`-Icon-Import entfernen.
+- `src/components/superadmin/AppSidebar.tsx`: „Tickets"-Eintrag und `Ticket`-Icon-Import entfernen.
 
-Keine Änderungen an Logik/State/DB — nur reine Text-Anpassungen.
+### 3. Ticket-Bezüge in anderen Seiten entfernen
+- `src/pages/mitarbeiter/Erfassen.tsx`:
+  - State `ticketErstellen` inkl. `setTicketErstellen`, das Checkbox-UI („Ticket erstellen (Aufgabe für Kunde)") und der Payload-Key `ticket_erstellen` beim Insert in `call_notes` entfernen.
+- `src/pages/mitarbeiter/KundeDetail.tsx`:
+  - Panel „Offene Tickets" komplett entfernen inkl. Filter/Import von `MOCK_TICKETS`.
+- `src/pages/mitarbeiter/Statistik.tsx`:
+  - `StatCard` „Tickets erstellt" und `Ticket`-Icon-Import entfernen.
+- `src/pages/superadmin/Einstellungen.tsx`:
+  - Text „Eigene Anrufe, Notizen, Tickets" auf „Eigene Anrufe, Notizen" kürzen.
+- `src/lib/mitarbeiter-mock.ts`:
+  - Interface `MockTicket` und Array `MOCK_TICKETS` entfernen.
+
+### 4. Datenbank-Schema aufräumen
+- Migration: Spalte `ticket_erstellen` aus `public.call_notes` entfernen (`ALTER TABLE public.call_notes DROP COLUMN ticket_erstellen`).
+- Keine weiteren Tabellen zu droppen (es gibt keine separate `tickets`-Tabelle).
+
+### 5. Verifikation
+- Build (`bun run build`) muss ohne TS-Fehler durchlaufen.
+- `rg -i ticket src/ supabase/` sollte danach keine relevanten Treffer mehr liefern.
