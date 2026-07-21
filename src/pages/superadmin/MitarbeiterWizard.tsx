@@ -139,11 +139,6 @@ const STEPS: StepDef[] = [
       "health_insurance",
     ],
   },
-  {
-    title: "SIP-Daten",
-    description: "Zugangsdaten für PhonerLite.",
-    fields: ["sip_phone_number", "sip_server", "sip_username", "sip_password"],
-  },
 ];
 
 const DEFAULTS: FormValues = {
