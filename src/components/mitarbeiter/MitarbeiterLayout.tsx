@@ -173,13 +173,18 @@ export function ClientLogo({
   size?: "sm" | "md" | "lg";
 }) {
   const sz = size === "sm" ? "h-8 w-8 text-base" : size === "lg" ? "h-14 w-14 text-2xl" : "h-10 w-10 text-lg";
+  const pad = size === "sm" ? "p-1" : "p-1.5";
   return (
     <div
-      className={cn("grid shrink-0 place-items-center overflow-hidden rounded-xl bg-primary/15 text-ink", sz)}
+      className={cn(
+        "grid shrink-0 place-items-center overflow-hidden rounded-xl border border-border/60 text-ink",
+        logoUrl ? "bg-background" : "bg-primary/15",
+        sz,
+      )}
       aria-label={name}
     >
       {logoUrl ? (
-        <img src={logoUrl} alt={name} className="h-full w-full object-cover" />
+        <img src={logoUrl} alt={name} className={cn("h-full w-full object-contain", pad)} />
       ) : (
         <span>{logo ?? name.charAt(0).toUpperCase()}</span>
       )}
