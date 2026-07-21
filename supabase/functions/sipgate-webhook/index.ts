@@ -40,15 +40,32 @@ async function lookupClient(toNumber: string | null): Promise<string | null> {
 }
 
 async function lookupEmployeeBySipgateUser(
-  userId: string | null,
+  candidates: (string | null | undefined)[],
 ): Promise<string | null> {
-  if (!userId) return null;
+  const clean = candidates.map((c) => (c ?? "").trim()).filter(Boolean);
+  if (clean.length === 0) return null;
+  const { data } = await admin
+    .from("employees")
+    .select("id, sipgate_user_id")
+    .in("sipgate_user_id", clean)
+    .limit(1);
+  return data?.[0]?.id ?? null;
+}
+
+async function lookupEmployeeByName(fullName: string | null): Promise<string | null> {
+  const name = (fullName ?? "").trim();
+  if (!name) return null;
+  const parts = name.split(/\s+/);
+  if (parts.length < 2) return null;
+  const first = parts[0];
+  const last = parts.slice(1).join(" ");
   const { data } = await admin
     .from("employees")
     .select("id")
-    .eq("sipgate_user_id", userId)
-    .maybeSingle();
-  return data?.id ?? null;
+    .ilike("first_name", first)
+    .ilike("last_name", last)
+    .limit(1);
+  return data?.[0]?.id ?? null;
 }
 
 function parseFields(params: URLSearchParams): Record<string, string> {
