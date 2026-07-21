@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Save, FileText, Plus, Trash2, Phone } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -168,6 +168,9 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [phoneNumbers, setPhoneNumbers] = useState<
+    { id?: string; phone_number: string; label: string }[]
+  >([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(draftSchema),
