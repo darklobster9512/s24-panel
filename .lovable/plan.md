@@ -1,40 +1,50 @@
-## Diagnose zuerst — dann Fix
+# sipgate-Webhook: Folge-Events per XML-Response abonnieren
 
-Aktuell wissen wir nur: `newCall` kommt an, danach passiert nichts mehr in der DB. Ob sipgate den `hangup` **überhaupt schickt**, ob er mit anderem Event-Namen / anderem `callId`-Feld ankommt, oder ob unser Parser ihn ignoriert — dazu haben wir keine Logs, weil die Function bei Erfolg still ist. Ohne diese Info raten wir. Deshalb: erst Logging schärfen, dann gezielt fixen.
+## Kontext — was ist Push API vs. REST API
 
-## Schritt 1 — Diagnose-Logging in `supabase/functions/sipgate-webhook/index.ts`
+sipgate hat zwei unabhängige Produkte:
 
-Jeden eingehenden Request loggen, bevor irgendetwas anderes passiert:
+- **REST API** (`api.sipgate.com`) — Polling/Client-initiiert. Nutzen wir **nicht**.
+- **Push API = das „Webhooks"-Feature** — sipgate pusht POST-Requests an unsere URL. **Genau das nutzen wir bereits.** Die technischen Docs dazu liegen unter `developer.sipgate.io/push-api` (im sipgate-Menü als „Push API" gelistet, auf der Landingpage `sipgate.io/webhooks` beworben — beides derselbe Mechanismus).
 
-- `console.log("[sipgate-webhook] incoming", { method, contentType, rawBody })` direkt nach dem `req.text()`.
-- Nach dem Parsen: `console.log("[sipgate-webhook] parsed", { event, callId, direction, from, to, allFields: fields })`.
-- In jedem Zweig (`newcall`, `answer`, `hangup`, else) ein `console.log` mit dem finalen DB-Ergebnis (`data` und `error`).
-- Auch den `else`-Zweig mit `console.warn` samt vollem `fields`-Dump — falls sipgate `event=hangUp` (camelCase) oder ein anderes Namensschema sendet, sehen wir es sofort.
+Es sind also keine API-Credentials, kein REST-Client und keine zusätzlichen Panel-Einstellungen nötig. Reine Erweiterung unseres bestehenden Webhook-Endpunkts.
 
-Das ist ein kleiner, in sich abgeschlossener Edit an genau einer Datei. Keine Logik-Änderung.
+## Ursache des aktuellen Bugs
 
-## Schritt 2 — Reproduzieren
+Aus der Push-API-Referenz wörtlich:
 
-- Preview offen lassen, echten Testanruf über sipgate auslösen und wieder auflegen.
-- Edge-Function-Logs auslesen. Drei mögliche Befunde:
-  1. **Kein Hangup-Request eingegangen** → sipgate schickt ihn nicht. Ursache liegt in der sipgate-Konsole (Push-API-Konfiguration für Hangup nicht aktiviert / falsche Extension). Ich zeige dir dann genau, was in sipgate umzustellen ist.
-  2. **Hangup kommt, aber mit anderem Event-Namen / Feldnamen** (z. B. `event=hangUp`, `event=Hangup`, oder `callId` heißt `originalCallId`). → Fix im Parser: case-insensitive Vergleich + Aliases für `callId`.
-  3. **Hangup kommt und wird verarbeitet, aber `.update(...).eq('sipgate_call_id', callId)` matcht keine Zeile** (z. B. weil sipgate für `newCall` und `hangup` unterschiedliche IDs schickt — `callId` vs. `origCallId`). → Fix: bei Update sowohl gegen `sipgate_call_id` als auch gegen gespeicherte `raw_payload->>origCallId` matchen, oder beim Insert `origCallId` als Schlüssel bevorzugen.
+> „In your response to the new call event POST request, you can subscribe to receive following events of the concerned call. Specify these urls via xml-attributes in the response-tag."
+>
+> - `onAnswer` — POST beim Annehmen
+> - `onHangup` — POST beim Beenden
 
-## Schritt 3 — Gezielter Fix
+Beispiel aus der Doku:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Response onAnswer="https://…/webhook" onHangup="https://…/webhook"/>
+```
 
-Basierend auf dem konkreten Log-Output aus Schritt 2 wird genau eine der drei Ursachen adressiert:
+Unser Endpoint antwortet aktuell mit leerem 200er → sipgate sendet keine Folge-Events → Status bleibt auf „ringing"/„Wartezeit" hängen. Genau das Symptom im Cockpit.
 
-- (1) → keine Code-Änderung, Anleitung für sipgate-Konsole.
-- (2) → Parser in `sipgate-webhook/index.ts` toleranter machen (Event-Namen normalisieren, Feld-Aliases). 
-- (3) → Match-Strategie ändern: `sipgate_call_id` in der DB auf `origCallId ?? callId` normalisieren (Migration nicht nötig, nur Function-Logik).
+## Änderungen — ausschließlich in `supabase/functions/sipgate-webhook/index.ts`
 
-## Was der Nutzer danach sieht
+1. **`xmlResponse(body)`-Helper**: setzt `Content-Type: application/xml`, liefert XML-Prolog + Body.
+2. **Callback-URL aus dem eingehenden `req.url` rekonstruieren** (inkl. `?token=<TOKEN>`), damit dieselbe Function für alle Events wiederverwendet wird und keine URL hardcoded ist.
+3. **`newCall`-Zweig**: nach DB-Upsert antworten mit
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <Response onAnswer="…?token=…" onHangup="…?token=…"/>
+   ```
+4. **`answer`/`hangup`/unbekannte Events**: mit leerem `<Response/>`-XML antworten (statt leerem Body) — laut Doku wird valides XML erwartet.
+5. Parser, DB-Writes und Logging bleiben unverändert, inkl. `origCallId`-Fallback.
 
-- `/mitarbeiter/live` erkennt `ringing → answered → ended/missed` in Echtzeit, weil der `hangup`-Pfad sauber durchläuft.
-- Kein Timer, kein Cleanup-Cron — der Status kommt aus dem Event, so wie du es willst.
+Kein `<Dial>` oder andere Actions — wir wollen den Anruf nicht umleiten, nur Events empfangen. Ein `<Response>` ohne Kinder ist laut Doku zulässig („kein-Action-Zweig").
 
-## Nicht Teil dieses Plans
+## Verifikation
 
-- Client-Timeout in `use-live-calls.ts` und pg_cron-Cleanup (auf deinen Wunsch verworfen).
-- UI-Änderungen an `/mitarbeiter/live`.
+1. Nach Deploy einen Testanruf: klingeln → annehmen → auflegen.
+2. `sipgate-webhook`-Logs müssen in Reihenfolge zeigen: `event: "newcall"` → `event: "answer"` → `event: "hangup"`.
+3. `/mitarbeiter/live` + `/superadmin/anrufe`: Status wechselt live „Wartezeit" → „Aktiv" → „Beendet" (bzw. „Verpasst", wenn nicht angenommen).
+4. Falls trotzdem keine Folge-Events kommen: Response-Body im sipgate-Log prüfen und ggf. XML-Namespace `xmlns="http://schemas.sipgate.io/webhookserver/xml/schema/2015"` ergänzen (Doku zeigt ihn im Beispiel, sagt aber nicht explizit „required").
+
+Keine DB-Migration, keine Frontend-Änderung, keine sipgate-Panel-Änderung deinerseits.
