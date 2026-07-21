@@ -1,26 +1,50 @@
-## Diagnose (verifiziert)
+Sobald sipgate ein `answer`-Event schickt, wird der Mitarbeiter, der den Anruf angenommen hat, in seinem Browser automatisch zu `/mitarbeiter/erfassen` weitergeleitet — Kunde ist vorausgewählt (via `to`-Nummer), Anrufernummer eingetragen (via `from`), Timer läuft. Beim `hangup`-Event wird der Timer automatisch gestoppt.
 
-Webhook funktioniert jetzt korrekt. Aus der DB:
-- Der Anruf um 15:20 wurde sauber verarbeitet: `newCall → answer → hangup`, Status `ended`, `answered_at` und `ended_at` gesetzt.
-- Es liegt aber noch ein alter, hängender Datensatz drin: `pbx-405fa678-...` von 12:54:28 mit Status `ringing`, `answered_at = NULL`, `ended_at = NULL`. Dieser stammt aus einem Testanruf **vor** dem Webhook-Fix, für den sipgate nie ein Hangup an uns geschickt hat.
-- Die Live-Ansicht lädt initial alle Zeilen mit Status `ringing`/`answered`. Dadurch erscheint dieser alte Call weiterhin als "Wartezeit", obwohl er längst vorbei ist.
+## Mapping Mitarbeiter ↔ sipgate
 
-Realtime ist auf `sipgate_calls` aktiv (Publication + REPLICA IDENTITY FULL), UPDATE-Events funktionieren also grundsätzlich — sichtbar auch daran, dass der 15:20-Call korrekt aus der Live-Liste verschwunden ist.
+Die Spalte `employees.sipgate_user_id` existiert schon. Ich baue sie ins Mitarbeiter-Anlegen/-Bearbeiten Formular ein (Step „Zugangsdaten"): freies Textfeld, z. B. `w1` oder `4004168w1`.
 
-Ursache ist also **nicht** die UI-Logik im Normalfall, sondern (a) verwaiste Ringing-Zeilen ohne Hangup und (b) fehlender clientseitiger Schutz, falls sipgate mal wirklich kein Hangup schickt.
+Matching-Logik im Webhook bei `answer`:
+1. Exakter Match auf `sipgate_user_id` gegen `fullUserId` (`4004168w1`).
+2. Fallback: Match gegen kurze `userId` (`w1`).
+3. Fallback: Namensabgleich `user` (`Fabian Gerker`) gegen `first_name || ' ' || last_name`.
 
-## Umsetzung
+Passt keiner, wird nur `answered_at`/`status` gesetzt, kein Redirect.
 
-1. **Verwaiste Ringing-Calls sofort bereinigen**  
-   Alle `sipgate_calls` mit Status `ringing` oder `answered`, die älter als 15 Minuten sind, auf `missed` bzw. `ended` setzen und `ended_at = now()`.
+## Änderungen
 
-2. **Stale-Guard im Hook `src/hooks/use-live-calls.ts`**  
-   - Ticker (1 s), der Calls automatisch ausblendet, deren `started_at` > 15 Minuten zurückliegt — unabhängig vom DB-Status.
-   - Verhindert, dass die Live-Kachel bei fehlendem Hangup unbegrenzt "Wartezeit" zeigt.
+### 1. Webhook (`supabase/functions/sipgate-webhook/index.ts`)
+- `answer`: `employees` nachschlagen (Prio sipgate_user_id → Namensfallback), `answered_by_employee_id` und `handled_by_employee_id` auf `sipgate_calls` setzen.
+- `hangup`: bleibt wie gehabt — findet den Call per `callId`, setzt `status='ended'`, `ended_at=now()`. Passt automatisch zu from/to, weil `callId` beim newCall gespeichert wurde.
 
-3. **Optional (nur wenn du willst)**: Serverseitige Cleanup-Query wiederverwendbar machen (kleine SQL-Funktion oder Cron). Für jetzt reicht das einmalige Bereinigen + der Client-Guard.
+### 2. Mitarbeiter-Wizard (`src/pages/superadmin/MitarbeiterWizard.tsx` + Detail)
+- Feld „sipgate User-ID" im Zugangsdaten-Step (optional).
 
-## Was **nicht** geändert wird
+### 3. Auto-Redirect + Auto-Stop (neu: `src/hooks/use-auto-answer-redirect.ts`)
+- Läuft global im Mitarbeiter-Layout.
+- Ermittelt einmalig die eigene `employees.id`.
+- Realtime-Subscription auf `sipgate_calls` UPDATE:
+  - **Answer-Fall**: `answered_by_employee_id === myEmployeeId` UND `status === 'answered'` UND `answered_at` in den letzten 60 s UND Call-ID noch nicht gesehen → `navigate('/mitarbeiter/erfassen?call=<id>&auto=1')`.
+  - **Hangup-Fall**: `answered_by_employee_id === myEmployeeId` UND `status === 'ended'` → Event ins `window` dispatchen (`sipgate:hangup` mit `detail: { callId, from, to }`), damit die Erfassen-Seite darauf reagieren kann.
 
-- Webhook-Code bleibt wie er ist — die Logs zeigen, dass er korrekt arbeitet.
-- Keine Änderungen an sipgate-URL oder Token.
+### 4. Erfassen-Seite (`src/pages/mitarbeiter/Erfassen.tsx`)
+- Listener auf `sipgate:hangup`: wenn `event.detail.callId === aktuelle callId` **oder** `from === anruferNummer` und `to === Kundennummer`, dann:
+  - `setRunning(false)`
+  - Dauer aus `Date.now() - start` einfrieren
+  - Toast „Anruf beendet — Timer gestoppt"
+- Kein Auto-Save; Mitarbeiter klickt weiterhin selbst „Speichern".
+
+### 5. Einbinden im Layout (`src/components/mitarbeiter/MitarbeiterLayout.tsx`)
+- `useAutoAnswerRedirect()` einmal im Root aufrufen.
+
+## Randfälle
+
+- **Mehrere Tabs**: alle Tabs navigieren/stoppen — akzeptiert.
+- **Hangup ohne vorherigen Answer für diesen User**: kein Auto-Stop, Call wird nur in DB beendet.
+- **Kein Match auf sipgate_user_id**: kein Redirect, kein Auto-Stop, Call landet trotzdem im Log.
+- **Alte `answered_at` (>60 s) beim ersten Login**: kein Redirect, verhindert Kapern der Seite.
+
+## Verifikation
+
+- Simulierten `newCall → answer → hangup` schicken; prüfen dass `answered_by_employee_id`, `handled_by_employee_id`, `ended_at` gesetzt werden.
+- Browser-Test: eingeloggt als Mitarbeiter, Answer simulieren → Redirect + Timer läuft; Hangup simulieren → Timer stoppt automatisch.
