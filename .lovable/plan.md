@@ -1,32 +1,26 @@
-Du hast recht, das muss jetzt sauber gelöst werden. Ich habe den aktuellen Code und die sipgate-Doku geprüft: Die Funktion antwortet zwar mit `onAnswer` und `onHangup`, aber die Callback-URLs enthalten zusätzlich `&callback=answer/hangup`. Genau diesen unnötigen Zusatz entferne ich, damit sipgate eine möglichst einfache, dokumentationsnahe Callback-URL bekommt.
+## Diagnose (verifiziert)
 
-Plan:
+Webhook funktioniert jetzt korrekt. Aus der DB:
+- Der Anruf um 15:20 wurde sauber verarbeitet: `newCall → answer → hangup`, Status `ended`, `answered_at` und `ended_at` gesetzt.
+- Es liegt aber noch ein alter, hängender Datensatz drin: `pbx-405fa678-...` von 12:54:28 mit Status `ringing`, `answered_at = NULL`, `ended_at = NULL`. Dieser stammt aus einem Testanruf **vor** dem Webhook-Fix, für den sipgate nie ein Hangup an uns geschickt hat.
+- Die Live-Ansicht lädt initial alle Zeilen mit Status `ringing`/`answered`. Dadurch erscheint dieser alte Call weiterhin als "Wartezeit", obwohl er längst vorbei ist.
 
-1. Webhook-XML vereinfachen
-   - `onAnswer` und `onHangup` zeigen beide auf dieselbe saubere URL:
-     `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=...`
-   - Kein zusätzliches `&callback=...` mehr in den XML-Attributen.
-   - Die Funktion unterscheidet Answer/Hangup ausschließlich über das von sipgate gesendete `event`-Feld, wie in der Doku beschrieben.
+Realtime ist auf `sipgate_calls` aktiv (Publication + REPLICA IDENTITY FULL), UPDATE-Events funktionieren also grundsätzlich — sichtbar auch daran, dass der 15:20-Call korrekt aus der Live-Liste verschwunden ist.
 
-2. XML-Ausgabe exakt dokumentationsnah machen
-   - Response bleibt:
-     ```xml
-     <?xml version="1.0" encoding="UTF-8"?>
-     <Response onAnswer="..." onHangup="..." />
-     ```
-   - `Content-Type: application/xml` bleibt gesetzt.
-   - Keine zusätzlichen XML-Kommentare, keine extra Attribute, keine Spielereien.
+Ursache ist also **nicht** die UI-Logik im Normalfall, sondern (a) verwaiste Ringing-Zeilen ohne Hangup und (b) fehlender clientseitiger Schutz, falls sipgate mal wirklich kein Hangup schickt.
 
-3. Webhook robuster machen
-   - `event=newCall`, `event=answer`, `event=hangup` werden case-insensitive verarbeitet.
-   - `callId` wird für alle Events gleich behandelt.
-   - Hangup beendet auch dann den Call, wenn vorher kein Answer angekommen ist.
+## Umsetzung
 
-4. Live-Status bereinigen
-   - Nach erfolgreichem Fix markiere ich aktuell hängende `ringing`/`answered` Calls als beendet/missed, damit `/mitarbeiter/live` nicht weiter alten Müll zeigt.
+1. **Verwaiste Ringing-Calls sofort bereinigen**  
+   Alle `sipgate_calls` mit Status `ringing` oder `answered`, die älter als 15 Minuten sind, auf `missed` bzw. `ended` setzen und `ended_at = now()`.
 
-5. Verifikation
-   - Ich teste die Edge Function mit simulierten `newCall`, `answer` und `hangup` POSTs.
-   - Danach prüfe ich per Datenbankabfrage, ob Status korrekt von `ringing` zu `answered` zu `ended/missed` wechselt.
-   - Dann brauchst du nur noch genau diese URL bei sipgate hinterlegt lassen:
-     `https://erwuhvouxkaxczzbjrle.supabase.co/functions/v1/sipgate-webhook?token=...`
+2. **Stale-Guard im Hook `src/hooks/use-live-calls.ts`**  
+   - Ticker (1 s), der Calls automatisch ausblendet, deren `started_at` > 15 Minuten zurückliegt — unabhängig vom DB-Status.
+   - Verhindert, dass die Live-Kachel bei fehlendem Hangup unbegrenzt "Wartezeit" zeigt.
+
+3. **Optional (nur wenn du willst)**: Serverseitige Cleanup-Query wiederverwendbar machen (kleine SQL-Funktion oder Cron). Für jetzt reicht das einmalige Bereinigen + der Client-Guard.
+
+## Was **nicht** geändert wird
+
+- Webhook-Code bleibt wie er ist — die Logs zeigen, dass er korrekt arbeitet.
+- Keine Änderungen an sipgate-URL oder Token.
