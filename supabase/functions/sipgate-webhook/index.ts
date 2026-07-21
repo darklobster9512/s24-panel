@@ -238,8 +238,18 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("[sipgate-webhook] handler error", e);
-    return new Response("error", { status: 500 });
+    return xmlResponse(EMPTY_RESPONSE_XML, 500);
   }
 
-  return new Response("", { status: 200 });
+  // For newCall we MUST subscribe to follow-up events via onAnswer/onHangup
+  // attributes on the <Response> tag, otherwise sipgate never sends answer/hangup.
+  if (event === "newcall") {
+    const attrs =
+      `onAnswer="${callbackUrl}" onHangup="${callbackUrl}" onData="${callbackUrl}"`;
+    const body = `<Response ${attrs}/>`;
+    console.log("[sipgate-webhook] newCall response", { callbackUrl });
+    return xmlResponse(body);
+  }
+
+  return xmlResponse(EMPTY_RESPONSE_XML);
 });
