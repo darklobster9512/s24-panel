@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAutoAnswerRedirect } from "@/hooks/use-auto-answer-redirect";
 
 type Status = "verfuegbar" | "pause" | "nicht-bereit";
 const STATUS_META: Record<Status, { label: string; dot: string; ring: string }> = {
@@ -25,6 +26,7 @@ const STATUS_META: Record<Status, { label: string; dot: string; ring: string }> 
 
 export default function MitarbeiterLayout() {
   const [status, setStatus] = useState<Status>("verfuegbar");
+  useAutoAnswerRedirect();
 
   const meta = STATUS_META[status];
 
