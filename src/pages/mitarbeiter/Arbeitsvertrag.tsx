@@ -264,18 +264,6 @@ export default function Arbeitsvertrag() {
     );
   }
 
-  if (false) {
-    return (
-      <>
-        <PageHeader title="Arbeitsvertrag" subtitle="" />
-        <Panel>
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Dir ist aktuell kein Arbeitsvertrag zugewiesen.
-          </p>
-        </Panel>
-      </>
-    );
-  }
 
   const c = q.data;
 
