@@ -249,18 +249,21 @@ export default function Arbeitsvertrag() {
     );
   }
 
-  if (!q.data) {
+  if (!q.data || !q.data.template) {
     return (
       <>
         <PageHeader title="Arbeitsvertrag" subtitle="" />
         <Panel>
           <p className="py-8 text-center text-sm text-muted-foreground">
-            Dir ist aktuell kein Arbeitsvertrag zugewiesen.
+            {!q.data
+              ? "Dir ist aktuell kein Arbeitsvertrag zugewiesen."
+              : "Die zugewiesene Vertragsvorlage wurde nicht gefunden. Bitte kontaktiere das Management."}
           </p>
         </Panel>
       </>
     );
   }
+
 
   const c = q.data;
 
