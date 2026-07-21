@@ -258,10 +258,6 @@ export type Database = {
           personal_email: string | null
           personal_phone: string | null
           salary: number | null
-          sip_password: string | null
-          sip_phone_number: string | null
-          sip_server: string | null
-          sip_username: string | null
           sipgate_user_id: string | null
           social_security_number: string | null
           start_date: string | null
@@ -291,10 +287,6 @@ export type Database = {
           personal_email?: string | null
           personal_phone?: string | null
           salary?: number | null
-          sip_password?: string | null
-          sip_phone_number?: string | null
-          sip_server?: string | null
-          sip_username?: string | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
@@ -324,10 +316,6 @@ export type Database = {
           personal_email?: string | null
           personal_phone?: string | null
           salary?: number | null
-          sip_password?: string | null
-          sip_phone_number?: string | null
-          sip_server?: string | null
-          sip_username?: string | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
