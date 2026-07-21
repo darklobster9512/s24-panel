@@ -1,44 +1,40 @@
+# /superadmin Übersicht an Supabase anbinden
 
-## Ziel
-`/mitarbeiter` (Cockpit) zeigt aktuell hardcodierte Mock-Werte („Willkommen, Sofia", 14 Anrufe heute, 2:48 Ø-Zeit, „Letzte Anrufe" aus Mock). Alles auf Live-Daten des eingeloggten Mitarbeiters umstellen.
+`src/pages/superadmin/Overview.tsx` von Mock-Daten auf Live-Queries umstellen.
 
-## Änderungen in `src/pages/mitarbeiter/Cockpit.tsx`
+## KPI-Karten (oben)
 
-### 1. Begrüßung mit echtem Namen
-- Aktuellen User via `useAuth()` holen.
-- Vornamen aus `employees` (`first_name`) laden, Fallback auf `profiles.full_name` bzw. E-Mail-Prefix.
-- Anzeige: „Willkommen, {Vorname}".
+- **Kunden**: Count aus `clients` (ohne Drafts, `is_draft = false`). Delta = neu in den letzten 7 Tagen (via `created_at`).
+- **Mitarbeiter**: Count aus `employees`. Delta = neu in den letzten 30 Tagen.
+- **Anrufe heute**: Count aus `sipgate_calls` mit `started_at >= today`. Delta = % vs. gestern.
+- **Offene Tickets**: Vorerst ausblenden oder auf 0 setzen, da noch keine Tickets-Tabelle existiert (falls doch vorhanden, prüfen und anbinden — sonst Karte entfernen).
+- **Offene Auszahlungen**: Ebenfalls keine Tabelle vorhanden → Karte entfernen (oder auf statischen „—" Zustand).
 
-### 2. KPI-Karten mit echten Zahlen
-Berechnung serverseitig via Supabase-Queries, gefiltert auf zugewiesene Kunden (`useAssignedClients` liefert IDs) und heutigen Tag (00:00 lokal):
+## Letzte Anrufe
 
-- **Anrufe heute**: `count` aus `sipgate_calls` wo `client_id in (assigned)` und `started_at >= today`. Delta: gestrige Anzahl → „+X vs. gestern".
-- **Ø Gesprächszeit**: Mittelwert `duration_seconds` (nur beendete Anrufe mit Dauer > 0) von heute; formatiert als `m:ss`. Delta: Vergleich zu gestern.
-- **Offene Notizen**: `count` aus `call_notes` wo `employee_id = <mein employee.id>` und `rueckruf_gewuenscht = true` (oder Status offen, falls vorhanden — Feld beim Implementieren im Schema prüfen).
-- **Zugewiesene Kunden**: bleibt `clients.length` aus `useAssignedClients`.
+- Query auf `sipgate_calls` mit Join auf `clients` (Name) und `employees` (Vorname + Nachname), sortiert nach `started_at desc`, Limit 6.
+- Spalten: Uhrzeit (HH:MM), Kunde, Mitarbeiter, Dauer (aus `duration_seconds` bzw. `ended_at - started_at`), Status-Badge (beendet/verpasst/laufend).
 
-Fallback: Wenn keine Daten, „0" bzw. „—" statt Delta.
+## Mitarbeiter live
 
-### 3. Panel „Letzte Anrufe"
-- Query: letzte 6 `sipgate_calls` für zugewiesene Kunden, sortiert `started_at desc`.
-- Join/Lookup Kundenname + Logo aus vorhandenem `useAssignedClients`.
-- Status-Badge:
-  - `missed` → rot „Verpasst"
-  - sonst Dauer via `duration_seconds`.
-- Kategorie-Badge nur zeigen, wenn im Datensatz vorhanden (aktuell nicht in `sipgate_calls` — weglassen oder aus verknüpfter `call_notes` ziehen; im Plan: erstmal weglassen, dafür `direction` als Badge „Eingehend/Ausgehend").
+- Alle `employees` mit letztem Anruf/Status aus `sipgate_calls`:
+  - „Im Gespräch" wenn ein laufender Call (`ended_at is null`) existiert.
+  - Sonst „Verfügbar".
+  - `calls` = Anzahl Anrufe heute pro Mitarbeiter.
+- Limit auf ~8 Einträge, sortiert nach Anrufen heute desc.
 
-### 4. Panel „Meine Kunden"
-- Bleibt wie bisher (nutzt bereits echte Daten via `useAssignedClients`).
+## System-Ereignisse & Umsatz-Chart
 
-### 5. Mock-Referenzen entfernen
-- `MOCK_RECENT_CALLS`, `CURRENT_EMPLOYEE` aus dieser Datei nicht mehr importieren.
-- `mitarbeiter-mock.ts` selbst nicht anfassen (wird noch von anderen Seiten genutzt).
+- **System-Ereignisse**: Ersetzen durch echte Recent-Activity: letzte angelegte Kunden/Mitarbeiter/abgeschlossene Verträge (jeweils 1–2 Einträge, gemischt und nach Zeit sortiert). Alternativ Panel entfernen, wenn zu aufwändig — Vorschlag: behalten mit Recent Activity.
+- **Umsatz-Chart**: Keine Umsatzdaten in der DB vorhanden → Panel entfernen.
 
-## Technisch
-- Neue Queries via `@tanstack/react-query` (Muster wie in `useAssignedClients` / `use-live-calls`).
-- Loading-States: Skeleton-Werte („—") während Fetch.
-- Keine DB-Migration nötig — alle Felder existieren bereits (`sipgate_calls.started_at`, `duration_seconds`, `client_id`, `status`, `direction`; `call_notes.employee_id`, `rueckruf_gewuenscht`).
+## Technisches
 
-## Nicht Teil des Plans
-- Realtime-Updates der KPIs (kann später via Channel auf `sipgate_calls` ergänzt werden).
-- Änderungen an anderen Mitarbeiter-Seiten.
+- Alle Daten via React Query parallel laden (`useQueries` oder mehrere `useQuery` Hooks).
+- Loader-States mit `Loader2` Spinner in den einzelnen Panels.
+- Deutsche Datums-/Zeitformatierung (`de-DE`).
+- Keine DB-/Schema-Änderungen nötig.
+
+## Offene Frage
+
+Sollen die Panels „Offene Tickets", „Offene Auszahlungen" und „Umsatz (12 Monate)" **entfernt** werden (da keine Datenquelle), oder als Platzhalter mit „—" stehen bleiben? Vorschlag: entfernen, damit die Übersicht nur echte Daten zeigt.
