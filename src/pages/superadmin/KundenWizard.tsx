@@ -105,6 +105,12 @@ const STEPS: StepDef[] = [
     fields: ["contact_person", "contact_phone", "contact_email"],
   },
   {
+    title: "Rufnummern",
+    description:
+      "sipgate-Rufnummern, unter denen der Kunde erreichbar ist. Sie werden zur automatischen Kunden-Erkennung bei eingehenden Anrufen genutzt.",
+    fields: [],
+  },
+  {
     title: "Konfiguration",
     description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
     fields: ["greeting_text", "forwarding_enabled"],
