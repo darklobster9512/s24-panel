@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
 
   if (!callId) {
     console.warn("[sipgate-webhook] missing callId", fields);
-    return new Response("ok", { status: 200 });
+    return xmlResponse(EMPTY_RESPONSE_XML);
   }
 
   const direction = (fields.direction ?? "in").toLowerCase() === "out"
