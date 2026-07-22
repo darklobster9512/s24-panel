@@ -10,11 +10,22 @@ function renderTemplate(tpl: string, vars: Record<string, string>) {
   return tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => vars[k] ?? '');
 }
 function textToParagraphs(text: string) {
-  const rendered = escapeHtml(text.trim());
-  const blocks = rendered
-    .split(/\n{2,}/)
-    .map((b) => b.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
+  const normalized = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim();
+
+  const blocks = normalized
+    .split(/\n\s*\n+/)
+    .map((b) =>
+      b
+        .split('\n')
+        .map((line) => escapeHtml(line).replace(/[\t ]+/g, ' ').trim())
+        .filter(Boolean)
+        .join('<br style="line-height:1.75;" />'),
+    )
     .filter(Boolean);
+
   return blocks
     .map(
       (b) =>

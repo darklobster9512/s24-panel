@@ -209,7 +209,7 @@ export default function Einstellungen() {
                 onChange={(e) => set("application_email_body", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Platzhalter: <code>{"{{vorname}}"}</code>, <code>{"{{nachname}}"}</code>, <code>{"{{email}}"}</code>
+                Leerzeile = neuer Absatz, einfacher Zeilenumbruch bleibt erhalten. Platzhalter: <code>{"{{vorname}}"}</code>, <code>{"{{nachname}}"}</code>, <code>{"{{email}}"}</code>
               </p>
             </div>
 
