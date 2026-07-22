@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     try {
       const { data: settings } = await supabase
         .from('app_settings')
-        .select('resend_api_key, resend_from_name, resend_from_email, application_email_enabled, application_email_subject, application_email_body')
+        .select('resend_api_key, resend_from_name, resend_from_email, application_email_enabled, application_email_subject, application_email_body, company_name, company_address, accent_color, logo_text')
         .limit(1)
         .maybeSingle();
 
@@ -138,15 +138,30 @@ Deno.serve(async (req) => {
           nachname: data.nachname,
           email: data.email,
         };
-        const render = (t: string) =>
-          t.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => vars[k] ?? '');
 
         const from = settings.resend_from_name
           ? `${settings.resend_from_name} <${settings.resend_from_email}>`
           : settings.resend_from_email;
 
-        const body = render(settings.application_email_body ?? '');
-        const subject = render(settings.application_email_subject ?? 'Deine Bewerbung');
+        const subject = renderTemplate(
+          settings.application_email_subject ?? 'Deine Bewerbung',
+          vars,
+        );
+        const bodyText = settings.application_email_body ?? '';
+
+        const html = renderApplicationEmailHtml({
+          subject,
+          bodyText,
+          vars,
+          company: {
+            name: settings.company_name ?? 'Sekreteriat24',
+            address: settings.company_address,
+            logoText: settings.logo_text ?? settings.company_name ?? 'Sekreteriat24',
+            accent: settings.accent_color ?? '#7bed9f',
+          },
+        });
+
+        const text = renderTemplate(bodyText, vars);
 
         const r = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -158,8 +173,8 @@ Deno.serve(async (req) => {
             from,
             to: [data.email],
             subject,
-            text: body,
-            html: body.replace(/\n/g, '<br/>'),
+            text,
+            html,
           }),
         });
         if (!r.ok) {
