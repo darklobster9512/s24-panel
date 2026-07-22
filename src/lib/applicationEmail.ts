@@ -28,11 +28,14 @@ export function renderTemplate(tpl: string, vars: Record<string, string>) {
 
 function textToParagraphs(text: string) {
   const rendered = escapeHtml(text.trim());
-  const blocks = rendered.split(/\n{2,}/).map((b) => b.replace(/\n/g, "<br/>"));
+  const blocks = rendered
+    .split(/\n{2,}/)
+    .map((b) => b.replace(/\n/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
   return blocks
     .map(
-      (b) =>
-        `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:#1a2e1f;">${b}</p>`,
+      (b, i) =>
+        `<p style="margin:0 0 ${i === 0 ? 24 : 20}px 0;font-size:15px;line-height:1.7;color:#1a2e1f;font-weight:${i === 0 ? 500 : 400};">${b}</p>`,
     )
     .join("");
 }
