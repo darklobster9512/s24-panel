@@ -167,7 +167,7 @@ export function SuperadminSidebar() {
       </SidebarHeader>
       <SidebarContent className="gap-1 py-2">
         {renderGroup("Allgemein", mainItems)}
-        {renderGroup("Betrieb", opsItems)}
+        {renderGroup("Betrieb", opsItems(newApplicationsCount))}
         {renderGroup("Finanzen", finItems(pendingCount))}
         {renderGroup("System", systemItems)}
       </SidebarContent>
