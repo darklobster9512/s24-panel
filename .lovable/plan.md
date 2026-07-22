@@ -1,37 +1,26 @@
-# Moderne Bestätigungsmail für Bewerbungen
+# Bestätigungsmail: Header-Band + bessere Absätze
 
-Die aktuelle Mail ist ein simpler Text-Body ohne Design. Wir ersetzen sie durch ein professionelles, responsives HTML-Template im Sekreteriat24-Look (helles Theme, Akzent `#7bed9f`).
+## Änderungen am HTML-Template (`renderApplicationEmailHtml`)
 
-## Design
+Datei: `src/lib/applicationEmail.ts` und Spiegelung in `supabase/functions/submit-application/index.ts`.
 
-- **Layout**: Zentrierte Card (max. 560px), heller Hintergrund (`#f5f7f5`), weiße Content-Card mit sanftem Shadow und abgerundeten Ecken.
-- **Header**: Sekreteriat**24**-Wortmarke (24 in Akzentgrün `#7bed9f`), dünne grüne Trennlinie darunter.
-- **Body**: Persönliche Ansprache, klare Typo (system-ui/Arial fallback), großzügige Line-Height, kurze Absätze.
-- **Info-Box**: Grün getönte Box (`#7bed9f` mit ~10% opacity) mit den nächsten Schritten (Prüfung → Rückmeldung innerhalb X Tage).
-- **Footer**: Firmenname, Adresse aus `app_settings`, dezenter Grauton, kleine Schrift, rechtlicher Hinweis.
-- **Kompatibilität**: Inline-Styles, table-basiertes Layout für Outlook, `preheader`-Textzeile, Dark-Mode-freundliche Farben.
-- **Plain-Text-Fallback** wird parallel mitgesendet.
+1. **Logo in Header-Band**
+   - Die freistehende Wortmarke oberhalb der Card entfällt.
+   - Stattdessen bekommt die weiße Card oben ein eigenes Header-Segment (heller grüner Tint `#7bed9f14`, dünne Trennlinie darunter) mit dem Logo (`Sekreteriat` + `24` in Akzentgrün) linksbündig, Padding 24px 32px.
+   - Die bisherige dünne 4px-Akzentleiste bleibt als Abschluss unter dem Header.
 
-## Umsetzung
+2. **Bessere Satzabsätze im Body**
+   - Padding der Content-Sektion von `36px 36px 12px` auf `32px 36px 8px` reduzieren, damit der Header sauber anschließt.
+   - Absatz-Abstand: `margin-bottom` pro `<p>` von 16px auf 20px erhöhen, `line-height` von 1.65 auf 1.7.
+   - Einzelne `\n` (weiche Umbrüche) werden nicht mehr zu `<br/>`, sondern als Leerzeichen behandelt — nur `\n\n` (Doppelumbruch) erzeugt einen neuen `<p>`-Block. So entstehen echte Absätze mit klaren Lücken statt gedrängter Zeilen.
+   - Erster Absatz (Anrede) bekommt zusätzlich `margin-bottom:24px` und ein leicht dunkleres Gewicht (500), damit er sich absetzt.
 
-1. **Template-Builder** in `supabase/functions/submit-application/index.ts`:
-   - Neue Funktion `renderApplicationEmail({ subject, bodyMarkdown, applicant, settings })` die das HTML mit Firmendaten (Name, Adresse) aus `app_settings` rendert.
-   - `bodyMarkdown` (aus dem Settings-Feld) wird mit einfachen Zeilenumbrüchen zu `<p>`-Blöcken konvertiert; Platzhalter (`{{vorname}}` etc.) wie bisher ersetzt.
-   - Resend-Aufruf sendet nun `html` **und** `text`.
-2. **Standard-Vorlage in `app_settings`** aktualisieren (Seed/Update-Migration), damit vorhandene Installationen sofort einen sinnvollen Default-Text bekommen (bestehende benutzerdefinierte Texte bleiben unangetastet — nur wenn Feld leer oder Default).
-3. **Preview-Dialog** in `src/pages/superadmin/Einstellungen.tsx`:
-   - Statt Rohtext den gleichen HTML-Renderer clientseitig ausführen (kleine TS-Helper-Funktion, geteilt via `src/lib/emailTemplate.ts` und in Edge Function importiert bzw. dupliziert, da Deno/Node-Trennung).
-   - Vorschau in einem `<iframe srcDoc={...}>` rendern, damit Styles isoliert sind.
-   - Betreff-Zeile darüber anzeigen.
+3. **Info-Box unverändert** (Wie geht es weiter?), Footer unverändert.
 
-## Technische Details
+## Preview
 
-- Kein neues Package nötig; HTML wird als Template-String gebaut.
-- Farben als Konstanten: `--brand: #7bed9f`, Text `#1a2e1f`, Muted `#6b7a70`, Card `#ffffff`, Page `#f5f7f5`.
-- Absender-Domain bleibt wie in `app_settings.resend_from_email` konfiguriert.
-- Keine Änderung am Speicher-/Storage-Flow der Bewerbung.
+Der Einstellungs-Dialog nutzt bereits `renderApplicationEmailHtml` im iframe — die Änderungen sind sofort sichtbar. Keine weiteren UI-Änderungen nötig.
 
-## Nicht Teil des Plans
+## Deploy
 
-- Keine Änderung an Signup/Auth-Mails (separates Modul).
-- Kein Rebranding anderer Seiten.
+Edge Function `submit-application` neu deployen, damit die Änderung am Renderer produktiv wird.

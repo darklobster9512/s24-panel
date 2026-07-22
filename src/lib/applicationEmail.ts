@@ -28,11 +28,14 @@ export function renderTemplate(tpl: string, vars: Record<string, string>) {
 
 function textToParagraphs(text: string) {
   const rendered = escapeHtml(text.trim());
-  const blocks = rendered.split(/\n{2,}/).map((b) => b.replace(/\n/g, "<br/>"));
+  const blocks = rendered
+    .split(/\n{2,}/)
+    .map((b) => b.replace(/\n/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
   return blocks
     .map(
-      (b) =>
-        `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:#1a2e1f;">${b}</p>`,
+      (b, i) =>
+        `<p style="margin:0 0 ${i === 0 ? 24 : 20}px 0;font-size:15px;line-height:1.7;color:#1a2e1f;font-weight:${i === 0 ? 500 : 400};">${b}</p>`,
     )
     .join("");
 }
@@ -73,16 +76,14 @@ export function renderApplicationEmailHtml(input: ApplicationEmailInput) {
         <td align="center" style="padding:40px 16px;">
           <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
             <tr>
-              <td style="padding:0 4px 20px 4px;">
-                <div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">
-                  ${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span>
-                </div>
-              </td>
-            </tr>
-            <tr>
               <td style="background:#ffffff;border-radius:16px;box-shadow:0 1px 2px rgba(16,24,20,0.04),0 8px 24px rgba(16,24,20,0.06);overflow:hidden;">
-                <div style="height:4px;background:${accent};"></div>
-                <div style="padding:36px 36px 12px 36px;">
+                <div style="padding:22px 32px;background:${accent}14;border-bottom:1px solid ${accent}40;">
+                  <div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">
+                    ${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span>
+                  </div>
+                </div>
+                <div style="height:3px;background:${accent};"></div>
+                <div style="padding:32px 36px 8px 36px;">
                   ${paragraphs}
                 </div>
                 <div style="padding:0 36px 32px 36px;">
