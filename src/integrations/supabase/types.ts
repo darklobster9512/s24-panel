@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          accent_color: string | null
+          application_email_body: string | null
+          application_email_enabled: boolean
+          application_email_subject: string | null
+          company_address: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          logo_text: string | null
+          resend_api_key: string | null
+          resend_from_email: string | null
+          resend_from_name: string | null
+          singleton: boolean
+          updated_at: string
+          vat_id: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          application_email_body?: string | null
+          application_email_enabled?: boolean
+          application_email_subject?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          logo_text?: string | null
+          resend_api_key?: string | null
+          resend_from_email?: string | null
+          resend_from_name?: string | null
+          singleton?: boolean
+          updated_at?: string
+          vat_id?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          application_email_body?: string | null
+          application_email_enabled?: boolean
+          application_email_subject?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          logo_text?: string | null
+          resend_api_key?: string | null
+          resend_from_email?: string | null
+          resend_from_name?: string | null
+          singleton?: boolean
+          updated_at?: string
+          vat_id?: string | null
+        }
+        Relationships: []
+      }
       applications: {
         Row: {
           anstellung: string

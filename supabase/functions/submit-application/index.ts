@@ -120,6 +120,56 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Bestätigungsmail versenden (Fehler nur loggen)
+    try {
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('resend_api_key, resend_from_name, resend_from_email, application_email_enabled, application_email_subject, application_email_body')
+        .limit(1)
+        .maybeSingle();
+
+      if (
+        settings?.application_email_enabled &&
+        settings.resend_api_key &&
+        settings.resend_from_email
+      ) {
+        const vars: Record<string, string> = {
+          vorname: data.vorname,
+          nachname: data.nachname,
+          email: data.email,
+        };
+        const render = (t: string) =>
+          t.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => vars[k] ?? '');
+
+        const from = settings.resend_from_name
+          ? `${settings.resend_from_name} <${settings.resend_from_email}>`
+          : settings.resend_from_email;
+
+        const body = render(settings.application_email_body ?? '');
+        const subject = render(settings.application_email_subject ?? 'Deine Bewerbung');
+
+        const r = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${settings.resend_api_key}`,
+          },
+          body: JSON.stringify({
+            from,
+            to: [data.email],
+            subject,
+            text: body,
+            html: body.replace(/\n/g, '<br/>'),
+          }),
+        });
+        if (!r.ok) {
+          console.error('resend send failed', r.status, await r.text());
+        }
+      }
+    } catch (mailErr) {
+      console.error('confirmation mail error', mailErr);
+    }
+
     return new Response(JSON.stringify({ ok: true, id }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
