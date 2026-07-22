@@ -95,7 +95,7 @@ export function renderApplicationEmailHtml(input: ApplicationEmailInput) {
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
             <tr>
               <td style="background:#ffffff;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,20,0.04),0 8px 24px rgba(16,24,20,0.06);overflow:hidden;border:1px solid #eaeee9;">
-                <div style="padding:32px 32px;background:#0f1a2e;text-align:center;">
+                <div style="padding:32px 32px;background:#130f40;text-align:center;">
                   <div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#ffffff;">
                     ${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span>
                   </div>
