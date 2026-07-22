@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
       });
     }
     if (file.size === 0 || file.size > MAX_FILE_SIZE) {
-      return new Response(JSON.stringify({ error: 'Datei zu groß (max. 5 MB) oder leer' }), {
+      return new Response(JSON.stringify({ error: 'Lebenslauf darf maximal 10 MB groß sein' }), {
         status: 413,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
