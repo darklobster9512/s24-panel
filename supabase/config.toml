@@ -2,3 +2,6 @@ project_id = "erwuhvouxkaxczzbjrle"
 
 [functions.sipgate-webhook]
 verify_jwt = false
+
+[functions.submit-application]
+verify_jwt = false
