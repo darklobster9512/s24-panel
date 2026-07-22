@@ -1,26 +1,33 @@
-# Bestätigungsmail: Header-Band + bessere Absätze
+## Bestätigungsmail überarbeiten
 
-## Änderungen am HTML-Template (`renderApplicationEmailHtml`)
+**Header**
+- Logo „Sekreteriat**24**" horizontal zentriert im Header-Band (statt linksbündig)
+- Dezenter, schmalerer Header mit mehr Weißraum
 
-Datei: `src/lib/applicationEmail.ts` und Spiegelung in `supabase/functions/submit-application/index.ts`.
+**Anrede & Einleitung (klare Absätze)**
+```
+Hallo {Vorname} {Nachname},
 
-1. **Logo in Header-Band**
-   - Die freistehende Wortmarke oberhalb der Card entfällt.
-   - Stattdessen bekommt die weiße Card oben ein eigenes Header-Segment (heller grüner Tint `#7bed9f14`, dünne Trennlinie darunter) mit dem Logo (`Sekreteriat` + `24` in Akzentgrün) linksbündig, Padding 24px 32px.
-   - Die bisherige dünne 4px-Akzentleiste bleibt als Abschluss unter dem Header.
+vielen Dank für deine Bewerbung bei Sekreteriat24.
 
-2. **Bessere Satzabsätze im Body**
-   - Padding der Content-Sektion von `36px 36px 12px` auf `32px 36px 8px` reduzieren, damit der Header sauber anschließt.
-   - Absatz-Abstand: `margin-bottom` pro `<p>` von 16px auf 20px erhöhen, `line-height` von 1.65 auf 1.7.
-   - Einzelne `\n` (weiche Umbrüche) werden nicht mehr zu `<br/>`, sondern als Leerzeichen behandelt — nur `\n\n` (Doppelumbruch) erzeugt einen neuen `<p>`-Block. So entstehen echte Absätze mit klaren Lücken statt gedrängter Zeilen.
-   - Erster Absatz (Anrede) bekommt zusätzlich `margin-bottom:24px` und ein leicht dunkleres Gewicht (500), damit er sich absetzt.
+Wir haben deine Unterlagen erhalten und prüfen sie sorgfältig. In Kürze melden wir uns persönlich bei dir zurück.
+```
+Jeder Block als eigener `<p>` mit sauberem Abstand (24px), keine zusammengeklebten Sätze mehr.
 
-3. **Info-Box unverändert** (Wie geht es weiter?), Footer unverändert.
+**„Wie geht es weiter" – neuer, seriöser Text**
+Statt Marketing-Ton eine sachliche 3-Punkt-Übersicht:
+1. **Prüfung deiner Unterlagen** – Unser Team sichtet deine Bewerbung sorgfältig.
+2. **Persönliche Rückmeldung** – Du erhältst innerhalb weniger Werktage eine Nachricht von uns.
+3. **Nächste Schritte** – Bei passender Qualifikation laden wir dich zu einem Kennenlerngespräch ein.
 
-## Preview
+**Ton & Design allgemein**
+- Formeller, ruhiger Wortlaut – keine Ausrufezeichen, keine Floskeln
+- Grußformel: „Mit freundlichen Grüßen\nDein Team von Sekreteriat24"
+- Info-Box dezenter (dünnerer Rand, kleinerer Akzent), keine Emojis
+- Konsistente Typo-Hierarchie, mehr vertikaler Rhythmus (padding 40px, paragraph-margin 24px)
 
-Der Einstellungs-Dialog nutzt bereits `renderApplicationEmailHtml` im iframe — die Änderungen sind sofort sichtbar. Keine weiteren UI-Änderungen nötig.
+**Betroffene Dateien**
+- `src/lib/applicationEmail.ts` – HTML/Text-Template
+- `supabase/functions/submit-application/index.ts` – identisches Template gespiegelt, danach redeploy
 
-## Deploy
-
-Edge Function `submit-application` neu deployen, damit die Änderung am Renderer produktiv wird.
+Preview im Einstellungs-Dialog aktualisiert sich automatisch (iframe rendert Template).
