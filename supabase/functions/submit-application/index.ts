@@ -80,7 +80,7 @@ const ALLOWED_MIME = new Set([
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]);
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const ANSTELLUNG = ['vollzeit', 'teilzeit', 'minijob', 'werkstudent', 'freelance'] as const;
 
