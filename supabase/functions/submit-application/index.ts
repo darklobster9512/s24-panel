@@ -52,9 +52,10 @@ function renderApplicationEmailHtml(input: EmailInput) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f7f5;"><tr><td align="center" style="padding:40px 16px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
 <tr><td style="background:#ffffff;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,20,0.04),0 8px 24px rgba(16,24,20,0.06);overflow:hidden;border:1px solid #eaeee9;">
-<div style="padding:28px 32px;background:${accentTintSoft};border-bottom:1px solid ${accentBorder};text-align:center;"><div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">${escapeHtml(head)}<span style="color:${accentDark};">${escapeHtml(tail)}</span></div></div>
+<div style="padding:32px 32px;background:#0f1a2e;text-align:center;"><div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#ffffff;">${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span></div></div>
 <div style="height:3px;background:${accent};line-height:3px;font-size:0;">&nbsp;</div>
-<div style="padding:40px 44px 8px 44px;"><div style="border-left:3px solid ${accent};padding-left:14px;margin:0 0 24px 0;">${paragraphs}</div></div>
+<div style="padding:40px 44px 8px 44px;"><div style="margin:0 0 24px 0;">${paragraphs}</div></div>
+
 <div style="padding:0 44px 40px 44px;"><div style="margin-top:12px;padding:22px 24px;border-radius:10px;background:${accentTint};border:1px solid ${accentBorder};">
 <div style="font-size:13px;font-weight:700;color:${accentDark};margin:0 0 16px 0;letter-spacing:0.06em;text-transform:uppercase;">Der weitere Ablauf</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
