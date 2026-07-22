@@ -12,6 +12,8 @@ import {
   Receipt,
   Settings,
   Headphones,
+  UserPlus,
+
 } from "lucide-react";
 
 import {
@@ -45,9 +47,15 @@ const mainItems: SidebarItem[] = [
   { title: "Zuweisungen", url: "/superadmin/zuweisungen", icon: Link2 },
 ];
 
-const opsItems: SidebarItem[] = [
+const opsItems = (newApplicationsCount: number): SidebarItem[] => [
   { title: "Anrufe", url: "/superadmin/anrufe", icon: PhoneCall },
   { title: "Notizen", url: "/superadmin/notizen", icon: StickyNote },
+  {
+    title: "Bewerbungen",
+    url: "/superadmin/bewerbungen",
+    icon: UserPlus,
+    badge: newApplicationsCount,
+  },
 ];
 
 const finItems = (pendingCount: number): SidebarItem[] => [
@@ -83,7 +91,20 @@ export function SuperadminSidebar() {
     },
   });
 
+  const newApplicationsQuery = useQuery({
+    queryKey: ["new-applications-count"],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "neu");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const pendingCount = pendingCountQuery.data ?? 0;
+  const newApplicationsCount = newApplicationsQuery.data ?? 0;
 
   const isActive = (path: string, end?: boolean) =>
     end ? pathname === path : pathname === path || pathname.startsWith(path + "/");
@@ -146,7 +167,7 @@ export function SuperadminSidebar() {
       </SidebarHeader>
       <SidebarContent className="gap-1 py-2">
         {renderGroup("Allgemein", mainItems)}
-        {renderGroup("Betrieb", opsItems)}
+        {renderGroup("Betrieb", opsItems(newApplicationsCount))}
         {renderGroup("Finanzen", finItems(pendingCount))}
         {renderGroup("System", systemItems)}
       </SidebarContent>

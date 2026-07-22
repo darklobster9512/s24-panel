@@ -20,6 +20,7 @@ import SuperadminMitarbeiterDetail from "./pages/superadmin/MitarbeiterDetail";
 import SuperadminZuweisungen from "./pages/superadmin/Zuweisungen";
 import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
+import SuperadminBewerbungen from "./pages/superadmin/Bewerbungen";
 
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
 import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageEditor";
@@ -82,6 +83,8 @@ export default function App() {
                     <Route path="zuweisungen" element={<SuperadminZuweisungen />} />
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
                     <Route path="notizen" element={<SuperadminNotizen />} />
+                    <Route path="bewerbungen" element={<SuperadminBewerbungen />} />
+
                     
                     <Route path="vertraege" element={<SuperadminVertraege />} />
                     <Route path="vertraege/:templateId" element={<SuperadminVertragsvorlageEditor />} />
