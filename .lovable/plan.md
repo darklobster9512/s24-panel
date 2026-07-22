@@ -1,17 +1,10 @@
-## Änderungen an der Bewerbungs-Bestätigungsmail
+## Änderungen
 
-**Header-Band**
-- Hintergrund wird auf das Sidebar-Dunkelblau (`#0f172a` / hsl-Äquivalent des `--sidebar-background` Tokens) umgestellt.
-- Logotext „Sekreteriat“ in Weiß (`#ffffff`), die „24“ bleibt in Branding-Grün (`#7bed9f`).
-- Die 3px Akzentlinie darunter bleibt in Branding-Grün als Trenner zum weißen Body.
+**1. E-Mail-Header-Farbe korrigieren**
+- In `src/lib/applicationEmail.ts` und `supabase/functions/submit-application/index.ts` den Header-Hintergrund von `#0f1a2e` auf das echte Sidebar-Token `#130f40` (`--ink-deep`) umstellen.
 
-**Anrede-Block**
-- Der grüne linke Border-Strich (`border-left: 3px solid …`) wird komplett entfernt.
-- Anrede wird als normaler Absatz ohne Einrückung/Hintergrund gerendert.
+**2. Lebenslauf-Upload auf max. 10 MB begrenzen**
+- In `supabase/functions/submit-application/index.ts` nach dem Auslesen der `resume`-Datei prüfen: wenn `file.size > 10 * 1024 * 1024`, mit Status 413 und klarer Fehlermeldung (`"Lebenslauf darf maximal 10 MB groß sein"`) antworten, bevor der Upload zu Storage passiert.
+- Edge Function wird automatisch neu deployt.
 
-**Nicht angetastet**
-- Nummern-Badges „Der weitere Ablauf“, Footer-Trennlinie und restliche Farbakzente bleiben unverändert.
-
-### Betroffene Dateien
-- `src/lib/applicationEmail.ts` (Frontend-Vorschau)
-- `supabase/functions/submit-application/index.ts` (identisches Template, Edge Function wird neu deployt)
+Keine weiteren Änderungen (Text, Struktur, Grüntöne bleiben wie zuletzt).
