@@ -1,72 +1,40 @@
-## Diagnose
+## Ziel
+`/superadmin/einstellungen` an Supabase anbinden, Integrationen entfernen, Resend-Karte hinzufügen und Bestätigungsmail bei neuen Bewerbungen versenden.
 
-Cloudflare macht seinen Job perfekt:
+## Änderungen
 
-```text
-Forwarded to Supabase 200 body length 371 / 176 / 160
-```
+### 1. Datenbank — neue Tabelle `public.app_settings`
+Singleton-Zeile mit RLS „nur Superadmin lesen/schreiben".
+Felder:
+- Firmendaten: `company_name`, `company_address`, `vat_id`
+- Branding: `accent_color`, `logo_text`
+- Resend: `resend_api_key` (Text), `resend_from_name`, `resend_from_email`
+- Bewerbungsmail: `application_email_enabled` (bool), `application_email_subject`, `application_email_body`
 
-Der Body kommt an, Supabase antwortet 200. Trotzdem landet nichts in `sipgate_calls`. Grund steht in unseren Edge-Function-Logs:
+Grants für `authenticated` + `service_role`, RLS-Policy per `has_role(auth.uid(), 'superadmin')`.
 
-```text
-[sipgate-webhook] failed to read body BadResource: Bad resource ID
-```
+### 2. Settings-Seite (`src/pages/superadmin/Einstellungen.tsx`)
+- Integrationen-Karte entfernen
+- Steuernummer entfernen
+- Firmendaten- und Branding-Karte an `app_settings` binden (Load via React Query, Save-Button)
+- Neue **Resend-Karte**:
+  - Input „Resend API Key" (Passwort-Feld, mit Show/Hide-Toggle)
+  - Absender-Name, Absender-E-Mail
+  - Switch „Bestätigungsmail bei neuer Bewerbung senden"
+  - Betreff-Input
+  - Body-Textarea mit Hinweis auf Platzhalter (`{{vorname}}`, `{{nachname}}`, `{{email}}`)
+  - Speichern-Button
+  - **„Vorschau"-Button** → Dialog mit gerendertem Betreff + Body am Dummy-Bewerber „Max Mustermann"
 
-Weil unsere Function den Body noch immer in einem Background-Task liest:
+### 3. Edge Function-Anpassung
+`supabase/functions/submit-application/index.ts`:
+- Nach erfolgreichem Insert `app_settings` via Service-Role laden
+- Falls `application_email_enabled` und API-Key gesetzt: Resend-Aufruf an `https://api.resend.com/emails` mit dem in der DB gespeicherten Key
+- Platzhalter im Betreff und Body ersetzen
+- Fehler nur loggen, Bewerbung nicht failen lassen
 
-```ts
-runInBackground(async () => {
-  bodyText = await req.text();
-  await processWebhookBody(bodyText, contentType);
-});
-return xmlResponse(CALLBACK_RESPONSE_XML);
-```
+### 4. Placeholder-Helper
+Kleine Utility (client + Deno-side): `renderTemplate(str, vars)` — identisch für Preview und Versand.
 
-Nach dem `return` ist der Request-Stream im Supabase Edge Runtime nicht mehr gültig → `BadResource` → kein DB-Insert.
-
-Du hast außerdem recht: Da **Cloudflare bereits die XML-Antwort an Sipgate zurückgibt**, sieht Sipgate unsere Supabase-Antwort nie. Unsere Function muss also weder schnell antworten noch überhaupt XML zurückgeben. Sie darf synchron arbeiten.
-
-## Fix
-
-Nur `supabase/functions/sipgate-webhook/index.ts` wird geändert.
-
-### 1. Body synchron lesen, dann verarbeiten, dann antworten
-
-Alter Flow:
-
-```ts
-runInBackground(async () => { bodyText = await req.text(); ... });
-return xmlResponse(CALLBACK_RESPONSE_XML);
-```
-
-Neuer Flow:
-
-```ts
-const bodyText = await req.text();
-await processWebhookBody(bodyText, contentType);
-return new Response("ok", { status: 200 });
-```
-
-- Body wird gelesen, solange der Stream existiert → kein `BadResource` mehr.
-- `newCall` / `answer` / `hangup` schreiben zuverlässig in `sipgate_calls`.
-- Antwort ist nur noch `200 ok` für Cloudflare — Sipgate sieht sie nie, XML wird vom Worker gesendet.
-
-### 2. Aufräumen
-
-- `runInBackground` Helper entfernen, wird nicht mehr gebraucht.
-- Der Callback-XML-String (`CALLBACK_RESPONSE_XML`) und `getPublicCallbackUrl` bleiben, falls Sipgate doch mal direkt trifft (`?keepalive=1` bleibt auch drin für den Fall).
-- Keep-Alive-Cron ist bereits aus, kein Handlungsbedarf.
-
-## Was **nicht** angefasst wird
-
-- Kein Cloudflare-Worker-Change.
-- Kein Frontend-Change.
-- Keine DB-Migration.
-- Keine Änderung an `pg_cron`.
-
-## Erwartetes Ergebnis nach Deploy
-
-1. Cloudflare forwarded wie bisher (`200 body length …`).
-2. Supabase liest Body sofort, verarbeitet, schreibt DB.
-3. `/mitarbeiter/live` zeigt neue Anrufe in Echtzeit.
-4. In den Edge-Function-Logs erscheinen wieder `[sipgate-webhook] newCall/answer/hangup result`-Zeilen statt `BadResource`.
+## Sicherheitshinweis
+API-Key liegt in Klartext in der DB. RLS beschränkt Zugriff strikt auf Superadmin-Rolle; Service-Role liest ihn serverseitig. Kein Frontend-Leak, da nur `/superadmin` ihn abrufen darf.
