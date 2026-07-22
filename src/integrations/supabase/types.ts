@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          anstellung: string
+          created_at: string
+          email: string
+          geburtsdatum: string
+          handynummer: string
+          id: string
+          lebenslauf_filename: string | null
+          lebenslauf_mime: string | null
+          lebenslauf_path: string | null
+          nachname: string
+          staatsangehoerigkeit: string
+          status: string
+          updated_at: string
+          vorname: string
+        }
+        Insert: {
+          anstellung: string
+          created_at?: string
+          email: string
+          geburtsdatum: string
+          handynummer: string
+          id?: string
+          lebenslauf_filename?: string | null
+          lebenslauf_mime?: string | null
+          lebenslauf_path?: string | null
+          nachname: string
+          staatsangehoerigkeit: string
+          status?: string
+          updated_at?: string
+          vorname: string
+        }
+        Update: {
+          anstellung?: string
+          created_at?: string
+          email?: string
+          geburtsdatum?: string
+          handynummer?: string
+          id?: string
+          lebenslauf_filename?: string | null
+          lebenslauf_mime?: string | null
+          lebenslauf_path?: string | null
+          nachname?: string
+          staatsangehoerigkeit?: string
+          status?: string
+          updated_at?: string
+          vorname?: string
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           client_id: string
