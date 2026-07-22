@@ -17,8 +17,8 @@ function textToParagraphs(text: string) {
     .filter(Boolean);
   return blocks
     .map(
-      (b, i) =>
-        `<p style="margin:0 0 ${i === 0 ? 24 : 20}px 0;font-size:15px;line-height:1.7;color:#1a2e1f;font-weight:${i === 0 ? 500 : 400};">${b}</p>`,
+      (b) =>
+        `<p style="margin:0 0 24px 0;font-size:15px;line-height:1.75;color:#1a2e1f;">${b}</p>`,
     )
     .join('');
 }
@@ -45,22 +45,25 @@ function renderApplicationEmailHtml(input: EmailInput) {
 <body style="margin:0;padding:0;background:#f5f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f7f5;"><tr><td align="center" style="padding:40px 16px;">
-<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
-<tr><td style="background:#ffffff;border-radius:16px;box-shadow:0 1px 2px rgba(16,24,20,0.04),0 8px 24px rgba(16,24,20,0.06);overflow:hidden;">
-<div style="padding:22px 32px;background:${accent}14;border-bottom:1px solid ${accent}40;"><div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span></div></div>
-<div style="height:3px;background:${accent};"></div>
-<div style="padding:32px 36px 8px 36px;">${paragraphs}</div>
-<div style="padding:0 36px 32px 36px;"><div style="margin-top:8px;padding:18px 20px;border-radius:12px;background:${accent}1a;border:1px solid ${accent}55;">
-<div style="font-size:13px;font-weight:600;color:#1a2e1f;margin-bottom:6px;">Wie geht es weiter?</div>
-<div style="font-size:13px;line-height:1.6;color:#3b4a3f;">Wir sichten deine Unterlagen sorgfältig und melden uns in den nächsten Tagen persönlich per E-Mail bei dir zurück.</div>
-</div></div></td></tr>
-<tr><td style="padding:20px 8px 0 8px;"><div style="font-size:12px;line-height:1.6;color:#6b7a70;text-align:center;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+<tr><td style="background:#ffffff;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,20,0.04),0 8px 24px rgba(16,24,20,0.06);overflow:hidden;border:1px solid #eaeee9;">
+<div style="padding:28px 32px;background:#fafbfa;border-bottom:1px solid #eaeee9;text-align:center;"><div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span></div></div>
+<div style="padding:40px 44px 8px 44px;">${paragraphs}</div>
+<div style="padding:0 44px 40px 44px;"><div style="margin-top:12px;padding:22px 24px;border-radius:10px;background:#fafbfa;border:1px solid #eaeee9;">
+<div style="font-size:13px;font-weight:600;color:#1a2e1f;margin:0 0 14px 0;letter-spacing:0.02em;text-transform:uppercase;">Der weitere Ablauf</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="padding:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4a3f;"><strong style="color:#1a2e1f;">1. Prüfung der Unterlagen.</strong> Unser Team sichtet deine Bewerbung sorgfältig.</td></tr>
+<tr><td style="padding:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4a3f;"><strong style="color:#1a2e1f;">2. Persönliche Rückmeldung.</strong> Innerhalb weniger Werktage erhältst du eine Nachricht von uns.</td></tr>
+<tr><td style="padding:0;font-size:14px;line-height:1.6;color:#3b4a3f;"><strong style="color:#1a2e1f;">3. Kennenlerngespräch.</strong> Bei passender Qualifikation laden wir dich zu einem Gespräch ein.</td></tr>
+</table></div></div></td></tr>
+<tr><td style="padding:24px 8px 0 8px;"><div style="font-size:12px;line-height:1.6;color:#6b7a70;text-align:center;">
 <div style="font-weight:600;color:#3b4a3f;">${companyName}</div>
 ${address ? `<div>${address}</div>` : ''}
-<div style="margin-top:8px;">Diese E-Mail wurde automatisch generiert. Bitte antworte nicht direkt auf diese Nachricht.</div>
+<div style="margin-top:10px;">Diese E-Mail wurde automatisch versendet. Bitte antworte nicht direkt auf diese Nachricht.</div>
 </div></td></tr>
 </table></td></tr></table></body></html>`;
 }
+
 
 
 const ALLOWED_MIME = new Set([
