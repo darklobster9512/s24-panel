@@ -11,10 +11,15 @@ function renderTemplate(tpl: string, vars: Record<string, string>) {
 }
 function textToParagraphs(text: string) {
   const rendered = escapeHtml(text.trim());
-  return rendered
+  const blocks = rendered
     .split(/\n{2,}/)
-    .map((b) => b.replace(/\n/g, '<br/>'))
-    .map((b) => `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:#1a2e1f;">${b}</p>`)
+    .map((b) => b.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  return blocks
+    .map(
+      (b, i) =>
+        `<p style="margin:0 0 ${i === 0 ? 24 : 20}px 0;font-size:15px;line-height:1.7;color:#1a2e1f;font-weight:${i === 0 ? 500 : 400};">${b}</p>`,
+    )
     .join('');
 }
 function splitLogo(logoText: string) {
@@ -41,10 +46,10 @@ function renderApplicationEmailHtml(input: EmailInput) {
 <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f7f5;"><tr><td align="center" style="padding:40px 16px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
-<tr><td style="padding:0 4px 20px 4px;"><div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span></div></td></tr>
 <tr><td style="background:#ffffff;border-radius:16px;box-shadow:0 1px 2px rgba(16,24,20,0.04),0 8px 24px rgba(16,24,20,0.06);overflow:hidden;">
-<div style="height:4px;background:${accent};"></div>
-<div style="padding:36px 36px 12px 36px;">${paragraphs}</div>
+<div style="padding:22px 32px;background:${accent}14;border-bottom:1px solid ${accent}40;"><div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#1a2e1f;">${escapeHtml(head)}<span style="color:${accent};">${escapeHtml(tail)}</span></div></div>
+<div style="height:3px;background:${accent};"></div>
+<div style="padding:32px 36px 8px 36px;">${paragraphs}</div>
 <div style="padding:0 36px 32px 36px;"><div style="margin-top:8px;padding:18px 20px;border-radius:12px;background:${accent}1a;border:1px solid ${accent}55;">
 <div style="font-size:13px;font-weight:600;color:#1a2e1f;margin-bottom:6px;">Wie geht es weiter?</div>
 <div style="font-size:13px;line-height:1.6;color:#3b4a3f;">Wir sichten deine Unterlagen sorgfältig und melden uns in den nächsten Tagen persönlich per E-Mail bei dir zurück.</div>
