@@ -1,76 +1,72 @@
-# Plan: Bewerbungen-Modul im Superadmin
+## Diagnose
 
-## Ziel
-Neuer Reiter `/superadmin/bewerbungen` mit Tabelle aller eingegangener Bewerbungen. Eine öffentliche Edge Function nimmt Bewerbungen (inkl. Lebenslauf-Upload) von der Landingpage entgegen.
-
-## Datenbank
-
-### Tabelle `public.applications`
-Felder:
-- `vorname`, `nachname`, `email`, `handynummer`
-- `geburtsdatum` (date)
-- `staatsangehoerigkeit`
-- `anstellung` (Vollzeit / Teilzeit / Minijob / Werkstudent — als text)
-- `lebenslauf_path` (Pfad im Storage), `lebenslauf_filename`, `lebenslauf_mime`
-- `status` (default `neu` → `gesichtet`, `abgelehnt`, `angenommen`)
-- Standard: `id`, `created_at`, `updated_at`
-
-### RLS
-- Nur Superadmin darf SELECT/UPDATE/DELETE.
-- Keine INSERT-Policy für anon/authenticated — Inserts laufen ausschließlich über die Edge Function mit Service Role.
-
-### Storage-Bucket `applications` (privat)
-- Signed URLs für Lebenslauf-Download im Panel.
-- RLS: nur Superadmin darf lesen (via storage.objects policies mit `has_role`).
-
-## Edge Function `submit-application` (public, `verify_jwt = false`)
-- Nimmt `multipart/form-data` entgegen (Textfelder + Datei).
-- Validierung mit Zod: Pflichtfelder, E-Mail-Format, Handynummer-Regex, Geburtsdatum plausibel, Anstellung als Enum.
-- Datei-Validierung: MIME `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`; Max 5 MB.
-- Lädt Datei via Service Role in Bucket `applications/<uuid>-<sanitized-filename>` hoch.
-- Insert in `applications` mit Storage-Pfad.
-- CORS offen (`*`), damit die externe Landingpage posten kann.
-- Rate Limit: einfache IP-basierte Prüfung (letzte 60s max 3 Requests) über einen In-Memory-Zähler.
-- Rückgabe: `{ ok: true }` oder Fehlermeldung mit 400/413/500.
-
-## Frontend
-
-### Sidebar
-- Neuer Menüpunkt „Bewerbungen“ in der Gruppe „Betrieb“ in `src/components/superadmin/AppSidebar.tsx` mit Badge = Anzahl `status = 'neu'`.
-
-### Route
-- `src/pages/superadmin/Bewerbungen.tsx`, eingebunden in `src/App.tsx` unter `/superadmin/bewerbungen`.
-
-### Seite
-- Tabelle (im Stil der bestehenden Superadmin-Tabellen wie `/superadmin/anrufe`) mit Spalten:
-  - Datum & Uhrzeit (aus `created_at`, `de-DE` Format)
-  - Name (Vor- + Nachname)
-  - E-Mail
-  - Handy
-  - Geburtsdatum
-  - Staatsangehörigkeit
-  - Anstellung
-  - Lebenslauf (Button „Öffnen“ → generiert Signed URL zur Datei)
-  - Status (Badge, per Dropdown änderbar)
-- Suchfeld (Name/E-Mail) + Statusfilter.
-- Detail-Sheet/Drawer beim Klick auf eine Zeile mit allen Feldern und Aktion „Lebenslauf herunterladen".
-- Daten über React Query aus Supabase, Realtime-Subscription für neue Einträge.
-
-## Landingpage-Integration (Referenz)
-Ich stelle im Anschluss ein cURL-/Fetch-Beispiel bereit, das die Karriere-Seite genau so aufrufen kann:
+Cloudflare macht seinen Job perfekt:
 
 ```text
-POST https://<project>.supabase.co/functions/v1/submit-application
-Content-Type: multipart/form-data
-Felder: vorname, nachname, email, handynummer, geburtsdatum,
-        staatsangehoerigkeit, anstellung, lebenslauf (File)
+Forwarded to Supabase 200 body length 371 / 176 / 160
 ```
 
-Kein Auth-Header nötig (public endpoint).
+Der Body kommt an, Supabase antwortet 200. Trotzdem landet nichts in `sipgate_calls`. Grund steht in unseren Edge-Function-Logs:
 
-## Reihenfolge der Umsetzung
-1. Migration: Tabelle `applications` + RLS + Storage-Bucket-Policies.
-2. Storage-Bucket `applications` (privat) anlegen.
-3. Edge Function `submit-application` erstellen und deployen.
-4. Sidebar-Eintrag + Route + Seite bauen.
-5. Test-Insert prüfen, cURL-Snippet für Landingpage liefern.
+```text
+[sipgate-webhook] failed to read body BadResource: Bad resource ID
+```
+
+Weil unsere Function den Body noch immer in einem Background-Task liest:
+
+```ts
+runInBackground(async () => {
+  bodyText = await req.text();
+  await processWebhookBody(bodyText, contentType);
+});
+return xmlResponse(CALLBACK_RESPONSE_XML);
+```
+
+Nach dem `return` ist der Request-Stream im Supabase Edge Runtime nicht mehr gültig → `BadResource` → kein DB-Insert.
+
+Du hast außerdem recht: Da **Cloudflare bereits die XML-Antwort an Sipgate zurückgibt**, sieht Sipgate unsere Supabase-Antwort nie. Unsere Function muss also weder schnell antworten noch überhaupt XML zurückgeben. Sie darf synchron arbeiten.
+
+## Fix
+
+Nur `supabase/functions/sipgate-webhook/index.ts` wird geändert.
+
+### 1. Body synchron lesen, dann verarbeiten, dann antworten
+
+Alter Flow:
+
+```ts
+runInBackground(async () => { bodyText = await req.text(); ... });
+return xmlResponse(CALLBACK_RESPONSE_XML);
+```
+
+Neuer Flow:
+
+```ts
+const bodyText = await req.text();
+await processWebhookBody(bodyText, contentType);
+return new Response("ok", { status: 200 });
+```
+
+- Body wird gelesen, solange der Stream existiert → kein `BadResource` mehr.
+- `newCall` / `answer` / `hangup` schreiben zuverlässig in `sipgate_calls`.
+- Antwort ist nur noch `200 ok` für Cloudflare — Sipgate sieht sie nie, XML wird vom Worker gesendet.
+
+### 2. Aufräumen
+
+- `runInBackground` Helper entfernen, wird nicht mehr gebraucht.
+- Der Callback-XML-String (`CALLBACK_RESPONSE_XML`) und `getPublicCallbackUrl` bleiben, falls Sipgate doch mal direkt trifft (`?keepalive=1` bleibt auch drin für den Fall).
+- Keep-Alive-Cron ist bereits aus, kein Handlungsbedarf.
+
+## Was **nicht** angefasst wird
+
+- Kein Cloudflare-Worker-Change.
+- Kein Frontend-Change.
+- Keine DB-Migration.
+- Keine Änderung an `pg_cron`.
+
+## Erwartetes Ergebnis nach Deploy
+
+1. Cloudflare forwarded wie bisher (`200 body length …`).
+2. Supabase liest Body sofort, verarbeitet, schreibt DB.
+3. `/mitarbeiter/live` zeigt neue Anrufe in Echtzeit.
+4. In den Edge-Function-Logs erscheinen wieder `[sipgate-webhook] newCall/answer/hangup result`-Zeilen statt `BadResource`.
