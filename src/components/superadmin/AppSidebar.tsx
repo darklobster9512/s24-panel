@@ -12,6 +12,8 @@ import {
   Receipt,
   Settings,
   Headphones,
+  UserPlus,
+
 } from "lucide-react";
 
 import {
