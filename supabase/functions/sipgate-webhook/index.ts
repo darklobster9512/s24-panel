@@ -326,21 +326,25 @@ Deno.serve(async (req) => {
     return new Response("unauthorized", { status: 401 });
   }
 
-  if (req.method !== "POST") return xmlResponse(EMPTY_RESPONSE_XML);
+  if (req.method !== "POST") return new Response("ok", { status: 200 });
 
   const contentType = req.headers.get("content-type") ?? "";
 
-  // sipgate hat ~1s Timeout — Body-Read darf die XML-Antwort nicht blockieren.
-  runInBackground(async () => {
-    let bodyText = "";
-    try {
-      bodyText = await req.text();
-    } catch (e) {
-      console.error("[sipgate-webhook] failed to read body", e);
-      return;
-    }
-    await processWebhookBody(bodyText, contentType);
-  });
+  // Cloudflare Worker antwortet Sipgate bereits mit XML.
+  // Wir können den Body synchron lesen und verarbeiten.
+  let bodyText = "";
+  try {
+    bodyText = await req.text();
+  } catch (e) {
+    console.error("[sipgate-webhook] failed to read body", e);
+    return new Response("body read failed", { status: 200 });
+  }
 
-  return xmlResponse(CALLBACK_RESPONSE_XML);
+  try {
+    await processWebhookBody(bodyText, contentType);
+  } catch (e) {
+    console.error("[sipgate-webhook] processing failed", e);
+  }
+
+  return new Response("ok", { status: 200 });
 });
