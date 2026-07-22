@@ -1,40 +1,37 @@
-## Ziel
-`/superadmin/einstellungen` an Supabase anbinden, Integrationen entfernen, Resend-Karte hinzufügen und Bestätigungsmail bei neuen Bewerbungen versenden.
+# Moderne Bestätigungsmail für Bewerbungen
 
-## Änderungen
+Die aktuelle Mail ist ein simpler Text-Body ohne Design. Wir ersetzen sie durch ein professionelles, responsives HTML-Template im Sekreteriat24-Look (helles Theme, Akzent `#7bed9f`).
 
-### 1. Datenbank — neue Tabelle `public.app_settings`
-Singleton-Zeile mit RLS „nur Superadmin lesen/schreiben".
-Felder:
-- Firmendaten: `company_name`, `company_address`, `vat_id`
-- Branding: `accent_color`, `logo_text`
-- Resend: `resend_api_key` (Text), `resend_from_name`, `resend_from_email`
-- Bewerbungsmail: `application_email_enabled` (bool), `application_email_subject`, `application_email_body`
+## Design
 
-Grants für `authenticated` + `service_role`, RLS-Policy per `has_role(auth.uid(), 'superadmin')`.
+- **Layout**: Zentrierte Card (max. 560px), heller Hintergrund (`#f5f7f5`), weiße Content-Card mit sanftem Shadow und abgerundeten Ecken.
+- **Header**: Sekreteriat**24**-Wortmarke (24 in Akzentgrün `#7bed9f`), dünne grüne Trennlinie darunter.
+- **Body**: Persönliche Ansprache, klare Typo (system-ui/Arial fallback), großzügige Line-Height, kurze Absätze.
+- **Info-Box**: Grün getönte Box (`#7bed9f` mit ~10% opacity) mit den nächsten Schritten (Prüfung → Rückmeldung innerhalb X Tage).
+- **Footer**: Firmenname, Adresse aus `app_settings`, dezenter Grauton, kleine Schrift, rechtlicher Hinweis.
+- **Kompatibilität**: Inline-Styles, table-basiertes Layout für Outlook, `preheader`-Textzeile, Dark-Mode-freundliche Farben.
+- **Plain-Text-Fallback** wird parallel mitgesendet.
 
-### 2. Settings-Seite (`src/pages/superadmin/Einstellungen.tsx`)
-- Integrationen-Karte entfernen
-- Steuernummer entfernen
-- Firmendaten- und Branding-Karte an `app_settings` binden (Load via React Query, Save-Button)
-- Neue **Resend-Karte**:
-  - Input „Resend API Key" (Passwort-Feld, mit Show/Hide-Toggle)
-  - Absender-Name, Absender-E-Mail
-  - Switch „Bestätigungsmail bei neuer Bewerbung senden"
-  - Betreff-Input
-  - Body-Textarea mit Hinweis auf Platzhalter (`{{vorname}}`, `{{nachname}}`, `{{email}}`)
-  - Speichern-Button
-  - **„Vorschau"-Button** → Dialog mit gerendertem Betreff + Body am Dummy-Bewerber „Max Mustermann"
+## Umsetzung
 
-### 3. Edge Function-Anpassung
-`supabase/functions/submit-application/index.ts`:
-- Nach erfolgreichem Insert `app_settings` via Service-Role laden
-- Falls `application_email_enabled` und API-Key gesetzt: Resend-Aufruf an `https://api.resend.com/emails` mit dem in der DB gespeicherten Key
-- Platzhalter im Betreff und Body ersetzen
-- Fehler nur loggen, Bewerbung nicht failen lassen
+1. **Template-Builder** in `supabase/functions/submit-application/index.ts`:
+   - Neue Funktion `renderApplicationEmail({ subject, bodyMarkdown, applicant, settings })` die das HTML mit Firmendaten (Name, Adresse) aus `app_settings` rendert.
+   - `bodyMarkdown` (aus dem Settings-Feld) wird mit einfachen Zeilenumbrüchen zu `<p>`-Blöcken konvertiert; Platzhalter (`{{vorname}}` etc.) wie bisher ersetzt.
+   - Resend-Aufruf sendet nun `html` **und** `text`.
+2. **Standard-Vorlage in `app_settings`** aktualisieren (Seed/Update-Migration), damit vorhandene Installationen sofort einen sinnvollen Default-Text bekommen (bestehende benutzerdefinierte Texte bleiben unangetastet — nur wenn Feld leer oder Default).
+3. **Preview-Dialog** in `src/pages/superadmin/Einstellungen.tsx`:
+   - Statt Rohtext den gleichen HTML-Renderer clientseitig ausführen (kleine TS-Helper-Funktion, geteilt via `src/lib/emailTemplate.ts` und in Edge Function importiert bzw. dupliziert, da Deno/Node-Trennung).
+   - Vorschau in einem `<iframe srcDoc={...}>` rendern, damit Styles isoliert sind.
+   - Betreff-Zeile darüber anzeigen.
 
-### 4. Placeholder-Helper
-Kleine Utility (client + Deno-side): `renderTemplate(str, vars)` — identisch für Preview und Versand.
+## Technische Details
 
-## Sicherheitshinweis
-API-Key liegt in Klartext in der DB. RLS beschränkt Zugriff strikt auf Superadmin-Rolle; Service-Role liest ihn serverseitig. Kein Frontend-Leak, da nur `/superadmin` ihn abrufen darf.
+- Kein neues Package nötig; HTML wird als Template-String gebaut.
+- Farben als Konstanten: `--brand: #7bed9f`, Text `#1a2e1f`, Muted `#6b7a70`, Card `#ffffff`, Page `#f5f7f5`.
+- Absender-Domain bleibt wie in `app_settings.resend_from_email` konfiguriert.
+- Keine Änderung am Speicher-/Storage-Flow der Bewerbung.
+
+## Nicht Teil des Plans
+
+- Keine Änderung an Signup/Auth-Mails (separates Modul).
+- Kein Rebranding anderer Seiten.
