@@ -257,6 +257,16 @@ export default function Bewerbungen() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={rankingFilter} onValueChange={setRankingFilter}>
+            <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Rankings</SelectItem>
+              <SelectItem value="none">Ohne Ranking</SelectItem>
+              {RANKING_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="divide-y divide-border/60">
