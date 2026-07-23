@@ -61,7 +61,7 @@ export default function Einstellungen() {
   const save = useMutation({
     mutationFn: async (patch: Partial<Settings>) => {
       if (!form) return;
-      const { error } = await supabase.from("app_settings").update(patch).eq("id", form.id);
+      const { error } = await (supabase as any).from("app_settings").update(patch).eq("id", form.id);
       if (error) throw error;
     },
     onSuccess: () => {
