@@ -1,92 +1,47 @@
 ## Ziel
-
-Neuer Reiter **Bewerbungsgespräche** im Superadmin-Panel. Wenn eine Bewerbung genehmigt wird, geht eine Mail (im bestehenden Sekretariat24-Style) mit einem individuellen Buchungslink raus. Der Bewerber wählt einen Termin, dieser erscheint dann im Reiter.
+Bewerbungsgespräch-Einladungsmail komplett stimmig machen:
+- Echter, klickbarer Button „Termin auswählen" statt Text-Link (Vorschau + Versand).
+- Default-Text: Unterlagen wurden geprüft, wir möchten die Person näher kennenlernen.
+- Die 3-Schritt-„Der weitere Ablauf"-Card darf NICHT mehr sagen, dass wir die Unterlagen erst sichten – der Ablauf muss zur Einladung passen.
 
 ## Umsetzung
 
-### 1. Datenbank (Migration)
+1. **Shared Renderer** (`src/lib/applicationEmail.ts`)
+   - `ApplicationEmailInput` optional erweitern:
+     - `cta?: { label: string; url: string }`
+     - `steps?: Array<{ title: string; body: string }>` (überschreibt die Default-Steps).
+   - CTA: nach dem Body-Absatz zentrierter Button-Block (Table-Layout, Akzentfarbe, weißer Text, abgerundet, klickbarer `<a>`).
+   - Steps: wenn `steps` übergeben ist, statt der bisherigen drei fixen Zeilen die übergebenen rendern (Nummer + Titel + Body, identisches Styling).
+   - Bestehende Bewerbungs-Bestätigungsmail bleibt unverändert (keine `cta`/`steps` → alter Default).
 
-**Neue Tabelle `public.interview_appointments`**
-- `application_id` (FK → applications, ON DELETE CASCADE, UNIQUE)
-- `appointment_date` (date), `appointment_time` (time)
-- `status` (text, Default `neu`): `neu | erfolgreich | fehlgeschlagen | abgesagt`
-- `notes` (text)
-- `booking_token` (uuid, UNIQUE, Default `gen_random_uuid()`) — für öffentlichen Link
-- `booked_at`, `created_at`, `updated_at`
+2. **Edge Function `send-interview-invite`**
+   - Inline-Renderer analog erweitern (CTA + Steps).
+   - Beim Versand mitgeben:
+     - `cta: { label: "Termin auswählen", url: bookingUrl }`
+     - `steps`:
+       1. „Termin wählen" – „Such dir über den Button oben einen passenden Zeitraum aus."
+       2. „Kurzes Kennenlerngespräch" – „Wir sprechen ca. 20–30 Minuten online über deine Erfahrung und offene Fragen."
+       3. „Rückmeldung & nächste Schritte" – „Direkt im Anschluss klären wir gemeinsam, wie es weitergeht."
+   - Falls im Body noch `{{booking_url}}` steht, entfernen – Link ist der Button.
 
-**Neue Spalten auf `public.applications`**
-- `booking_token` uuid UNIQUE — wird beim Genehmigen gesetzt
-- Status-Werte werden erweitert um `bewerbungsgespraech` (Link versendet) und `termin_gebucht`
+3. **Einstellungen · Vorschau** (`src/pages/superadmin/Einstellungen.tsx`)
+   - Im Interview-Preview-Iframe `cta` und dieselben `steps` übergeben, damit die Vorschau 1:1 der Versand-Mail entspricht.
+   - Body im Preview NICHT mehr um `➔ Termin auswählen: {{booking_url}}` erweitern.
+   - Hinweistext unter dem Textarea: Button und Ablauf-Card werden automatisch eingefügt; Platzhalter `{{vorname}}`, `{{nachname}}`, `{{email}}`.
 
-**Neue Spalten auf `public.app_settings`** (für Konfiguration & Mail-Template)
-- `interview_email_enabled` bool Default true
-- `interview_email_subject` text
-- `interview_email_body` text (mit Platzhaltern `{{vorname}}`, `{{nachname}}`, `{{booking_url}}`)
-- `interview_slot_start` time Default `09:00`
-- `interview_slot_end` time Default `18:00`
-- `interview_slot_interval_minutes` int Default 30
-- `interview_available_weekdays` int[] Default `{1,2,3,4,5}`
+4. **Neuer Default-Text** (Insert-Tool auf `app_settings`)
+   - Betreff: `Bewerbungsgespräch bei {{company_name}} – wir möchten dich kennenlernen`
+   - Body:
+     ```
+     Hallo {{vorname}},
 
-**GRANTs & RLS**
-```
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.interview_appointments TO authenticated;
-GRANT ALL ON public.interview_appointments TO service_role;
-GRANT SELECT ON public.interview_appointments TO anon;  -- öffentliche Buchungsseite
-```
-Policies:
-- `authenticated`: `has_role(auth.uid(),'superadmin')` darf alles (SELECT/INSERT/UPDATE/DELETE)
-- `anon` SELECT: nur wenn per Token gefiltert (Frontend nutzt `.eq("booking_token", token)`) — Policy `USING (true)` auf SELECT wäre offen; besser: SECURITY DEFINER RPCs `get_interview_by_token(_token)`, `book_interview_slot(_token, _date, _time)` und `list_booked_slots_public()` → nur diese RPCs für anon freigeben, direkte Tabellen-Reads für anon bleiben zu.
+     vielen Dank für deine Bewerbung. Wir haben uns deine Unterlagen in Ruhe angeschaut und möchten dich gerne näher kennenlernen.
 
-Neue RPCs (SECURITY DEFINER, `SET search_path=public`):
-- `get_interview_by_token(_token uuid)` → Termin + Bewerber-Vorname/Nachname
-- `book_interview_slot(_token uuid, _date date, _time time)` → prüft Token gültig, Slot frei, schreibt Termin, setzt `applications.status='termin_gebucht'`
-- `list_booked_slots()` → gibt nur `{date,time}` zurück (keine PII), damit die Buchungsseite belegte Slots ausgraut
+     Bitte wähle über den Button unten einen Termin, der dir für ein kurzes Bewerbungsgespräch passt. Das Gespräch dauert ca. 20–30 Minuten und findet online statt.
 
-### 2. Genehmigen-Aktion in `src/pages/superadmin/Bewerbungen.tsx`
+     Wir freuen uns auf dich!
+     ```
 
-- Neuer Button „Genehmigen & Termin-Link senden" im Detail-Sheet und in der Zeile (nur wenn Status ≠ `bewerbungsgespraech`/`termin_gebucht`).
-- Aktion: generiert `booking_token` (falls fehlt), setzt Status `bewerbungsgespraech`, ruft Edge Function `send-interview-invite` auf.
-
-### 3. Edge Function `send-interview-invite`
-
-- Analog zu `submit-application`: Resend-Versand via `renderApplicationEmailHtml`/`renderApplicationEmailText` (bestehende `src/lib/applicationEmail.ts` — gleicher Style).
-- Liest `app_settings.interview_email_*`, ersetzt Platzhalter (`{{vorname}}`, `{{nachname}}`, `{{booking_url}}`).
-- `booking_url` = `${SITE_URL}/bewerbungsgespraech/${booking_token}`.
-- `verify_jwt = true`; nur vom Frontend mit Superadmin-Session aufrufbar (Rollen-Check via `has_role`).
-
-### 4. Öffentliche Buchungsseite `/bewerbungsgespraech/:token`
-
-Neue Datei `src/pages/BewerbungsgespraechPublic.tsx` (Route in `src/App.tsx` **vor** den Auth-geschützten Routen, ohne `RequireRole`):
-- Lädt via `supabase.rpc("get_interview_by_token", { _token })`.
-- Zeigt Sekretariat24-Header (dunkelblau + grüner Akzent), Bewerbername, Kalender + Zeitslots.
-- Slots aus `app_settings.interview_slot_*` generieren, belegte via `list_booked_slots()` ausgrauen.
-- Bestätigung → `book_interview_slot(...)` → Success-View mit Termin.
-- Wenn schon gebucht: Zusammenfassung + „Termin ändern"-Option (löscht alten, bucht neu).
-
-### 5. Neuer Reiter `/superadmin/bewerbungsgespraeche`
-
-Neue Datei `src/pages/superadmin/Bewerbungsgespraeche.tsx`:
-- Tabelle: Bewerber (Name/Email/Handy aus join `applications`), Termin (Datum/Uhrzeit), Status-Badge, Aktionen: „Erfolgreich"/„Fehlgeschlagen"/„Absagen"/„Löschen".
-- Filter: „Heute/Morgen", „Vergangene", „Zukünftige" (Buttons wie in Referenz), Suchfeld.
-- Realtime-Subscription auf `interview_appointments`.
-- Sidebar-Eintrag in `src/components/superadmin/AppSidebar.tsx` unter „Betrieb" (Icon `Calendar`), Badge = Anzahl heutiger Termine.
-
-### 6. Einstellungen-Erweiterung `src/pages/superadmin/Einstellungen.tsx`
-
-Neuer Abschnitt „Bewerbungsgespräch-Einladung":
-- Toggle enabled, Subject-Input, Body-Textarea (gleiche Platzhalter-UX wie Bewerbungs-Mail, zusätzlich `{{booking_url}}`).
-- Konfiguration der verfügbaren Slot-Zeiten (Start/Ende, Intervall, Wochentage).
-- Vorschau-Button öffnet Dialog mit `renderApplicationEmailHtml` — analog zur bestehenden Preview, damit Style-Konsistenz sichtbar ist.
-
-### 7. Wichtige Sicherheits-Details
-
-- Token ist Zufalls-UUID → nicht erratbar; keine Auth nötig, aber auch keine sensiblen Daten in RPC-Response (nur Vorname/Nachname + evtl. Firmenname).
-- `book_interview_slot` prüft Slot-Kollision serverseitig (kein Client-Trust).
-- Keine E-Mail/Handy an anon zurückgeben.
-- Alle neuen Tabellen/Spalten mit expliziten GRANTs.
-
-### 8. Reihenfolge
-
-1. Migration ausführen (Tabelle, Spalten, RPCs, RLS, GRANTs)
-2. Edge Function `send-interview-invite` deployen
-3. Frontend: neue Seiten, Sidebar, Einstellungen, Genehmigen-Button
+## Verifikation
+- Vorschau in `/superadmin/einstellungen` zeigt: neuen Text, grünen Button, neue 3-Schritt-Card ohne „Unterlagen sichten".
+- Testversand über „Genehmigen & Termin-Link senden"; HTML enthält `<a href=".../bewerbungsgespraech/<token>">Termin auswählen</a>` und die neuen Steps.

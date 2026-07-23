@@ -11,7 +11,10 @@ export type ApplicationEmailInput = {
     logoText?: string | null; // e.g. "Sekretariat24"
     accent?: string | null; // hex like #7bed9f
   };
+  cta?: { label: string; url: string } | null;
+  steps?: Array<{ title: string; body: string }> | null;
 };
+
 
 function escapeHtml(s: string) {
   return s
@@ -118,16 +121,34 @@ export function renderApplicationEmailHtml(input: ApplicationEmailInput) {
                   </div>
                 </div>
 
+                ${
+                  input.cta
+                    ? `<div style="padding:0 44px 32px 44px;text-align:center;">
+                        <a href="${escapeHtml(input.cta.url)}" style="display:inline-block;background:${accent};color:#0f1a2e;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;letter-spacing:0.02em;">${escapeHtml(input.cta.label)}</a>
+                      </div>`
+                    : ""
+                }
+
                 <div style="padding:0 44px 40px 44px;">
                   <div style="margin-top:12px;padding:22px 24px;border-radius:10px;background:${accentTint};border:1px solid ${accentBorder};">
                     <div style="font-size:13px;font-weight:700;color:${accentDark};margin:0 0 16px 0;letter-spacing:0.06em;text-transform:uppercase;">Der weitere Ablauf</div>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                      ${step(1, "Prüfung der Unterlagen", "Unser Team sichtet deine Bewerbung sorgfältig.")}
-                      ${step(2, "Persönliche Rückmeldung", "Innerhalb weniger Werktage erhältst du eine Nachricht von uns.")}
-                      ${step(3, "Kennenlerngespräch", "Bei passender Qualifikation laden wir dich zu einem Gespräch ein.")}
+                      ${
+                        (input.steps && input.steps.length > 0
+                          ? input.steps
+                          : [
+                              { title: "Prüfung der Unterlagen", body: "Unser Team sichtet deine Bewerbung sorgfältig." },
+                              { title: "Persönliche Rückmeldung", body: "Innerhalb weniger Werktage erhältst du eine Nachricht von uns." },
+                              { title: "Kennenlerngespräch", body: "Bei passender Qualifikation laden wir dich zu einem Gespräch ein." },
+                            ]
+                        )
+                          .map((s, i) => step(i + 1, escapeHtml(s.title), escapeHtml(s.body)))
+                          .join("")
+                      }
                     </table>
                   </div>
                 </div>
+
               </td>
             </tr>
             <tr>

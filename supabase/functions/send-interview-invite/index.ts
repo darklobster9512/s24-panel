@@ -38,6 +38,12 @@ type EmailInput = {
   company: { name: string; address?: string | null; logoText?: string | null; accent?: string | null };
 };
 
+const INTERVIEW_STEPS = [
+  { title: "Termin wählen", body: "Such dir über den Button oben einen passenden Zeitraum aus." },
+  { title: "Kurzes Kennenlerngespräch", body: "Wir sprechen ca. 20–30 Minuten online über deine Erfahrung und offene Fragen." },
+  { title: "Rückmeldung & nächste Schritte", body: "Direkt im Anschluss klären wir gemeinsam, wie es weitergeht." },
+];
+
 function renderInterviewEmailHtml(input: EmailInput) {
   const accent = input.company.accent || '#7bed9f';
   const accentDark = '#2fa363';
@@ -51,6 +57,19 @@ function renderInterviewEmailHtml(input: EmailInput) {
   const preheader = escapeHtml(input.subject).slice(0, 140);
   const bookingUrl = escapeHtml(input.bookingUrl);
 
+  const step = (n: number, title: string, body: string) => `
+    <tr><td style="padding:0 0 14px 0;vertical-align:top;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td width="28" style="vertical-align:top;">
+          <div style="width:26px;height:26px;border-radius:999px;background:${accent};color:#0f1a2e;font-size:13px;font-weight:700;text-align:center;line-height:26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${n}</div>
+        </td>
+        <td style="padding-left:12px;font-size:14px;line-height:1.6;color:#3b4a3f;">
+          <div style="color:#1a2e1f;font-weight:600;margin-bottom:2px;">${escapeHtml(title)}</div>
+          <div>${escapeHtml(body)}</div>
+        </td>
+      </tr></table>
+    </td></tr>`;
+
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="color-scheme" content="light"/><title>${escapeHtml(input.subject)}</title></head>
 <body style="margin:0;padding:0;background:#f5f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
@@ -62,14 +81,15 @@ function renderInterviewEmailHtml(input: EmailInput) {
 <div style="height:3px;background:${accent};line-height:3px;font-size:0;">&nbsp;</div>
 <div style="padding:40px 44px 8px 44px;"><div style="margin:0 0 24px 0;">${paragraphs}</div></div>
 
-<div style="padding:0 44px 40px 44px;text-align:center;">
-  <a href="${bookingUrl}" style="display:inline-block;background:${accent};color:#0f1a2e;text-decoration:none;font-weight:700;font-size:15px;padding:14px 28px;border-radius:10px;letter-spacing:0.02em;">Termin auswählen</a>
-  <div style="margin-top:14px;font-size:12px;color:#6b7a70;word-break:break-all;">${bookingUrl}</div>
+<div style="padding:0 44px 32px 44px;text-align:center;">
+  <a href="${bookingUrl}" style="display:inline-block;background:${accent};color:#0f1a2e;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;letter-spacing:0.02em;">Termin auswählen</a>
 </div>
 
 <div style="padding:0 44px 40px 44px;"><div style="padding:22px 24px;border-radius:10px;background:${accentTint};border:1px solid ${accentBorder};">
-<div style="font-size:13px;font-weight:700;color:${accentDark};margin:0 0 12px 0;letter-spacing:0.06em;text-transform:uppercase;">Was dich erwartet</div>
-<div style="font-size:14px;line-height:1.7;color:#3b4a3f;">Ein lockeres Kennenlerngespräch per Telefon oder Video. Wir stellen dir das Team vor und beantworten deine Fragen.</div>
+<div style="font-size:13px;font-weight:700;color:${accentDark};margin:0 0 16px 0;letter-spacing:0.06em;text-transform:uppercase;">Der weitere Ablauf</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+${INTERVIEW_STEPS.map((s, i) => step(i + 1, s.title, s.body)).join('')}
+</table>
 </div></div></td></tr>
 <tr><td style="padding:24px 8px 0 8px;">
 <div style="height:1px;background:${accentBorder};margin:0 auto 16px auto;max-width:120px;line-height:1px;font-size:0;">&nbsp;</div>
@@ -80,6 +100,7 @@ ${address ? `<div>${address}</div>` : ''}
 </div></td></tr>
 </table></td></tr></table></body></html>`;
 }
+
 
 const BodySchema = z.object({
   application_id: z.string().uuid(),
