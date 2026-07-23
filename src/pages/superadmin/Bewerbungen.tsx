@@ -186,7 +186,11 @@ export default function Bewerbungen() {
       toast.error("Datei konnte nicht geladen werden");
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    setPreview({
+      url: data.signedUrl,
+      name: row.lebenslauf_filename || `${row.vorname}_${row.nachname}_Lebenslauf`,
+      mime: row.lebenslauf_mime,
+    });
   }
 
   async function deleteRow(row: Application) {
