@@ -24,6 +24,13 @@ export type Database = {
           company_name: string | null
           created_at: string
           id: string
+          interview_available_weekdays: number[]
+          interview_email_body: string | null
+          interview_email_enabled: boolean
+          interview_email_subject: string | null
+          interview_slot_end: string
+          interview_slot_interval_minutes: number
+          interview_slot_start: string
           logo_text: string | null
           resend_api_key: string | null
           resend_from_email: string | null
@@ -41,6 +48,13 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           id?: string
+          interview_available_weekdays?: number[]
+          interview_email_body?: string | null
+          interview_email_enabled?: boolean
+          interview_email_subject?: string | null
+          interview_slot_end?: string
+          interview_slot_interval_minutes?: number
+          interview_slot_start?: string
           logo_text?: string | null
           resend_api_key?: string | null
           resend_from_email?: string | null
@@ -58,6 +72,13 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           id?: string
+          interview_available_weekdays?: number[]
+          interview_email_body?: string | null
+          interview_email_enabled?: boolean
+          interview_email_subject?: string | null
+          interview_slot_end?: string
+          interview_slot_interval_minutes?: number
+          interview_slot_start?: string
           logo_text?: string | null
           resend_api_key?: string | null
           resend_from_email?: string | null
@@ -71,6 +92,7 @@ export type Database = {
       applications: {
         Row: {
           anstellung: string
+          booking_token: string | null
           created_at: string
           email: string
           geburtsdatum: string
@@ -88,6 +110,7 @@ export type Database = {
         }
         Insert: {
           anstellung: string
+          booking_token?: string | null
           created_at?: string
           email: string
           geburtsdatum: string
@@ -105,6 +128,7 @@ export type Database = {
         }
         Update: {
           anstellung?: string
+          booking_token?: string | null
           created_at?: string
           email?: string
           geburtsdatum?: string
@@ -610,6 +634,50 @@ export type Database = {
         }
         Relationships: []
       }
+      interview_appointments: {
+        Row: {
+          application_id: string
+          appointment_date: string
+          appointment_time: string
+          booked_at: string
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          appointment_date: string
+          appointment_time: string
+          booked_at?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          appointment_date?: string
+          appointment_time?: string
+          booked_at?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_appointments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null
@@ -742,6 +810,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      book_interview_slot: {
+        Args: { _date: string; _time: string; _token: string }
+        Returns: string
+      }
+      get_interview_by_token: {
+        Args: { _token: string }
+        Returns: {
+          application_id: string
+          appointment_date: string
+          appointment_time: string
+          nachname: string
+          status: string
+          vorname: string
+        }[]
+      }
+      get_interview_slot_config: {
+        Args: never
+        Returns: {
+          accent_color: string
+          company_name: string
+          interval_minutes: number
+          logo_text: string
+          slot_end: string
+          slot_start: string
+          weekdays: number[]
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -752,6 +847,13 @@ export type Database = {
       is_client_assigned_to_me: {
         Args: { _client_id: string }
         Returns: boolean
+      }
+      list_booked_interview_slots: {
+        Args: never
+        Returns: {
+          appointment_date: string
+          appointment_time: string
+        }[]
       }
     }
     Enums: {
