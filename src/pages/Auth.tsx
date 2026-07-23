@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logoIcon from "@/assets/logo-icon.png.asset.json";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
