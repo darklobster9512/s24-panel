@@ -1,14 +1,16 @@
-# Favicon per Pixel-Recoloring statt AI-Neuzeichnung
+## Icon-Update
 
-## Problem
-Die `imagegen--edit_image` Version hat das Telefon-Icon neu gezeichnet und die Form verändert (anderer Hörer, andere Proportionen). Statt ein KI-Modell darum zu bitten, tausche ich die Farben pixelweise – so bleibt die Form exakt identisch zur Vorlage.
+**Asset**
+- Upload `favicon-64x64-3.png` (dunkelblauer Kreis mit grünem Hörer) via `lovable-assets` als CDN-Pointer nach `src/assets/logo-icon.png.asset.json` einbinden, damit es sowohl in React-Komponenten als auch als Favicon nutzbar ist.
+- Zusätzlich Kopie nach `public/favicon.png` (überschreibt aktuelles Favicon), damit `<link rel="icon">` das gleiche Bild ausliefert.
 
-## Vorgehen
-1. Python-Skript mit PIL im Sandbox laufen lassen, das das Original (`/mnt/user-uploads/favicon-64x64-2.png`) einliest.
-2. Pro Pixel:
-   - Grüntöne (nahe `#7bed9f`) → `#130f40`
-   - Dunkelblau-Töne (nahe `#130f40` / dunkles Navy) → `#7bed9f`
-   - Toleranzbereich pro Kanal, damit Anti-Aliasing-Kanten sauber mitgeswappt werden (Interpolation entlang der Farbdistanz statt harter Schwelle).
-   - Transparente Pixel bleiben transparent.
-3. Ergebnis als `public/favicon.png` speichern (überschreibt die aktuelle, falsche Version). Auflösung des Originals beibehalten.
-4. `index.html` bleibt unverändert (referenziert bereits `/favicon.png`).
+**Sidebar (`src/components/superadmin/AdminSidebar.tsx` bzw. Mitarbeiter-Sidebar)**
+- Aktuelles Icon vor dem „Sekretariat24"-Logo durch `<img src={logoIcon.url} />` ersetzen, gleiche Größe wie bisher.
+
+**Auth-Seite (`src/pages/Auth.tsx`)**
+- Icon vor dem Logo-Text ebenfalls durch das neue Bild ersetzen.
+
+**Favicon (`index.html`)**
+- Bleibt `/favicon.png`, Datei wird lediglich durch das neue Bild ersetzt (kein HTML-Change nötig).
+
+Kein Umschalten der Farben mehr – das Original wird 1:1 verwendet.

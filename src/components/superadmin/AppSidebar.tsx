@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import logoIcon from "@/assets/logo-icon.png.asset.json";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -150,9 +151,7 @@ export function SuperadminSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-ink-deep to-ink text-primary shadow-sm">
-            <Headphones className="h-4 w-4" />
-          </div>
+          <img src={logoIcon.url} alt="Sekretariat24" className="h-9 w-9 shrink-0 rounded-xl" />
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">
