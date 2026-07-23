@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, FileText, Download, Trash2, ExternalLink } from "lucide-react";
+import { Search, FileText, Download, Trash2, ExternalLink, Mail, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,6 +48,8 @@ type Application = {
 const STATUS_OPTIONS = [
   { value: "neu", label: "Neu" },
   { value: "gesichtet", label: "Gesichtet" },
+  { value: "bewerbungsgespraech", label: "Gespräch-Link gesendet" },
+  { value: "termin_gebucht", label: "Termin gebucht" },
   { value: "angenommen", label: "Angenommen" },
   { value: "abgelehnt", label: "Abgelehnt" },
 ];
@@ -68,9 +70,13 @@ const RANKING_CLASSES: Record<string, string> = {
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "abgelehnt") return "destructive";
-  if (s === "angenommen") return "default";
-  if (s === "gesichtet") return "outline";
+  if (s === "angenommen" || s === "termin_gebucht") return "default";
+  if (s === "gesichtet" || s === "bewerbungsgespraech") return "outline";
   return "secondary";
+}
+
+function statusLabel(s: string) {
+  return STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s;
 }
 
 
@@ -99,6 +105,7 @@ export default function Bewerbungen() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Application | null>(null);
   const [preview, setPreview] = useState<{ url: string; name: string; mime: string | null } | null>(null);
+  const [inviteLoading, setInviteLoading] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,6 +237,35 @@ export default function Bewerbungen() {
     setRows((prev) => prev.filter((r) => r.id !== row.id));
   }
 
+  async function sendInvite(row: Application) {
+    setInviteLoading(row.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-interview-invite", {
+        body: { application_id: row.id, site_url: window.location.origin },
+      });
+      if (error) throw error;
+      const newStatus = "bewerbungsgespraech";
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: newStatus } : r)));
+      if (selected?.id === row.id) setSelected({ ...selected, status: newStatus });
+      const url = (data as any)?.booking_url as string | undefined;
+      if (url) {
+        try {
+          await navigator.clipboard.writeText(url);
+          toast.success("Termin-Link versendet und in Zwischenablage kopiert");
+        } catch {
+          toast.success("Termin-Link versendet");
+        }
+      } else {
+        toast.success("Aktion abgeschlossen");
+      }
+    } catch (e: any) {
+      console.error("[sendInvite] failed:", e);
+      toast.error(e?.message || "Termin-Link konnte nicht gesendet werden");
+    } finally {
+      setInviteLoading(null);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -307,8 +343,8 @@ export default function Bewerbungen() {
                 <span className="truncate capitalize text-muted-foreground">{r.anstellung}</span>
                 <span className="truncate text-muted-foreground">{r.geburtsdatum ? formatDate(r.geburtsdatum) : "—"}</span>
                 <span className="truncate text-muted-foreground">{r.staatsangehoerigkeit}</span>
-                <Badge variant={statusVariant(r.status)} className="w-fit capitalize">
-                  {r.status}
+                <Badge variant={statusVariant(r.status)} className="w-fit">
+                  {statusLabel(r.status)}
                 </Badge>
                 <div onClick={(e) => e.stopPropagation()}>
                   <Select
@@ -436,6 +472,17 @@ export default function Bewerbungen() {
 
 
                 <div className="pt-2 flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => sendInvite(selected)}
+                    disabled={inviteLoading === selected.id}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    {inviteLoading === selected.id
+                      ? "Sende…"
+                      : selected.status === "bewerbungsgespraech" || selected.status === "termin_gebucht"
+                        ? "Termin-Link erneut senden"
+                        : "Genehmigen & Termin-Link senden"}
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={() => openLebenslauf(selected)}

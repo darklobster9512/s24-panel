@@ -14,6 +14,7 @@ import {
   Settings,
   Headphones,
   UserPlus,
+  Calendar,
 
 } from "lucide-react";
 
@@ -48,7 +49,7 @@ const mainItems: SidebarItem[] = [
   { title: "Zuweisungen", url: "/superadmin/zuweisungen", icon: Link2 },
 ];
 
-const opsItems = (newApplicationsCount: number): SidebarItem[] => [
+const opsItems = (newApplicationsCount: number, interviewsTodayCount: number): SidebarItem[] => [
   { title: "Anrufe", url: "/superadmin/anrufe", icon: PhoneCall },
   { title: "Notizen", url: "/superadmin/notizen", icon: StickyNote },
   {
@@ -56,6 +57,12 @@ const opsItems = (newApplicationsCount: number): SidebarItem[] => [
     url: "/superadmin/bewerbungen",
     icon: UserPlus,
     badge: newApplicationsCount,
+  },
+  {
+    title: "Bewerbungsgespräche",
+    url: "/superadmin/bewerbungsgespraeche",
+    icon: Calendar,
+    badge: interviewsTodayCount,
   },
 ];
 
@@ -104,8 +111,22 @@ export function SuperadminSidebar() {
     },
   });
 
+  const interviewsTodayQuery = useQuery({
+    queryKey: ["interviews-today-count"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { count, error } = await (supabase as any)
+        .from("interview_appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("appointment_date", today);
+      if (error) return 0;
+      return count ?? 0;
+    },
+  });
+
   const pendingCount = pendingCountQuery.data ?? 0;
   const newApplicationsCount = newApplicationsQuery.data ?? 0;
+  const interviewsTodayCount = interviewsTodayQuery.data ?? 0;
 
   const isActive = (path: string, end?: boolean) =>
     end ? pathname === path : pathname === path || pathname.startsWith(path + "/");
@@ -166,7 +187,7 @@ export function SuperadminSidebar() {
       </SidebarHeader>
       <SidebarContent className="gap-1 py-2">
         {renderGroup("Allgemein", mainItems)}
-        {renderGroup("Betrieb", opsItems(newApplicationsCount))}
+        {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount))}
         {renderGroup("Finanzen", finItems(pendingCount))}
         {renderGroup("System", systemItems)}
       </SidebarContent>
