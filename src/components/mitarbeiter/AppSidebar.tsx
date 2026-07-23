@@ -105,7 +105,7 @@ export function MitarbeiterSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-3">
-          <img src={logoIcon.url} alt="Sekretariat24" className="h-9 w-9 shrink-0 rounded-xl" />
+          <img src="/logo-icon.png" alt="Sekretariat24" className="h-9 w-9 shrink-0 rounded-xl" />
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">

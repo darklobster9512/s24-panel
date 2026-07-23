@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import logoIcon from "@/assets/logo-icon.png.asset.json";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Headphones,
   MessageSquare,
   PhoneCall,
   Sparkles,
@@ -16,7 +14,6 @@ import { useAuth, roleHome } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -65,7 +62,7 @@ function BrandingPanel() {
 
       <div className="relative">
         <Link to="/" className="inline-flex items-center gap-2 text-on-ink">
-          <img src={logoIcon.url} alt="Sekretariat24" className="h-9 w-9 rounded-xl" />
+          <img src="/logo-icon.png" alt="Sekretariat24" className="h-9 w-9 rounded-xl" />
           <span className="text-lg font-semibold tracking-tight">
             Sekretariat<span className="text-primary">24</span>
           </span>
@@ -136,26 +133,13 @@ function FormPanel() {
     <div className="flex flex-col justify-center p-6 md:p-10">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold tracking-tight">Willkommen</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Willkommen zurück</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Melden Sie sich an oder erstellen Sie ein neues Konto.
+            Melden Sie sich mit Ihren Zugangsdaten an.
           </p>
         </div>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Registrieren</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="login" className="mt-6">
-            <LoginForm />
-          </TabsContent>
-
-          <TabsContent value="signup" className="mt-6">
-            <SignupForm />
-          </TabsContent>
-        </Tabs>
+        <LoginForm />
       </div>
     </div>
   );
@@ -204,6 +188,7 @@ function LoginForm() {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
         />
       </div>
       <Button type="submit" className="w-full" disabled={submitting}>
@@ -211,67 +196,6 @@ function LoginForm() {
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
           "Anmelden"
-        )}
-      </Button>
-    </form>
-  );
-}
-
-function SignupForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    const redirectUrl = `${window.location.origin}/auth`;
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: redirectUrl },
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(
-      "Konto erstellt. Bitte prüfen Sie ggf. Ihr E-Mail-Postfach.",
-    );
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="signup-email">E-Mail</Label>
-        <Input
-          id="signup-email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="name@firma.de"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="signup-password">Passwort</Label>
-        <Input
-          id="signup-password"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      <Button type="submit" className="w-full" disabled={submitting}>
-        {submitting ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          "Konto erstellen"
         )}
       </Button>
     </form>
