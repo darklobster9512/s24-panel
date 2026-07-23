@@ -1,16 +1,15 @@
-## Icon-Update
+## Änderungen
 
-**Asset**
-- Upload `favicon-64x64-3.png` (dunkelblauer Kreis mit grünem Hörer) via `lovable-assets` als CDN-Pointer nach `src/assets/logo-icon.png.asset.json` einbinden, damit es sowohl in React-Komponenten als auch als Favicon nutzbar ist.
-- Zusätzlich Kopie nach `public/favicon.png` (überschreibt aktuelles Favicon), damit `<link rel="icon">` das gleiche Bild ausliefert.
+**1. Logo-Icon über `public/` ausliefern**
+- Datei `public/logo-icon.png` anlegen (Kopie des bestehenden Favicon-Bilds, dunkelblauer Kreis mit grünem Hörer).
+- In `src/components/superadmin/AppSidebar.tsx`, `src/components/mitarbeiter/AppSidebar.tsx` und `src/pages/Auth.tsx` den Import von `@/assets/logo-icon.png.asset.json` entfernen und `<img src="/logo-icon.png" … />` verwenden. So wird das Icon zuverlässig ausgeliefert (der Asset-CDN-Pointer wird aktuell im Preview nicht aufgelöst).
 
-**Sidebar (`src/components/superadmin/AdminSidebar.tsx` bzw. Mitarbeiter-Sidebar)**
-- Aktuelles Icon vor dem „Sekretariat24"-Logo durch `<img src={logoIcon.url} />` ersetzen, gleiche Größe wie bisher.
+**2. Passwort-Placeholder (Dot-Punkte)**
+- In `src/pages/Auth.tsx` bei beiden Passwort-`Input`-Feldern (Login + Signup) `placeholder="••••••••"` ergänzen, damit im leeren Zustand Dot-Punkte sichtbar sind.
 
-**Auth-Seite (`src/pages/Auth.tsx`)**
-- Icon vor dem Logo-Text ebenfalls durch das neue Bild ersetzen.
+**3. Registrieren-Tab entfernen**
+- In `src/pages/Auth.tsx` die `<Tabs>`-Struktur entfernen und nur das Login-Formular rendern.
+- `SignupForm`-Komponente und deren Nutzung entfernen (Registrierung erfolgt künftig ausschließlich durch den Superadmin via Mitarbeiter-Wizard).
+- Ungenutzte Imports (`Tabs`, `TabsContent`, `TabsList`, `TabsTrigger`) entfernen.
 
-**Favicon (`index.html`)**
-- Bleibt `/favicon.png`, Datei wird lediglich durch das neue Bild ersetzt (kein HTML-Change nötig).
-
-Kein Umschalten der Farben mehr – das Original wird 1:1 verwendet.
+Keine Backend-/DB-Änderungen.
