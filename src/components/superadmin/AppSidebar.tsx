@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import logoIcon from "@/assets/logo-icon.png.asset.json";
+
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
