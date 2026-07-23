@@ -96,6 +96,7 @@ export default function Bewerbungen() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Application | null>(null);
+  const [preview, setPreview] = useState<{ url: string; name: string; mime: string | null } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
