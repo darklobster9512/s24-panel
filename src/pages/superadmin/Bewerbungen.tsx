@@ -17,7 +17,14 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Search, FileText, Download, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Search, FileText, Download, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -89,6 +96,7 @@ export default function Bewerbungen() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Application | null>(null);
+  const [preview, setPreview] = useState<{ url: string; name: string; mime: string | null } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,7 +186,11 @@ export default function Bewerbungen() {
       toast.error("Datei konnte nicht geladen werden");
       return;
     }
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    setPreview({
+      url: data.signedUrl,
+      name: row.lebenslauf_filename || `${row.vorname}_${row.nachname}_Lebenslauf`,
+      mime: row.lebenslauf_mime,
+    });
   }
 
   async function deleteRow(row: Application) {
@@ -378,6 +390,46 @@ export default function Bewerbungen() {
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-5xl w-[95vw] h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="truncate">{preview?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 bg-muted/30">
+            {preview && (
+              preview.mime && !preview.mime.includes("pdf") && !preview.mime.startsWith("image/") ? (
+                <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted-foreground">
+                  <FileText className="h-10 w-10" />
+                  <div>Vorschau für diesen Dateityp nicht möglich.</div>
+                  <Button asChild variant="outline">
+                    <a href={preview.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      In neuem Tab öffnen
+                    </a>
+                  </Button>
+                </div>
+              ) : preview.mime?.startsWith("image/") ? (
+                <div className="flex h-full items-center justify-center overflow-auto p-4">
+                  <img src={preview.url} alt={preview.name} className="max-h-full max-w-full object-contain" />
+                </div>
+              ) : (
+                <iframe src={preview.url} title={preview.name} className="h-full w-full border-0" />
+              )
+            )}
+          </div>
+          <DialogFooter className="px-6 py-3 border-t">
+            {preview && (
+              <Button asChild variant="outline">
+                <a href={preview.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  In neuem Tab öffnen
+                </a>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
