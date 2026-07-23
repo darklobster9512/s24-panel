@@ -238,7 +238,7 @@ export default function Bewerbungen() {
         </div>
 
         <div className="divide-y divide-border/60">
-          <div className="grid grid-cols-[160px_1fr_1fr_140px_140px_110px_150px_140px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-[160px_1fr_1fr_140px_140px_110px_140px_120px_150px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <span>Eingegangen</span>
             <span>Name</span>
             <span>E-Mail</span>
