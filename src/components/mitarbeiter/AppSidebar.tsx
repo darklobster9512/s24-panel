@@ -110,7 +110,7 @@ export function MitarbeiterSidebar() {
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">
-                Sekreteriat<span className="text-primary">24</span>
+                Sekretariat<span className="text-primary">24</span>
               </span>
               <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                 Mitarbeiter

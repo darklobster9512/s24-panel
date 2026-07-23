@@ -60,7 +60,7 @@ export function renderContractHtml(html: string, vars: ContractVars): string {
       vars.monatsgehalt != null && vars.monatsgehalt !== ""
         ? `${vars.monatsgehalt} €`
         : null,
-    firma: vars.firma ?? "Sekreteriat24",
+    firma: vars.firma ?? "Sekretariat24",
     heutiges_datum: new Date().toLocaleDateString("de-DE"),
   };
   return html.replace(/\{\{\s*([a-zA-Z_]+)\s*\}\}/g, (_m, key) => esc(map[key]));
