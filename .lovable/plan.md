@@ -1,22 +1,15 @@
-## Ranking-Spalte für Bewerbungen
+## Ziel
+Beim Klick auf „Öffnen" (Lebenslauf) soll die Datei in einem Modal-Popup innerhalb der App angezeigt werden, statt in einem neuen Browser-Tab.
 
-Neue Spalte "Ranking" in `/superadmin/bewerbungen`, mit vier Stufen: Sehr gut, Gut, Mittel, Schlecht. Sortierung bleibt unverändert (nach Eingang).
+## Umsetzung in `src/pages/superadmin/Bewerbungen.tsx`
 
-### Datenbank
-- Migration auf `public.applications`: neue Spalte `ranking text` (nullable, kein Default).
-- Kein Enum, damit später leicht erweiterbar; Werte: `sehr_gut | gut | mittel | schlecht | null`.
+1. Neuen State hinzufügen: `previewUrl: string | null` und `previewName: string | null`.
+2. `openLebenslauf(row)` anpassen: signierte URL nicht mehr via `window.open`, sondern in den State setzen, um den Dialog zu öffnen.
+3. Neuen `Dialog` (shadcn) rendern:
+   - Große Breite (`max-w-5xl`), Höhe ca. `85vh`.
+   - Titel = Dateiname des Bewerbers.
+   - Inhalt: `<iframe src={previewUrl}>` für PDFs (Browser-nativer PDF-Viewer). Für Nicht-PDF (z. B. DOCX) Fallback mit „In neuem Tab öffnen"-Button, da Browser DOCX nicht inline rendern.
+   - Zusätzlicher Button „Herunterladen / In neuem Tab öffnen" im Footer.
+4. Auf `onOpenChange=false` den State zurücksetzen.
 
-### UI (`src/pages/superadmin/Bewerbungen.tsx`)
-- Grid-Header/Zeilen bekommen zusätzliche Spalte "Ranking" (Spaltenbreite ~140px).
-- Inline `Select` in jeder Zeile mit den 4 Optionen + "—" (kein Ranking). Click stoppt Row-Propagation, damit sich das Sheet nicht öffnet.
-- Farbige Badges/Dot je Stufe (grün / mint / gelb / rot) über das bestehende Design-Token-System (`bg-primary`, `bg-muted`, `text-destructive` etc.), keine Hardcodes.
-- Update via `supabase.from('applications').update({ ranking }).eq('id', …)`; Realtime aktualisiert die anderen Sessions.
-
-### Detail-Sheet
-- Neues Feld "Ranking" analog zum Status-Select, synchron mit der Tabelle.
-
-### TypeScript
-- Lokaler `Application`-Type um `ranking: string | null` erweitern.
-
-### Nicht geändert
-- Sortierreihenfolge, Filter, RLS-Policies (bestehende Update-Policy deckt die neue Spalte ab).
+Der bestehende „Öffnen"-Button in der Tabellenzeile und der „Lebenslauf öffnen"-Button im Detail-Sheet nutzen beide dieselbe Funktion — beide öffnen dann automatisch das Popup.
