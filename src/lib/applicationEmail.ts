@@ -11,7 +11,10 @@ export type ApplicationEmailInput = {
     logoText?: string | null; // e.g. "Sekretariat24"
     accent?: string | null; // hex like #7bed9f
   };
+  cta?: { label: string; url: string } | null;
+  steps?: Array<{ title: string; body: string }> | null;
 };
+
 
 function escapeHtml(s: string) {
   return s
