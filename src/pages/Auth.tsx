@@ -64,9 +64,7 @@ function BrandingPanel() {
 
       <div className="relative">
         <Link to="/" className="inline-flex items-center gap-2 text-on-ink">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <Headphones className="h-5 w-5" />
-          </div>
+          <img src={logoIcon.url} alt="Sekretariat24" className="h-9 w-9 rounded-xl" />
           <span className="text-lg font-semibold tracking-tight">
             Sekretariat<span className="text-primary">24</span>
           </span>
