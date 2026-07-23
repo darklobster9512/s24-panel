@@ -42,6 +42,7 @@ type Application = {
   lebenslauf_mime: string | null;
   status: string;
   ranking: string | null;
+  booking_token: string | null;
   created_at: string;
 };
 
@@ -266,6 +267,31 @@ export default function Bewerbungen() {
     }
   }
 
+  async function copyBookingLink(row: Application) {
+    let token = row.booking_token;
+    if (!token) {
+      const { data, error } = await (supabase as any)
+        .from("applications")
+        .select("booking_token")
+        .eq("id", row.id)
+        .single();
+      if (error || !data?.booking_token) {
+        toast.error("Kein Termin-Link für diese Bewerbung verfügbar");
+        return;
+      }
+      token = data.booking_token;
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, booking_token: token } : r)));
+      if (selected?.id === row.id) setSelected({ ...selected, booking_token: token });
+    }
+    const url = `${window.location.origin}/bewerbungsgespraech/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Termin-Link kopiert");
+    } catch {
+      toast.error("Termin-Link konnte nicht kopiert werden");
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -482,6 +508,14 @@ export default function Bewerbungen() {
                       : selected.status === "bewerbungsgespraech" || selected.status === "termin_gebucht"
                         ? "Termin-Link erneut senden"
                         : "Genehmigen & Termin-Link senden"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => copyBookingLink(selected)}
+                    disabled={!selected.booking_token}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Termin-Link kopieren
                   </Button>
                   <Button
                     variant="outline"

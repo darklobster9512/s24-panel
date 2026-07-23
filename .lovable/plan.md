@@ -1,47 +1,43 @@
-## Ziel
-Bewerbungsgespräch-Einladungsmail komplett stimmig machen:
-- Echter, klickbarer Button „Termin auswählen" statt Text-Link (Vorschau + Versand).
-- Default-Text: Unterlagen wurden geprüft, wir möchten die Person näher kennenlernen.
-- Die 3-Schritt-„Der weitere Ablauf"-Card darf NICHT mehr sagen, dass wir die Unterlagen erst sichten – der Ablauf muss zur Einladung passen.
+Plan: „Termin-Link kopieren"-Button im Bewerbungs-Detail-Sheet
 
-## Umsetzung
+1. Ziel
+Im Bewerbungs-Detail-Sheet (rechte Sidebar unter `/superadmin/bewerbungen`) soll neben „Termin-Link senden" ein weiterer Button erscheinen, der den öffentlichen Bewerbungsgespräch-Link in die Zwischenablage kopiert.
 
-1. **Shared Renderer** (`src/lib/applicationEmail.ts`)
-   - `ApplicationEmailInput` optional erweitern:
-     - `cta?: { label: string; url: string }`
-     - `steps?: Array<{ title: string; body: string }>` (überschreibt die Default-Steps).
-   - CTA: nach dem Body-Absatz zentrierter Button-Block (Table-Layout, Akzentfarbe, weißer Text, abgerundet, klickbarer `<a>`).
-   - Steps: wenn `steps` übergeben ist, statt der bisherigen drei fixen Zeilen die übergebenen rendern (Nummer + Titel + Body, identisches Styling).
-   - Bestehende Bewerbungs-Bestätigungsmail bleibt unverändert (keine `cta`/`steps` → alter Default).
+2. Technische Umsetzung
 
-2. **Edge Function `send-interview-invite`**
-   - Inline-Renderer analog erweitern (CTA + Steps).
-   - Beim Versand mitgeben:
-     - `cta: { label: "Termin auswählen", url: bookingUrl }`
-     - `steps`:
-       1. „Termin wählen" – „Such dir über den Button oben einen passenden Zeitraum aus."
-       2. „Kurzes Kennenlerngespräch" – „Wir sprechen ca. 20–30 Minuten online über deine Erfahrung und offene Fragen."
-       3. „Rückmeldung & nächste Schritte" – „Direkt im Anschluss klären wir gemeinsam, wie es weitergeht."
-   - Falls im Body noch `{{booking_url}}` steht, entfernen – Link ist der Button.
+2.1 Datenmodell
+- `applications`-Tabelle hat bereits `booking_token uuid` (verifiziert über bestehende `sendInvite`-Logik).
+- Der Application-Typ in `src/pages/superadmin/Bewerbungen.tsx` enthält `booking_token` noch nicht — wird ergänzt.
 
-3. **Einstellungen · Vorschau** (`src/pages/superadmin/Einstellungen.tsx`)
-   - Im Interview-Preview-Iframe `cta` und dieselben `steps` übergeben, damit die Vorschau 1:1 der Versand-Mail entspricht.
-   - Body im Preview NICHT mehr um `➔ Termin auswählen: {{booking_url}}` erweitern.
-   - Hinweistext unter dem Textarea: Button und Ablauf-Card werden automatisch eingefügt; Platzhalter `{{vorname}}`, `{{nachname}}`, `{{email}}`.
+2.2 URL-Format
+- Öffentliche Buchungsseite: `/bewerbungsgespraech/:token` (bereits in `src/App.tsx` vorhanden).
+- Link: `${window.location.origin}/bewerbungsgespraech/${booking_token}`.
 
-4. **Neuer Default-Text** (Insert-Tool auf `app_settings`)
-   - Betreff: `Bewerbungsgespräch bei {{company_name}} – wir möchten dich kennenlernen`
-   - Body:
-     ```
-     Hallo {{vorname}},
+2.3 Neue Funktion `copyBookingLink`
+- Prüft, ob `selected.booking_token` vorhanden ist.
+- Falls nicht, lädt den Token per Supabase-Query nach (einmaliger Fallback, damit auch ältere Bewerbungen funktionieren, die vor Öffnen des Sheets keinen Token hatten).
+- Schreibt die URL in die Zwischenablage (`navigator.clipboard.writeText`).
+- Zeigt Toast: „Termin-Link kopiert".
+- Fehlerfall: Toast „Link konnte nicht kopiert werden".
 
-     vielen Dank für deine Bewerbung. Wir haben uns deine Unterlagen in Ruhe angeschaut und möchten dich gerne näher kennenlernen.
+2.4 UI-Änderung
+- In der Button-Gruppe im Sheet (Zeilen 474–498) wird ein neuer Button `variant="outline"` eingefügt:
+  - Icon: `Copy` (bereits importiert).
+  - Label: „Termin-Link kopieren".
+  - Aktion: `copyBookingLink(selected)`.
+  - Disabled: solange keine `booking_token` geladen werden kann.
+- Reihenfolge der Buttons:
+  1. „Termin-Link senden" (primary)
+  2. „Termin-Link kopieren" (outline)
+  3. „Lebenslauf öffnen" (outline)
+  4. „Löschen" (destructive)
 
-     Bitte wähle über den Button unten einen Termin, der dir für ein kurzes Bewerbungsgespräch passt. Das Gespräch dauert ca. 20–30 Minuten und findet online statt.
+3. Keine Änderungen an
+- Edge Functions, Datenbank-Schema oder anderen Seiten.
+- Die bestehende `sendInvite`-Funktion bleibt unverändert; der neue Button arbeitet unabhängig davon.
 
-     Wir freuen uns auf dich!
-     ```
-
-## Verifikation
-- Vorschau in `/superadmin/einstellungen` zeigt: neuen Text, grünen Button, neue 3-Schritt-Card ohne „Unterlagen sichten".
-- Testversand über „Genehmigen & Termin-Link senden"; HTML enthält `<a href=".../bewerbungsgespraech/<token>">Termin auswählen</a>` und die neuen Steps.
+4. Akzeptanzkriterien
+- Im Sheet einer Bewerbung ist ein „Termin-Link kopieren"-Button sichtbar.
+- Klick kopiert den Link `/bewerbungsgespraech/<token>` in die Zwischenablage.
+- Erfolgsmeldung wird angezeigt.
+- Button funktioniert sowohl für frisch genehmigte Bewerbungen als auch für solche, bei denen der Token nachträglich geladen werden muss.
