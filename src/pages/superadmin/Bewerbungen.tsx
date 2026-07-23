@@ -95,6 +95,8 @@ export default function Bewerbungen() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [rankingFilter, setRankingFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Application | null>(null);
   const [preview, setPreview] = useState<{ url: string; name: string; mime: string | null } | null>(null);
 
@@ -135,6 +137,11 @@ export default function Bewerbungen() {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (rankingFilter !== "all") {
+        if (rankingFilter === "none") {
+          if (r.ranking) return false;
+        } else if (r.ranking !== rankingFilter) return false;
+      }
       if (q) {
         const hay = [r.vorname, r.nachname, r.email, r.handynummer, r.staatsangehoerigkeit]
           .filter(Boolean)
@@ -144,7 +151,22 @@ export default function Bewerbungen() {
       }
       return true;
     });
-  }, [rows, search, statusFilter]);
+  }, [rows, search, statusFilter, rankingFilter]);
+
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, rankingFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
 
   async function updateStatus(id: string, status: string) {
     const { error } = await (supabase as any)
@@ -235,6 +257,16 @@ export default function Bewerbungen() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={rankingFilter} onValueChange={setRankingFilter}>
+            <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Rankings</SelectItem>
+              <SelectItem value="none">Ohne Ranking</SelectItem>
+              {RANKING_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="divide-y divide-border/60">
@@ -258,7 +290,7 @@ export default function Bewerbungen() {
               Keine Bewerbungen gefunden.
             </div>
           ) : (
-            filtered.map((r) => (
+            paged.map((r) => (
               <div
                 key={r.id}
                 className="grid grid-cols-[160px_1fr_1fr_140px_140px_110px_140px_120px_150px_100px] items-center gap-4 py-3 text-sm cursor-pointer hover:bg-accent/40 rounded-md px-2 -mx-2 transition-colors"
@@ -313,6 +345,34 @@ export default function Bewerbungen() {
           )}
         </div>
 
+        {!loading && filtered.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <div>
+              Zeige {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} von {filtered.length}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  Zurück
+                </Button>
+                <span className="tabular-nums">Seite {page} / {totalPages}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Weiter
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </Panel>
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
