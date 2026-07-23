@@ -34,6 +34,7 @@ type Application = {
   lebenslauf_filename: string | null;
   lebenslauf_mime: string | null;
   status: string;
+  ranking: string | null;
   created_at: string;
 };
 
@@ -44,12 +45,27 @@ const STATUS_OPTIONS = [
   { value: "abgelehnt", label: "Abgelehnt" },
 ];
 
+const RANKING_OPTIONS = [
+  { value: "sehr_gut", label: "Sehr gut" },
+  { value: "gut", label: "Gut" },
+  { value: "mittel", label: "Mittel" },
+  { value: "schlecht", label: "Schlecht" },
+];
+
+const RANKING_CLASSES: Record<string, string> = {
+  sehr_gut: "bg-primary/20 text-primary-foreground border-primary/40",
+  gut: "bg-primary/10 text-foreground border-primary/30",
+  mittel: "bg-muted text-foreground border-border",
+  schlecht: "bg-destructive/15 text-destructive border-destructive/40",
+};
+
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "abgelehnt") return "destructive";
   if (s === "angenommen") return "default";
   if (s === "gesichtet") return "outline";
   return "secondary";
 }
+
 
 function formatDateTime(iso: string) {
   const d = new Date(iso);
