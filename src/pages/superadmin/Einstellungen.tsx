@@ -261,6 +261,116 @@ export default function Einstellungen() {
             </div>
           </div>
         </Panel>
+
+        <Panel title="Bewerbungsgespräch · Einladungs-Mail" className="lg:col-span-2">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="lg:col-span-2 flex items-center justify-between rounded-lg bg-surface px-3 py-2.5">
+              <div>
+                <div className="text-sm font-medium">Einladung nach Genehmigung senden</div>
+                <div className="text-xs text-muted-foreground">
+                  Sendet automatisch eine Mail mit persönlichem Termin-Link, sobald du eine Bewerbung genehmigst.
+                </div>
+              </div>
+              <Switch
+                checked={form.interview_email_enabled}
+                onCheckedChange={(v) => set("interview_email_enabled", v)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>Betreff</Label>
+              <Input
+                value={form.interview_email_subject ?? ""}
+                onChange={(e) => set("interview_email_subject", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>Nachricht</Label>
+              <Textarea
+                rows={10}
+                value={form.interview_email_body ?? ""}
+                onChange={(e) => set("interview_email_body", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Platzhalter: <code>{"{{vorname}}"}</code>, <code>{"{{nachname}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{booking_url}}"}</code>. Der Termin-Button wird zusätzlich automatisch eingefügt.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Slot-Start</Label>
+              <Input
+                type="time"
+                value={(form.interview_slot_start ?? "09:00").slice(0, 5)}
+                onChange={(e) => set("interview_slot_start", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Slot-Ende</Label>
+              <Input
+                type="time"
+                value={(form.interview_slot_end ?? "18:00").slice(0, 5)}
+                onChange={(e) => set("interview_slot_end", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Intervall (Minuten)</Label>
+              <Input
+                type="number"
+                min={10}
+                max={180}
+                step={5}
+                value={form.interview_slot_interval_minutes ?? 30}
+                onChange={(e) => set("interview_slot_interval_minutes", parseInt(e.target.value) || 30)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Verfügbare Wochentage</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {WEEKDAYS.map((w) => {
+                  const active = activeWeekdays.includes(w.v);
+                  return (
+                    <button
+                      key={w.v}
+                      type="button"
+                      onClick={() => toggleWeekday(w.v)}
+                      className={`h-9 min-w-9 rounded-md border px-2.5 text-sm font-medium transition ${
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background hover:border-foreground/30"
+                      }`}
+                    >
+                      {w.l}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 flex gap-2">
+              <Button
+                size="sm"
+                onClick={() =>
+                  save.mutate({
+                    interview_email_enabled: form.interview_email_enabled,
+                    interview_email_subject: form.interview_email_subject,
+                    interview_email_body: form.interview_email_body,
+                    interview_slot_start: form.interview_slot_start,
+                    interview_slot_end: form.interview_slot_end,
+                    interview_slot_interval_minutes: form.interview_slot_interval_minutes,
+                    interview_available_weekdays: form.interview_available_weekdays,
+                  })
+                }
+                disabled={save.isPending}
+              >
+                Speichern
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setInterviewPreviewOpen(true)}>
+                Vorschau
+              </Button>
+            </div>
+          </div>
+        </Panel>
       </div>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -291,6 +401,48 @@ export default function Einstellungen() {
                 srcDoc={renderApplicationEmailHtml({
                   subject: renderTpl(form.application_email_subject ?? "Deine Bewerbung", previewVars),
                   bodyText: form.application_email_body ?? "",
+                  vars: previewVars,
+                  company: {
+                    name: form.company_name ?? "Sekretariat24",
+                    address: form.company_address,
+                    logoText: form.logo_text ?? form.company_name ?? "Sekretariat24",
+                    accent: form.accent_color ?? "#7bed9f",
+                  },
+                })}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={interviewPreviewOpen} onOpenChange={setInterviewPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Vorschau · Bewerbungsgespräch-Einladung</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Von</div>
+                <div className="font-medium truncate">
+                  {form.resend_from_name || "—"} &lt;{form.resend_from_email || "no-reply@example.com"}&gt;
+                </div>
+              </div>
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Betreff</div>
+                <div className="font-medium truncate">
+                  {renderTpl(form.interview_email_subject ?? "", previewVars)}
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-border bg-[#f5f7f5]">
+              <iframe
+                title="Interview E-Mail Vorschau"
+                sandbox=""
+                style={{ width: "100%", height: 560, border: 0, background: "#f5f7f5" }}
+                srcDoc={renderApplicationEmailHtml({
+                  subject: renderTpl(form.interview_email_subject ?? "Bewerbungsgespräch", previewVars),
+                  bodyText: (form.interview_email_body ?? "") + "\n\n➔ Termin auswählen: {{booking_url}}",
                   vars: previewVars,
                   company: {
                     name: form.company_name ?? "Sekretariat24",
