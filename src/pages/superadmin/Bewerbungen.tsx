@@ -105,6 +105,7 @@ export default function Bewerbungen() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Application | null>(null);
   const [preview, setPreview] = useState<{ url: string; name: string; mime: string | null } | null>(null);
+  const [inviteLoading, setInviteLoading] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,8 +314,8 @@ export default function Bewerbungen() {
                 <span className="truncate capitalize text-muted-foreground">{r.anstellung}</span>
                 <span className="truncate text-muted-foreground">{r.geburtsdatum ? formatDate(r.geburtsdatum) : "—"}</span>
                 <span className="truncate text-muted-foreground">{r.staatsangehoerigkeit}</span>
-                <Badge variant={statusVariant(r.status)} className="w-fit capitalize">
-                  {r.status}
+                <Badge variant={statusVariant(r.status)} className="w-fit">
+                  {statusLabel(r.status)}
                 </Badge>
                 <div onClick={(e) => e.stopPropagation()}>
                   <Select
@@ -442,6 +443,17 @@ export default function Bewerbungen() {
 
 
                 <div className="pt-2 flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => sendInvite(selected)}
+                    disabled={inviteLoading === selected.id}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    {inviteLoading === selected.id
+                      ? "Sende…"
+                      : selected.status === "bewerbungsgespraech" || selected.status === "termin_gebucht"
+                        ? "Termin-Link erneut senden"
+                        : "Genehmigen & Termin-Link senden"}
+                  </Button>
                   <Button
                     variant="outline"
                     onClick={() => openLebenslauf(selected)}
