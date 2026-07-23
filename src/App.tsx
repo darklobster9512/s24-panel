@@ -20,6 +20,8 @@ import SuperadminZuweisungen from "./pages/superadmin/Zuweisungen";
 import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
 import SuperadminBewerbungen from "./pages/superadmin/Bewerbungen";
+import SuperadminBewerbungsgespraeche from "./pages/superadmin/Bewerbungsgespraeche";
+const BewerbungsgespraechPublic = lazy(() => import("./pages/BewerbungsgespraechPublic"));
 
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
 import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageEditor";
@@ -68,6 +70,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/bewerbungsgespraech/:token" element={<BewerbungsgespraechPublic />} />
 
                 <Route element={<RequireRole allow={["superadmin"]} />}>
                   <Route path="/superadmin" element={<SuperadminLayout />}>
@@ -83,6 +86,7 @@ export default function App() {
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
                     <Route path="notizen" element={<SuperadminNotizen />} />
                     <Route path="bewerbungen" element={<SuperadminBewerbungen />} />
+                    <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
 
                     
                     <Route path="vertraege" element={<SuperadminVertraege />} />
