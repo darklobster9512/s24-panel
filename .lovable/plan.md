@@ -1,15 +1,22 @@
-## Änderungen
+## Ranking-Spalte für Bewerbungen
 
-**1. Logo-Icon über `public/` ausliefern**
-- Datei `public/logo-icon.png` anlegen (Kopie des bestehenden Favicon-Bilds, dunkelblauer Kreis mit grünem Hörer).
-- In `src/components/superadmin/AppSidebar.tsx`, `src/components/mitarbeiter/AppSidebar.tsx` und `src/pages/Auth.tsx` den Import von `@/assets/logo-icon.png.asset.json` entfernen und `<img src="/logo-icon.png" … />` verwenden. So wird das Icon zuverlässig ausgeliefert (der Asset-CDN-Pointer wird aktuell im Preview nicht aufgelöst).
+Neue Spalte "Ranking" in `/superadmin/bewerbungen`, mit vier Stufen: Sehr gut, Gut, Mittel, Schlecht. Sortierung bleibt unverändert (nach Eingang).
 
-**2. Passwort-Placeholder (Dot-Punkte)**
-- In `src/pages/Auth.tsx` bei beiden Passwort-`Input`-Feldern (Login + Signup) `placeholder="••••••••"` ergänzen, damit im leeren Zustand Dot-Punkte sichtbar sind.
+### Datenbank
+- Migration auf `public.applications`: neue Spalte `ranking text` (nullable, kein Default).
+- Kein Enum, damit später leicht erweiterbar; Werte: `sehr_gut | gut | mittel | schlecht | null`.
 
-**3. Registrieren-Tab entfernen**
-- In `src/pages/Auth.tsx` die `<Tabs>`-Struktur entfernen und nur das Login-Formular rendern.
-- `SignupForm`-Komponente und deren Nutzung entfernen (Registrierung erfolgt künftig ausschließlich durch den Superadmin via Mitarbeiter-Wizard).
-- Ungenutzte Imports (`Tabs`, `TabsContent`, `TabsList`, `TabsTrigger`) entfernen.
+### UI (`src/pages/superadmin/Bewerbungen.tsx`)
+- Grid-Header/Zeilen bekommen zusätzliche Spalte "Ranking" (Spaltenbreite ~140px).
+- Inline `Select` in jeder Zeile mit den 4 Optionen + "—" (kein Ranking). Click stoppt Row-Propagation, damit sich das Sheet nicht öffnet.
+- Farbige Badges/Dot je Stufe (grün / mint / gelb / rot) über das bestehende Design-Token-System (`bg-primary`, `bg-muted`, `text-destructive` etc.), keine Hardcodes.
+- Update via `supabase.from('applications').update({ ranking }).eq('id', …)`; Realtime aktualisiert die anderen Sessions.
 
-Keine Backend-/DB-Änderungen.
+### Detail-Sheet
+- Neues Feld "Ranking" analog zum Status-Select, synchron mit der Tabelle.
+
+### TypeScript
+- Lokaler `Application`-Type um `ranking: string | null` erweitern.
+
+### Nicht geändert
+- Sortierreihenfolge, Filter, RLS-Policies (bestehende Update-Policy deckt die neue Spalte ab).

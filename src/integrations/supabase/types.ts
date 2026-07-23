@@ -80,6 +80,7 @@ export type Database = {
           lebenslauf_mime: string | null
           lebenslauf_path: string | null
           nachname: string
+          ranking: string | null
           staatsangehoerigkeit: string
           status: string
           updated_at: string
@@ -96,6 +97,7 @@ export type Database = {
           lebenslauf_mime?: string | null
           lebenslauf_path?: string | null
           nachname: string
+          ranking?: string | null
           staatsangehoerigkeit: string
           status?: string
           updated_at?: string
@@ -112,6 +114,7 @@ export type Database = {
           lebenslauf_mime?: string | null
           lebenslauf_path?: string | null
           nachname?: string
+          ranking?: string | null
           staatsangehoerigkeit?: string
           status?: string
           updated_at?: string
