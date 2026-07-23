@@ -151,6 +151,21 @@ export default function Bewerbungen() {
     if (selected?.id === id) setSelected({ ...selected, status });
   }
 
+  async function updateRanking(id: string, rankingValue: string) {
+    const ranking = rankingValue === "none" ? null : rankingValue;
+    const { error } = await (supabase as any)
+      .from("applications")
+      .update({ ranking })
+      .eq("id", id);
+    if (error) {
+      toast.error("Ranking-Update fehlgeschlagen");
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ranking } : r)));
+    if (selected?.id === id) setSelected({ ...selected, ranking });
+  }
+
+
   async function openLebenslauf(row: Application) {
     if (!row.lebenslauf_path) {
       toast.error("Keine Datei vorhanden");
