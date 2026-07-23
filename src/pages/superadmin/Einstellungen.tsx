@@ -442,7 +442,7 @@ export default function Einstellungen() {
                 style={{ width: "100%", height: 560, border: 0, background: "#f5f7f5" }}
                 srcDoc={renderApplicationEmailHtml({
                   subject: renderTpl(form.interview_email_subject ?? "Bewerbungsgespräch", previewVars),
-                  bodyText: (form.interview_email_body ?? "") + "\n\n➔ Termin auswählen: {{booking_url}}",
+                  bodyText: form.interview_email_body ?? "",
                   vars: previewVars,
                   company: {
                     name: form.company_name ?? "Sekretariat24",
@@ -450,9 +450,16 @@ export default function Einstellungen() {
                     logoText: form.logo_text ?? form.company_name ?? "Sekretariat24",
                     accent: form.accent_color ?? "#7bed9f",
                   },
+                  cta: { label: "Termin auswählen", url: previewVars.booking_url },
+                  steps: [
+                    { title: "Termin wählen", body: "Such dir über den Button oben einen passenden Zeitraum aus." },
+                    { title: "Kurzes Kennenlerngespräch", body: "Wir sprechen ca. 20–30 Minuten online über deine Erfahrung und offene Fragen." },
+                    { title: "Rückmeldung & nächste Schritte", body: "Direkt im Anschluss klären wir gemeinsam, wie es weitergeht." },
+                  ],
                 })}
               />
             </div>
+
           </div>
         </DialogContent>
       </Dialog>
