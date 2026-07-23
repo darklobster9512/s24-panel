@@ -137,6 +137,11 @@ export default function Bewerbungen() {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (rankingFilter !== "all") {
+        if (rankingFilter === "none") {
+          if (r.ranking) return false;
+        } else if (r.ranking !== rankingFilter) return false;
+      }
       if (q) {
         const hay = [r.vorname, r.nachname, r.email, r.handynummer, r.staatsangehoerigkeit]
           .filter(Boolean)
@@ -146,7 +151,22 @@ export default function Bewerbungen() {
       }
       return true;
     });
-  }, [rows, search, statusFilter]);
+  }, [rows, search, statusFilter, rankingFilter]);
+
+  const PAGE_SIZE = 10;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, rankingFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
 
   async function updateStatus(id: string, status: string) {
     const { error } = await (supabase as any)
