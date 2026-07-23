@@ -7,7 +7,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { RequireRole } from "@/components/RequireRole";
 import { Loader2 } from "lucide-react";
 
-const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 
 const SuperadminLayout = lazy(() => import("./components/superadmin/SuperadminLayout"));
