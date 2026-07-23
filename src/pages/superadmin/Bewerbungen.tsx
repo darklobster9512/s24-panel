@@ -237,6 +237,35 @@ export default function Bewerbungen() {
     setRows((prev) => prev.filter((r) => r.id !== row.id));
   }
 
+  async function sendInvite(row: Application) {
+    setInviteLoading(row.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-interview-invite", {
+        body: { application_id: row.id, site_url: window.location.origin },
+      });
+      if (error) throw error;
+      const newStatus = "bewerbungsgespraech";
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: newStatus } : r)));
+      if (selected?.id === row.id) setSelected({ ...selected, status: newStatus });
+      const url = (data as any)?.booking_url as string | undefined;
+      if (url) {
+        try {
+          await navigator.clipboard.writeText(url);
+          toast.success("Termin-Link versendet und in Zwischenablage kopiert");
+        } catch {
+          toast.success("Termin-Link versendet");
+        }
+      } else {
+        toast.success("Aktion abgeschlossen");
+      }
+    } catch (e: any) {
+      console.error("[sendInvite] failed:", e);
+      toast.error(e?.message || "Termin-Link konnte nicht gesendet werden");
+    } finally {
+      setInviteLoading(null);
+    }
+  }
+
   return (
     <>
       <PageHeader
