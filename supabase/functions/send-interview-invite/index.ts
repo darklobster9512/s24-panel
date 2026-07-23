@@ -211,9 +211,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const origin = site_url || req.headers.get('origin') || '';
-    const baseUrl = origin.replace(/\/+$/, '');
-    const bookingUrl = `${baseUrl}/bewerbungsgespraech/${token}`;
+    const bookingUrl = `https://app.sekretariat-24.de/bewerbungsgespraech/${token}`;
 
     const vars: Record<string, string> = {
       vorname: app.vorname,
