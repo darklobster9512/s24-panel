@@ -66,7 +66,7 @@ export default function App() {
           <AuthProvider>
             <Suspense fallback={<PageFallback />}>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
 
                 <Route element={<RequireRole allow={["superadmin"]} />}>
