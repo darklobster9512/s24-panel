@@ -42,6 +42,7 @@ type Application = {
   lebenslauf_mime: string | null;
   status: string;
   ranking: string | null;
+  booking_token: string | null;
   created_at: string;
 };
 
@@ -482,6 +483,14 @@ export default function Bewerbungen() {
                       : selected.status === "bewerbungsgespraech" || selected.status === "termin_gebucht"
                         ? "Termin-Link erneut senden"
                         : "Genehmigen & Termin-Link senden"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => copyBookingLink(selected)}
+                    disabled={!selected.booking_token}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Termin-Link kopieren
                   </Button>
                   <Button
                     variant="outline"
