@@ -1,43 +1,37 @@
-Plan: „Termin-Link kopieren"-Button im Bewerbungs-Detail-Sheet
+# Fixes: Termin-Link, Betreff & Anrede
 
-1. Ziel
-Im Bewerbungs-Detail-Sheet (rechte Sidebar unter `/superadmin/bewerbungen`) soll neben „Termin-Link senden" ein weiterer Button erscheinen, der den öffentlichen Bewerbungsgespräch-Link in die Zwischenablage kopiert.
+## 1. Hardcoded Domain für Termin-Link
+Statt `window.location.origin` bzw. `req.headers.get('origin')` immer `https://app.sekretariat-24.de` als Basis verwenden.
 
-2. Technische Umsetzung
+- **`supabase/functions/send-interview-invite/index.ts`** (Zeilen 214–216):
+  - `baseUrl` fix auf `https://app.sekretariat-24.de` setzen. `site_url`-Parameter ignorieren.
+  - `bookingUrl = \`https://app.sekretariat-24.de/bewerbungsgespraech/${token}\``
+- **`src/pages/superadmin/Bewerbungen.tsx`** (Zeile 286, `copyBookingLink`):
+  - `url = \`https://app.sekretariat-24.de/bewerbungsgespraech/${token}\``
 
-2.1 Datenmodell
-- `applications`-Tabelle hat bereits `booking_token uuid` (verifiziert über bestehende `sendInvite`-Logik).
-- Der Application-Typ in `src/pages/superadmin/Bewerbungen.tsx` enthält `booking_token` noch nicht — wird ergänzt.
+## 2. E-Mail Betreff
+Aktuell: `Bewerbungsgespräch bei {{company_name}} – wir möchten dich kennenlernen`
+→ `{{company_name}}` ist `aigis one GmbH`, deshalb erscheint dort nicht „Sekretariat24".
 
-2.2 URL-Format
-- Öffentliche Buchungsseite: `/bewerbungsgespraech/:token` (bereits in `src/App.tsx` vorhanden).
-- Link: `${window.location.origin}/bewerbungsgespraech/${booking_token}`.
+Fix per SQL Update auf `app_settings`:
+- Neuer Betreff: `Bewerbungsgespräch bei Sekretariat24 – wir möchten Sie kennenlernen`
 
-2.3 Neue Funktion `copyBookingLink`
-- Prüft, ob `selected.booking_token` vorhanden ist.
-- Falls nicht, lädt den Token per Supabase-Query nach (einmaliger Fallback, damit auch ältere Bewerbungen funktionieren, die vor Öffnen des Sheets keinen Token hatten).
-- Schreibt die URL in die Zwischenablage (`navigator.clipboard.writeText`).
-- Zeigt Toast: „Termin-Link kopiert".
-- Fehlerfall: Toast „Link konnte nicht kopiert werden".
+## 3. Anrede: SIE + voller Name
+Body in `app_settings.interview_email_body` auf Sie-Form umstellen und vollen Namen verwenden:
 
-2.4 UI-Änderung
-- In der Button-Gruppe im Sheet (Zeilen 474–498) wird ein neuer Button `variant="outline"` eingefügt:
-  - Icon: `Copy` (bereits importiert).
-  - Label: „Termin-Link kopieren".
-  - Aktion: `copyBookingLink(selected)`.
-  - Disabled: solange keine `booking_token` geladen werden kann.
-- Reihenfolge der Buttons:
-  1. „Termin-Link senden" (primary)
-  2. „Termin-Link kopieren" (outline)
-  3. „Lebenslauf öffnen" (outline)
-  4. „Löschen" (destructive)
+```
+Sehr geehrte/r Frau/Herr {{vorname}} {{nachname}},
 
-3. Keine Änderungen an
-- Edge Functions, Datenbank-Schema oder anderen Seiten.
-- Die bestehende `sendInvite`-Funktion bleibt unverändert; der neue Button arbeitet unabhängig davon.
+vielen Dank für Ihre Bewerbung. Wir haben uns Ihre Unterlagen in Ruhe angeschaut und möchten Sie gerne näher kennenlernen.
 
-4. Akzeptanzkriterien
-- Im Sheet einer Bewerbung ist ein „Termin-Link kopieren"-Button sichtbar.
-- Klick kopiert den Link `/bewerbungsgespraech/<token>` in die Zwischenablage.
-- Erfolgsmeldung wird angezeigt.
-- Button funktioniert sowohl für frisch genehmigte Bewerbungen als auch für solche, bei denen der Token nachträglich geladen werden muss.
+Bitte wählen Sie über den Button unten einen Termin, der Ihnen für ein kurzes Bewerbungsgespräch passt. Das Gespräch dauert ca. 20–30 Minuten und findet online statt.
+
+Wir freuen uns auf Sie!
+```
+
+(Die Platzhalter `{{vorname}}` und `{{nachname}}` sind bereits im `vars`-Objekt der Edge Function vorhanden – kein Code-Change nötig.)
+
+## Verifikation
+- `tsgo` Typecheck
+- Edge Function `send-interview-invite` wird automatisch neu deployt
+- Vorschau in `Einstellungen.tsx` zeigt neuen Betreff + Sie-Anrede korrekt
