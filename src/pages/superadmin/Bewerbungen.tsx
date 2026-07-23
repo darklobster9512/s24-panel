@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, FileText, Download, Trash2, ExternalLink } from "lucide-react";
+import { Search, FileText, Download, Trash2, ExternalLink, Mail, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,6 +48,8 @@ type Application = {
 const STATUS_OPTIONS = [
   { value: "neu", label: "Neu" },
   { value: "gesichtet", label: "Gesichtet" },
+  { value: "bewerbungsgespraech", label: "Gespräch-Link gesendet" },
+  { value: "termin_gebucht", label: "Termin gebucht" },
   { value: "angenommen", label: "Angenommen" },
   { value: "abgelehnt", label: "Abgelehnt" },
 ];
@@ -68,9 +70,13 @@ const RANKING_CLASSES: Record<string, string> = {
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "abgelehnt") return "destructive";
-  if (s === "angenommen") return "default";
-  if (s === "gesichtet") return "outline";
+  if (s === "angenommen" || s === "termin_gebucht") return "default";
+  if (s === "gesichtet" || s === "bewerbungsgespraech") return "outline";
   return "secondary";
+}
+
+function statusLabel(s: string) {
+  return STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s;
 }
 
 
