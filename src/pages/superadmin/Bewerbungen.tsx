@@ -267,6 +267,31 @@ export default function Bewerbungen() {
     }
   }
 
+  async function copyBookingLink(row: Application) {
+    let token = row.booking_token;
+    if (!token) {
+      const { data, error } = await (supabase as any)
+        .from("applications")
+        .select("booking_token")
+        .eq("id", row.id)
+        .single();
+      if (error || !data?.booking_token) {
+        toast.error("Kein Termin-Link für diese Bewerbung verfügbar");
+        return;
+      }
+      token = data.booking_token;
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, booking_token: token } : r)));
+      if (selected?.id === row.id) setSelected({ ...selected, booking_token: token });
+    }
+    const url = `${window.location.origin}/bewerbungsgespraech/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Termin-Link kopiert");
+    } catch {
+      toast.error("Termin-Link konnte nicht kopiert werden");
+    }
+  }
+
   return (
     <>
       <PageHeader
