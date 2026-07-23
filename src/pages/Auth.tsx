@@ -68,7 +68,7 @@ function BrandingPanel() {
             <Headphones className="h-5 w-5" />
           </div>
           <span className="text-lg font-semibold tracking-tight">
-            Sekreteriat<span className="text-primary">24</span>
+            Sekretariat<span className="text-primary">24</span>
           </span>
         </Link>
 

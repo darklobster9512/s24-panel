@@ -8,7 +8,7 @@ export type ApplicationEmailInput = {
   company: {
     name: string;
     address?: string | null;
-    logoText?: string | null; // e.g. "Sekreteriat24"
+    logoText?: string | null; // e.g. "Sekretariat24"
     accent?: string | null; // hex like #7bed9f
   };
 };
@@ -66,7 +66,7 @@ export function renderApplicationEmailHtml(input: ApplicationEmailInput) {
   const subject = renderTemplate(input.subject, input.vars);
   const bodyRendered = renderTemplate(input.bodyText, input.vars);
   const paragraphs = textToParagraphs(bodyRendered);
-  const logoText = input.company.logoText || input.company.name || "Sekreteriat24";
+  const logoText = input.company.logoText || input.company.name || "Sekretariat24";
   const { head, tail } = splitLogo(logoText);
   const companyName = escapeHtml(input.company.name || logoText);
   const address = input.company.address

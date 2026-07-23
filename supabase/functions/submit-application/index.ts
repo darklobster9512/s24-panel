@@ -50,7 +50,7 @@ function renderApplicationEmailHtml(input: EmailInput) {
   const accentTint = '#f4fbf6';
   const accentBorder = '#d9f2e2';
   const paragraphs = textToParagraphs(renderTemplate(input.bodyText, input.vars));
-  const logoText = input.company.logoText || input.company.name || 'Sekreteriat24';
+  const logoText = input.company.logoText || input.company.name || 'Sekretariat24';
   const { head, tail } = splitLogo(logoText);
   const companyName = escapeHtml(input.company.name || logoText);
   const address = input.company.address ? escapeHtml(input.company.address).replace(/\n/g, ' · ') : '';
@@ -238,9 +238,9 @@ Deno.serve(async (req) => {
           bodyText,
           vars,
           company: {
-            name: settings.company_name ?? 'Sekreteriat24',
+            name: settings.company_name ?? 'Sekretariat24',
             address: settings.company_address,
-            logoText: settings.logo_text ?? settings.company_name ?? 'Sekreteriat24',
+            logoText: settings.logo_text ?? settings.company_name ?? 'Sekretariat24',
             accent: settings.accent_color ?? '#7bed9f',
           },
         });

@@ -166,7 +166,7 @@ export default function Einstellungen() {
             <div className="space-y-1.5">
               <Label>Absender-Name</Label>
               <Input
-                placeholder="Sekreteriat24"
+                placeholder="Sekretariat24"
                 value={form.resend_from_name ?? ""}
                 onChange={(e) => set("resend_from_name", e.target.value)}
               />
@@ -268,9 +268,9 @@ export default function Einstellungen() {
                   bodyText: form.application_email_body ?? "",
                   vars: previewVars,
                   company: {
-                    name: form.company_name ?? "Sekreteriat24",
+                    name: form.company_name ?? "Sekretariat24",
                     address: form.company_address,
-                    logoText: form.logo_text ?? form.company_name ?? "Sekreteriat24",
+                    logoText: form.logo_text ?? form.company_name ?? "Sekretariat24",
                     accent: form.accent_color ?? "#7bed9f",
                   },
                 })}

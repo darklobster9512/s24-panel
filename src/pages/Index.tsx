@@ -10,7 +10,7 @@ export default function Index() {
       </div>
       <div className="relative z-10 flex flex-col items-center gap-8 px-6 text-center">
         <h1 className="text-6xl font-bold tracking-tight text-foreground sm:text-7xl md:text-8xl lg:text-9xl">
-          Sekreteriat24
+          Sekretariat24
         </h1>
         <Button asChild size="lg" className="gap-2">
           <Link to="/auth">

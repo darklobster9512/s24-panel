@@ -34,7 +34,7 @@ export function DashboardShell({
               <Headphones className="h-4 w-4" />
             </div>
             <span className="text-base font-semibold tracking-tight">
-              Sekreteriat<span className="text-primary">24</span>
+              Sekretariat<span className="text-primary">24</span>
             </span>
             {badge && (
               <span className="ml-2 rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-medium text-ink">
