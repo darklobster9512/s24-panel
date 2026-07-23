@@ -238,12 +238,14 @@ export default function Bewerbungen() {
         </div>
 
         <div className="divide-y divide-border/60">
-          <div className="grid grid-cols-[160px_1fr_1fr_140px_140px_120px_150px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-[160px_1fr_1fr_140px_140px_110px_140px_120px_150px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <span>Eingegangen</span>
             <span>Name</span>
             <span>E-Mail</span>
             <span>Telefon</span>
             <span>Anstellung</span>
+            <span>Geburtsdatum</span>
+            <span>Staatsang.</span>
             <span>Status</span>
             <span>Ranking</span>
             <span>Lebenslauf</span>
@@ -259,7 +261,7 @@ export default function Bewerbungen() {
             filtered.map((r) => (
               <div
                 key={r.id}
-                className="grid grid-cols-[160px_1fr_1fr_140px_140px_120px_150px_100px] items-center gap-4 py-3 text-sm cursor-pointer hover:bg-accent/40 rounded-md px-2 -mx-2 transition-colors"
+                className="grid grid-cols-[160px_1fr_1fr_140px_140px_110px_140px_120px_150px_100px] items-center gap-4 py-3 text-sm cursor-pointer hover:bg-accent/40 rounded-md px-2 -mx-2 transition-colors"
                 onClick={() => setSelected(r)}
               >
                 <span className="font-mono text-xs text-muted-foreground">
@@ -271,6 +273,8 @@ export default function Bewerbungen() {
                 <span className="truncate text-muted-foreground">{r.email}</span>
                 <span className="truncate font-mono text-xs">{r.handynummer}</span>
                 <span className="truncate capitalize text-muted-foreground">{r.anstellung}</span>
+                <span className="truncate text-muted-foreground">{r.geburtsdatum ? formatDate(r.geburtsdatum) : "—"}</span>
+                <span className="truncate text-muted-foreground">{r.staatsangehoerigkeit}</span>
                 <Badge variant={statusVariant(r.status)} className="w-fit capitalize">
                   {r.status}
                 </Badge>
