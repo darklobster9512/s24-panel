@@ -345,6 +345,34 @@ export default function Bewerbungen() {
           )}
         </div>
 
+        {!loading && filtered.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <div>
+              Zeige {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} von {filtered.length}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  Zurück
+                </Button>
+                <span className="tabular-nums">Seite {page} / {totalPages}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Weiter
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </Panel>
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
