@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,7 +7,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { RequireRole } from "@/components/RequireRole";
 import { Loader2 } from "lucide-react";
 
-const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 
 const SuperadminLayout = lazy(() => import("./components/superadmin/SuperadminLayout"));
@@ -67,7 +66,7 @@ export default function App() {
           <AuthProvider>
             <Suspense fallback={<PageFallback />}>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
 
                 <Route element={<RequireRole allow={["superadmin"]} />}>
