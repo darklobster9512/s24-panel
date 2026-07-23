@@ -290,7 +290,7 @@ export default function Bewerbungen() {
               Keine Bewerbungen gefunden.
             </div>
           ) : (
-            filtered.map((r) => (
+            paged.map((r) => (
               <div
                 key={r.id}
                 className="grid grid-cols-[160px_1fr_1fr_140px_140px_110px_140px_120px_150px_100px] items-center gap-4 py-3 text-sm cursor-pointer hover:bg-accent/40 rounded-md px-2 -mx-2 transition-colors"
