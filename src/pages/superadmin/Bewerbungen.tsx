@@ -336,6 +336,29 @@ export default function Bewerbungen() {
                   </Select>
                 </div>
 
+                <div>
+                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Ranking
+                  </div>
+                  <Select
+                    value={selected.ranking ?? "none"}
+                    onValueChange={(v) => updateRanking(selected.id, v)}
+                  >
+                    <SelectTrigger
+                      className={`h-9 ${selected.ranking ? RANKING_CLASSES[selected.ranking] ?? "" : ""}`}
+                    >
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      {RANKING_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+
                 <div className="pt-2 flex flex-wrap gap-2">
                   <Button
                     variant="outline"
