@@ -25,6 +25,13 @@ type Settings = {
   application_email_enabled: boolean;
   application_email_subject: string | null;
   application_email_body: string | null;
+  interview_email_enabled: boolean;
+  interview_email_subject: string | null;
+  interview_email_body: string | null;
+  interview_slot_start: string | null;
+  interview_slot_end: string | null;
+  interview_slot_interval_minutes: number | null;
+  interview_available_weekdays: number[] | null;
 };
 
 export function renderTemplate(tpl: string, vars: Record<string, string>) {
@@ -45,6 +52,7 @@ export default function Einstellungen() {
   const [form, setForm] = useState<Settings | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [interviewPreviewOpen, setInterviewPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (data) setForm(data);
@@ -78,6 +86,23 @@ export default function Einstellungen() {
     vorname: "Max",
     nachname: "Mustermann",
     email: "max@example.com",
+    booking_url: `${typeof window !== "undefined" ? window.location.origin : ""}/bewerbungsgespraech/beispiel-token`,
+  };
+
+  const WEEKDAYS = [
+    { v: 1, l: "Mo" },
+    { v: 2, l: "Di" },
+    { v: 3, l: "Mi" },
+    { v: 4, l: "Do" },
+    { v: 5, l: "Fr" },
+    { v: 6, l: "Sa" },
+    { v: 7, l: "So" },
+  ];
+  const activeWeekdays = form.interview_available_weekdays ?? [1, 2, 3, 4, 5];
+  const toggleWeekday = (v: number) => {
+    const s = new Set(activeWeekdays);
+    if (s.has(v)) s.delete(v); else s.add(v);
+    set("interview_available_weekdays", Array.from(s).sort((a, b) => a - b));
   };
 
   return (
