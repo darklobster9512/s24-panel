@@ -316,6 +316,27 @@ export default function Bewerbungen() {
         subtitle="Alle eingegangenen Bewerbungen von der Karriere-Seite."
       />
 
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+        {STAT_CARDS.map((c) => {
+          const count = rankingStats[c.key] ?? 0;
+          const total = rows.length || 1;
+          const pct = Math.round((count / total) * 100);
+          const active = rankingFilter === c.key;
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setRankingFilter(active ? "all" : c.key)}
+              className={`rounded-xl border p-4 text-left transition-all hover:shadow-sm ${c.tone} ${active ? "ring-2 ring-primary/60" : ""}`}
+            >
+              <div className="text-xs font-medium uppercase tracking-wider opacity-80">{c.label}</div>
+              <div className="mt-1 text-2xl font-semibold tabular-nums">{count}</div>
+              <div className="text-xs opacity-70">{pct}% aller Bewerbungen</div>
+            </button>
+          );
+        })}
+      </div>
+
       <Panel>
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative max-w-sm flex-1">
