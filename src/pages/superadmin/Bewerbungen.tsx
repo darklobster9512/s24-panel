@@ -175,6 +175,23 @@ export default function Bewerbungen() {
   const pageStart = (page - 1) * PAGE_SIZE;
   const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
+  const rankingStats = useMemo(() => {
+    const counts: Record<string, number> = { sehr_gut: 0, gut: 0, mittel: 0, schlecht: 0, none: 0 };
+    for (const r of rows) {
+      const key = r.ranking ?? "none";
+      if (key in counts) counts[key]++;
+    }
+    return counts;
+  }, [rows]);
+
+  const STAT_CARDS: { key: string; label: string; tone: string }[] = [
+    { key: "sehr_gut", label: "Sehr gut", tone: "bg-primary/15 text-foreground border-primary/40" },
+    { key: "gut", label: "Gut", tone: "bg-primary/5 text-foreground border-primary/25" },
+    { key: "mittel", label: "Mittel", tone: "bg-muted text-foreground border-border" },
+    { key: "schlecht", label: "Schlecht", tone: "bg-destructive/10 text-destructive border-destructive/40" },
+    { key: "none", label: "Ohne Ranking", tone: "bg-card text-muted-foreground border-border" },
+  ];
+
 
   async function updateStatus(id: string, status: string) {
     const { error } = await (supabase as any)
@@ -298,6 +315,27 @@ export default function Bewerbungen() {
         title="Bewerbungen"
         subtitle="Alle eingegangenen Bewerbungen von der Karriere-Seite."
       />
+
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+        {STAT_CARDS.map((c) => {
+          const count = rankingStats[c.key] ?? 0;
+          const total = rows.length || 1;
+          const pct = Math.round((count / total) * 100);
+          const active = rankingFilter === c.key;
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setRankingFilter(active ? "all" : c.key)}
+              className={`rounded-xl border p-4 text-left transition-all hover:shadow-sm ${c.tone} ${active ? "ring-2 ring-primary/60" : ""}`}
+            >
+              <div className="text-xs font-medium uppercase tracking-wider opacity-80">{c.label}</div>
+              <div className="mt-1 text-2xl font-semibold tabular-nums">{count}</div>
+              <div className="text-xs opacity-70">{pct}% aller Bewerbungen</div>
+            </button>
+          );
+        })}
+      </div>
 
       <Panel>
         <div className="mb-4 flex flex-wrap items-center gap-3">

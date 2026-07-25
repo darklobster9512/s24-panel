@@ -1,37 +1,23 @@
-# Fixes: Termin-Link, Betreff & Anrede
+## Ziel
+Auf `/superadmin/bewerbungen` über der Tabelle eine Reihe von Statistik-Cards einfügen, die zeigen, wie viele Bewerbungen pro Ranking-Stufe vorhanden sind.
 
-## 1. Hardcoded Domain für Termin-Link
-Statt `window.location.origin` bzw. `req.headers.get('origin')` immer `https://app.sekretariat-24.de` als Basis verwenden.
+## Umsetzung
+In `src/pages/superadmin/Bewerbungen.tsx` direkt vor dem `<Panel>` (oder als eigener Panel-Block darüber) ein Grid mit 4 Cards einfügen:
 
-- **`supabase/functions/send-interview-invite/index.ts`** (Zeilen 214–216):
-  - `baseUrl` fix auf `https://app.sekretariat-24.de` setzen. `site_url`-Parameter ignorieren.
-  - `bookingUrl = \`https://app.sekretariat-24.de/bewerbungsgespraech/${token}\``
-- **`src/pages/superadmin/Bewerbungen.tsx`** (Zeile 286, `copyBookingLink`):
-  - `url = \`https://app.sekretariat-24.de/bewerbungsgespraech/${token}\``
+- **Sehr gut** (Akzent grün)
+- **Gut**
+- **Mittel**
+- **Schlecht** (destructive)
 
-## 2. E-Mail Betreff
-Aktuell: `Bewerbungsgespräch bei {{company_name}} – wir möchten dich kennenlernen`
-→ `{{company_name}}` ist `aigis one GmbH`, deshalb erscheint dort nicht „Sekretariat24".
+Jede Card zeigt:
+- Label (z. B. „Sehr gut")
+- Große Zahl = Anzahl Bewerbungen mit diesem Ranking
+- Kleine Zeile darunter: Anteil in % (bezogen auf `rows.length`)
 
-Fix per SQL Update auf `app_settings`:
-- Neuer Betreff: `Bewerbungsgespräch bei Sekretariat24 – wir möchten Sie kennenlernen`
+Zusätzlich links eine 5. Card „Ohne Ranking" für Transparenz (optional, dezent).
 
-## 3. Anrede: SIE + voller Name
-Body in `app_settings.interview_email_body` auf Sie-Form umstellen und vollen Namen verwenden:
-
-```
-Sehr geehrte/r Frau/Herr {{vorname}} {{nachname}},
-
-vielen Dank für Ihre Bewerbung. Wir haben uns Ihre Unterlagen in Ruhe angeschaut und möchten Sie gerne näher kennenlernen.
-
-Bitte wählen Sie über den Button unten einen Termin, der Ihnen für ein kurzes Bewerbungsgespräch passt. Das Gespräch dauert ca. 20–30 Minuten und findet online statt.
-
-Wir freuen uns auf Sie!
-```
-
-(Die Platzhalter `{{vorname}}` und `{{nachname}}` sind bereits im `vars`-Objekt der Edge Function vorhanden – kein Code-Change nötig.)
-
-## Verifikation
-- `tsgo` Typecheck
-- Edge Function `send-interview-invite` wird automatisch neu deployt
-- Vorschau in `Einstellungen.tsx` zeigt neuen Betreff + Sie-Anrede korrekt
+## Details
+- Zählung via `useMemo` über `rows` (gesamter Datensatz, nicht gefiltert), damit die Statistik stabil bleibt.
+- Klick auf eine Card setzt `rankingFilter` auf den entsprechenden Wert (Quality-of-life, filtert die Tabelle darunter). Aktive Card bekommt Ring/Border in Akzentfarbe.
+- Styling: `grid grid-cols-2 md:grid-cols-5 gap-3`, konsistent mit bestehenden Panels (rounded-xl, border, bg-card, p-4). Farb-Akzente über die vorhandenen `RANKING_CLASSES`-Töne.
+- Keine DB- oder Backend-Änderungen, rein Frontend/Presentation.
