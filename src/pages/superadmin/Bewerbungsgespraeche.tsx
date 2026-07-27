@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader, Panel } from "@/components/superadmin/SuperadminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,9 +58,19 @@ function formatTime(t: string) {
   return t.slice(0, 5);
 }
 
+function dayLabel(iso: string) {
+  const today = new Date();
+  const t = today.toISOString().slice(0, 10);
+  const tomorrow = new Date(today.getTime() + 86400000).toISOString().slice(0, 10);
+  if (iso === t) return "Heute";
+  if (iso === tomorrow) return "Morgen";
+  return formatDate(iso);
+}
+
 type View = "upcoming" | "past" | "all";
 
 export default function Bewerbungsgespraeche() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -105,7 +116,7 @@ export default function Bewerbungsgespraeche() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const today = new Date().toISOString().slice(0, 10);
-    return rows.filter((r) => {
+    const list = rows.filter((r) => {
       if (view === "upcoming" && r.appointment_date < today) return false;
       if (view === "past" && r.appointment_date >= today) return false;
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
@@ -116,7 +127,17 @@ export default function Bewerbungsgespraeche() {
       }
       return true;
     });
+    // Anstehend: nächster Termin oben. Vergangen: zuletzt gewesener oben.
+    const dir = view === "past" ? -1 : 1;
+    return list.sort(
+      (a, b) =>
+        dir *
+        ((a.appointment_date + a.appointment_time).localeCompare(
+          b.appointment_date + b.appointment_time,
+        )),
+    );
   }, [rows, search, view, statusFilter]);
+
 
   async function setStatus(id: string, status: string) {
     const { error } = await (supabase as any)
@@ -220,69 +241,88 @@ export default function Bewerbungsgespraeche() {
               <span>Status</span>
               <span className="text-right">Aktionen</span>
             </div>
-            {filtered.map((r) => {
+            {filtered.map((r, i) => {
               const a = r.applications;
+              const showHeader =
+                i === 0 || filtered[i - 1].appointment_date !== r.appointment_date;
               return (
-                <div
-                  key={r.id}
-                  className="grid grid-cols-[170px_1fr_1fr_150px_140px_180px_120px] items-center gap-4 py-3 text-sm"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{formatDate(r.appointment_date)}</span>
-                    <span className="text-xs text-muted-foreground">{formatTime(r.appointment_time)} Uhr</span>
-                  </div>
-                  <span className="truncate font-medium">
-                    {a?.vorname} {a?.nachname}
-                  </span>
-                  <span className="truncate text-muted-foreground">{a?.email}</span>
-                  <span className="truncate font-mono text-xs">{a?.handynummer}</span>
-                  <span className="truncate capitalize text-muted-foreground">{a?.anstellung}</span>
-                  <div>
-                    <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
-                      <SelectTrigger className="h-8">
-                        <SelectValue asChild>
-                          <Badge variant={statusVariant(r.status)} className="w-fit">
-                            {STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status}
-                          </Badge>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title="Erfolgreich"
-                      onClick={() => setStatus(r.id, "erfolgreich")}
-                    >
-                      <Check className="h-4 w-4 text-primary" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title="Fehlgeschlagen"
-                      onClick={() => setStatus(r.id, "fehlgeschlagen")}
-                    >
-                      <X className="h-4 w-4 text-destructive" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title="Löschen"
-                      onClick={() => remove(r)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                <div key={r.id}>
+                  {showHeader && (
+                    <div className="flex items-center gap-2 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {dayLabel(r.appointment_date)}
+                    </div>
+                  )}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/superadmin/bewerbungsgespraeche/${r.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/superadmin/bewerbungsgespraeche/${r.id}`);
+                      }
+                    }}
+                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_150px_140px_180px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{formatDate(r.appointment_date)}</span>
+                      <span className="text-xs text-muted-foreground">{formatTime(r.appointment_time)} Uhr</span>
+                    </div>
+                    <span className="truncate font-medium">
+                      {a?.vorname} {a?.nachname}
+                    </span>
+                    <span className="truncate text-muted-foreground">{a?.email}</span>
+                    <span className="truncate font-mono text-xs">{a?.handynummer}</span>
+                    <span className="truncate capitalize text-muted-foreground">{a?.anstellung}</span>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue asChild>
+                            <Badge variant={statusVariant(r.status)} className="w-fit">
+                              {STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status}
+                            </Badge>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Erfolgreich"
+                        onClick={() => setStatus(r.id, "erfolgreich")}
+                      >
+                        <Check className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Fehlgeschlagen"
+                        onClick={() => setStatus(r.id, "fehlgeschlagen")}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Löschen"
+                        onClick={() => remove(r)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
+
         )}
       </Panel>
     </>
