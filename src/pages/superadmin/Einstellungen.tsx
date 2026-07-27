@@ -28,6 +28,10 @@ type Settings = {
   interview_email_enabled: boolean;
   interview_email_subject: string | null;
   interview_email_body: string | null;
+  confirmation_email_enabled: boolean;
+  confirmation_email_subject: string | null;
+  confirmation_email_body: string | null;
+
   interview_slot_start: string | null;
   interview_slot_end: string | null;
   interview_slot_interval_minutes: number | null;
