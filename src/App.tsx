@@ -21,6 +21,7 @@ import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
 import SuperadminBewerbungen from "./pages/superadmin/Bewerbungen";
 import SuperadminBewerbungsgespraeche from "./pages/superadmin/Bewerbungsgespraeche";
+import SuperadminBewerbungsgespraechDetail from "./pages/superadmin/BewerbungsgespraechDetail";
 const BewerbungsgespraechPublic = lazy(() => import("./pages/BewerbungsgespraechPublic"));
 
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
