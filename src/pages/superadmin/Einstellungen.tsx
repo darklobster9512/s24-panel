@@ -382,7 +382,68 @@ export default function Einstellungen() {
             </div>
           </div>
         </Panel>
+
+        <Panel title="Bewerbungsgespräch · Terminbestätigung" className="lg:col-span-2">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="lg:col-span-2 flex items-center justify-between rounded-lg bg-surface px-3 py-2.5">
+              <div>
+                <div className="text-sm font-medium">Bestätigung nach Buchung senden</div>
+                <div className="text-xs text-muted-foreground">
+                  Sendet automatisch eine Bestätigungs-Mail mit Datum und Uhrzeit, sobald ein Bewerber einen Termin
+                  gebucht oder geändert hat.
+                </div>
+              </div>
+              <Switch
+                checked={form.confirmation_email_enabled}
+                onCheckedChange={(v) => set("confirmation_email_enabled", v)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>Betreff</Label>
+              <Input
+                value={form.confirmation_email_subject ?? ""}
+                onChange={(e) => set("confirmation_email_subject", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>Nachricht</Label>
+              <Textarea
+                rows={10}
+                value={form.confirmation_email_body ?? ""}
+                onChange={(e) => set("confirmation_email_body", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Platzhalter: <code>{"{{vorname}}"}</code>, <code>{"{{nachname}}"}</code>,{" "}
+                <code>{"{{voller_name}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{datum}}"}</code>,{" "}
+                <code>{"{{uhrzeit}}"}</code>, <code>{"{{wochentag}}"}</code>. Die Termin-Card mit Datum und Uhrzeit
+                wird automatisch eingefügt.
+              </p>
+            </div>
+
+            <div className="lg:col-span-2 flex gap-2">
+              <Button
+                size="sm"
+                onClick={() =>
+                  save.mutate({
+                    confirmation_email_enabled: form.confirmation_email_enabled,
+                    confirmation_email_subject: form.confirmation_email_subject,
+                    confirmation_email_body: form.confirmation_email_body,
+                  })
+                }
+                disabled={save.isPending}
+              >
+                Speichern
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmationPreviewOpen(true)}>
+                Vorschau
+              </Button>
+            </div>
+          </div>
+        </Panel>
       </div>
+
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl">
