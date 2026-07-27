@@ -91,9 +91,14 @@ export default function Einstellungen() {
   const previewVars = {
     vorname: "Max",
     nachname: "Mustermann",
+    voller_name: "Max Mustermann",
     email: "max@example.com",
+    datum: "12. August 2026",
+    uhrzeit: "14:30",
+    wochentag: "Mittwoch",
     booking_url: `${typeof window !== "undefined" ? window.location.origin : ""}/bewerbungsgespraech/beispiel-token`,
   };
+
 
   const WEEKDAYS = [
     { v: 1, l: "Mo" },
