@@ -70,6 +70,7 @@ function dayLabel(iso: string) {
 type View = "upcoming" | "past" | "all";
 
 export default function Bewerbungsgespraeche() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
