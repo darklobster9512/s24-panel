@@ -230,69 +230,88 @@ export default function Bewerbungsgespraeche() {
               <span>Status</span>
               <span className="text-right">Aktionen</span>
             </div>
-            {filtered.map((r) => {
+            {filtered.map((r, i) => {
               const a = r.applications;
+              const showHeader =
+                i === 0 || filtered[i - 1].appointment_date !== r.appointment_date;
               return (
-                <div
-                  key={r.id}
-                  className="grid grid-cols-[170px_1fr_1fr_150px_140px_180px_120px] items-center gap-4 py-3 text-sm"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{formatDate(r.appointment_date)}</span>
-                    <span className="text-xs text-muted-foreground">{formatTime(r.appointment_time)} Uhr</span>
-                  </div>
-                  <span className="truncate font-medium">
-                    {a?.vorname} {a?.nachname}
-                  </span>
-                  <span className="truncate text-muted-foreground">{a?.email}</span>
-                  <span className="truncate font-mono text-xs">{a?.handynummer}</span>
-                  <span className="truncate capitalize text-muted-foreground">{a?.anstellung}</span>
-                  <div>
-                    <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
-                      <SelectTrigger className="h-8">
-                        <SelectValue asChild>
-                          <Badge variant={statusVariant(r.status)} className="w-fit">
-                            {STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status}
-                          </Badge>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title="Erfolgreich"
-                      onClick={() => setStatus(r.id, "erfolgreich")}
-                    >
-                      <Check className="h-4 w-4 text-primary" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title="Fehlgeschlagen"
-                      onClick={() => setStatus(r.id, "fehlgeschlagen")}
-                    >
-                      <X className="h-4 w-4 text-destructive" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title="Löschen"
-                      onClick={() => remove(r)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                <div key={r.id}>
+                  {showHeader && (
+                    <div className="flex items-center gap-2 pt-4 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {dayLabel(r.appointment_date)}
+                    </div>
+                  )}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/superadmin/bewerbungsgespraeche/${r.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/superadmin/bewerbungsgespraeche/${r.id}`);
+                      }
+                    }}
+                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_150px_140px_180px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{formatDate(r.appointment_date)}</span>
+                      <span className="text-xs text-muted-foreground">{formatTime(r.appointment_time)} Uhr</span>
+                    </div>
+                    <span className="truncate font-medium">
+                      {a?.vorname} {a?.nachname}
+                    </span>
+                    <span className="truncate text-muted-foreground">{a?.email}</span>
+                    <span className="truncate font-mono text-xs">{a?.handynummer}</span>
+                    <span className="truncate capitalize text-muted-foreground">{a?.anstellung}</span>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue asChild>
+                            <Badge variant={statusVariant(r.status)} className="w-fit">
+                              {STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status}
+                            </Badge>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Erfolgreich"
+                        onClick={() => setStatus(r.id, "erfolgreich")}
+                      >
+                        <Check className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Fehlgeschlagen"
+                        onClick={() => setStatus(r.id, "fehlgeschlagen")}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Löschen"
+                        onClick={() => remove(r)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
+
         )}
       </Panel>
     </>
