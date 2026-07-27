@@ -1,35 +1,33 @@
 ## Ziel
 
-Nach erfolgreicher Terminbuchung auf `/bewerbungsgespraech/:token` bekommt der Bewerber automatisch eine Bestätigungs-Mail mit Datum und Uhrzeit – im gleichen Layout wie die bestehenden Mails (dunkelblauer Header, grüner Akzentstreifen, Ablauf-Card, Footer). Betreff und Text sind unter **Einstellungen** pflegbar, inklusive Vorschau.
+Neuer Reiter `/superadmin/manager`, über den der Superadmin Manager-Accounts (E-Mail + Passwort) anlegen und löschen kann. Ein Manager loggt sich normal über `/auth` ein, landet direkt auf `/superadmin/bewerbungsgespraeche` und sieht in der Sidebar ausschließlich diesen Punkt. Alle anderen Reiter/Routen sind ausgeblendet und serverseitig gesperrt.
 
 ## Datenbank
 
-Migration auf `public.app_settings` (Singleton-Tabelle, keine neue Tabelle, keine RLS-Änderung nötig):
-- `confirmation_email_enabled boolean not null default true`
-- `confirmation_email_subject text` (Default: „Ihr Termin bei Sekretariat24 ist bestätigt")
-- `confirmation_email_body text` (Default-Text mit Siezen und vollem Namen, passend zu den bestehenden Mails)
+1. Enum `app_role` um den Wert `manager` erweitern.
+2. Neue Tabelle `public.managers`: `user_id`, `email`, `display_name` (optional), `created_by`, Zeitstempel + Update-Trigger. GRANTs für `authenticated` (nur Superadmin-Policies) und `service_role`, RLS an, Policies: nur Superadmins dürfen lesen/anlegen/ändern/löschen.
+3. `handle_new_user` anpassen: `manager` darf **nicht** per Self-Signup vergeben werden (bleibt bei `kunde`); die Rolle wird ausschließlich von der Edge Function per Service-Role gesetzt.
+4. RLS-Policies für den Manager-Arbeitsbereich ergänzen (jeweils zusätzlich zu den bestehenden Superadmin-Policies, via `has_role(auth.uid(),'manager')`):
+   - `interview_appointments`: lesen, ändern, löschen
+   - `applications`: lesen und ändern (Ranking/Status auf der Terminliste + Detailseite)
+   - `activity_log`: lesen und eintragen
+   - `app_settings`: nur lesen (für Firmenname/Akzentfarbe in der UI)
+   - Storage-Bucket `applications`: Lesezugriff für Manager (Lebenslauf-Einbettung auf der Detailseite)
 
 ## Backend
 
-`supabase/functions/interview-booked-notify/index.ts` erweitern (die Funktion wird nach der Buchung bereits vom öffentlichen Buchungs-Flow aufgerufen und läuft mit Service-Role):
-- Nach der Telegram-Benachrichtigung: `app_settings` laden (Resend-Key, Absender, `confirmation_email_*`, Firmendaten, Akzentfarbe, Logo-Text).
-- Abbruch ohne Fehler, wenn `confirmation_email_enabled = false` oder kein Resend-Key hinterlegt ist (Buchung darf nie fehlschlagen).
-- HTML-Renderer wie in `send-interview-invite` wiederverwenden, aber:
-  - **kein** Button (der Termin steht ja fest) – stattdessen eine Termin-Card mit Datum + Uhrzeit direkt unter dem Text.
-  - Ablauf-Schritte: 1. Termin notieren, 2. Gespräch (ca. 20–30 Min.), 3. Rückmeldung.
-- Platzhalter: `{{vorname}}`, `{{nachname}}`, `{{voller_name}}`, `{{email}}`, `{{datum}}` (z. B. „12. August 2026"), `{{uhrzeit}}` (z. B. „14:30"), `{{wochentag}}`.
-- Versand über Resend an `applications.email`, Fehler nur loggen und `ok: true` zurückgeben.
+- Neue Edge Function `create-manager-account`: prüft, dass der Aufrufer Superadmin ist, validiert E-Mail/Passwort (Zod), legt den Auth-User per Service-Role an (`email_confirm: true`), setzt in `user_roles` die Rolle `manager` (statt der Trigger-Default-Rolle) und schreibt den Eintrag in `managers`.
+- Neue Edge Function `delete-manager-account`: Superadmin-Check, löscht Auth-User und Managers-Zeile.
 
 ## Frontend
 
-`src/lib/applicationEmail.ts`: optionales Feld `infoCard?: { label: string; lines: string[] }` ergänzen, damit die Termin-Card (Datum/Uhrzeit) sowohl in der Vorschau als auch – als gespiegelter Code – in der Edge Function identisch rendert.
-
-`src/pages/superadmin/Einstellungen.tsx`:
-- Neues Panel **„Bewerbungsgespräch · Terminbestätigung"** unter dem Einladungs-Panel: Switch (aktiv/inaktiv), Betreff, Nachricht (Textarea), Platzhalter-Hinweis, Speichern + Vorschau.
-- Zweiter Vorschau-Dialog analog zum bestehenden, mit Beispielwerten (Datum/Uhrzeit) und der Termin-Card statt Button.
-- `Settings`-Typ und `previewVars` um die neuen Felder erweitern.
+- `src/hooks/use-auth.ts`: `AppRole` um `manager` erweitern, `roleHome('manager')` → `/superadmin/bewerbungsgespraeche`.
+- `src/App.tsx`: Superadmin-Block bleibt wie er ist; zusätzlich die beiden Bewerbungsgespräch-Routen für `allow={["superadmin","manager"]}` freigeben (eigener Guard-Block mit demselben `SuperadminLayout`), damit ein Manager keine andere Superadmin-Route erreicht.
+- `src/components/superadmin/AppSidebar.tsx`: Rolle aus `useAuth` lesen. Bei `manager` nur die Gruppe mit „Bewerbungsgespräche“ rendern (inkl. Badge), alle anderen Gruppen und der Header-Link auf die Übersicht entfallen.
+- Neue Seite `src/pages/superadmin/Manager.tsx`: Tabelle aller Manager (E-Mail, angelegt am), Button „Manager anlegen“ öffnet Dialog mit E-Mail, Passwort (inkl. Generator wie beim Mitarbeiter-Wizard) und Speichern über die Edge Function; Zeilen-Aktion „Löschen“ mit Bestätigung. Aktionen werden ins `activity_log` geschrieben.
+- Sidebar-Eintrag „Manager“ (Icon `ShieldCheck`) in der Gruppe System, nur für Superadmins sichtbar; Route `manager` in `App.tsx` registrieren.
 
 ## Hinweise
 
-- Die Buchungsseite selbst ändert sich nicht; der Aufruf von `interview-booked-notify` existiert dort bereits.
-- Bei „Termin ändern" wird die Funktion erneut aufgerufen → der Bewerber bekommt eine neue Bestätigung mit dem aktualisierten Termin. Das ist gewollt; sag Bescheid, falls das unterdrückt werden soll.
+- Passwörter werden nur beim Anlegen übergeben und nicht in der Datenbank gespeichert.
+- Nach der Migration wird der Supabase-Linter geprüft und relevante Warnungen behoben.

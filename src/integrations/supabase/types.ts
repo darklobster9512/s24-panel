@@ -720,6 +720,36 @@ export type Database = {
           },
         ]
       }
+      managers: {
+        Row: {
+          created_at: string
+          created_by: string
+          display_name: string | null
+          email: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          display_name?: string | null
+          email: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          display_name?: string | null
+          email?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company: string | null
@@ -932,7 +962,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "superadmin" | "kunde" | "mitarbeiter"
+      app_role: "superadmin" | "kunde" | "mitarbeiter" | "manager"
       employee_contract_status:
         | "pending_employee"
         | "pending_admin"
@@ -1064,7 +1094,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["superadmin", "kunde", "mitarbeiter"],
+      app_role: ["superadmin", "kunde", "mitarbeiter", "manager"],
       employee_contract_status: [
         "pending_employee",
         "pending_admin",

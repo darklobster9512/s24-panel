@@ -30,6 +30,7 @@ import SuperadminAuszahlungen from "./pages/superadmin/Auszahlungen";
 import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
 import SuperadminTelegram from "./pages/superadmin/Telegram";
+import SuperadminManager from "./pages/superadmin/Manager";
 import SuperadminArbeitsvertraege from "./pages/superadmin/Arbeitsvertraege";
 
 import SuperadminArbeitsvertragDetail from "./pages/superadmin/ArbeitsvertragDetail";
@@ -89,9 +90,8 @@ export default function App() {
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
                     <Route path="notizen" element={<SuperadminNotizen />} />
                     <Route path="bewerbungen" element={<SuperadminBewerbungen />} />
-                    <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
-                    <Route path="bewerbungsgespraeche/:id" element={<SuperadminBewerbungsgespraechDetail />} />
                     <Route path="telegram" element={<SuperadminTelegram />} />
+                    <Route path="manager" element={<SuperadminManager />} />
 
 
                     
@@ -102,6 +102,16 @@ export default function App() {
                     <Route path="auszahlungen" element={<SuperadminAuszahlungen />} />
                     <Route path="abrechnung" element={<SuperadminAbrechnung />} />
                     <Route path="einstellungen" element={<SuperadminEinstellungen />} />
+                  </Route>
+                </Route>
+
+                <Route element={<RequireRole allow={["superadmin", "manager"]} />}>
+                  <Route path="/superadmin" element={<SuperadminLayout />}>
+                    <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
+                    <Route
+                      path="bewerbungsgespraeche/:id"
+                      element={<SuperadminBewerbungsgespraechDetail />}
+                    />
                   </Route>
                 </Route>
 

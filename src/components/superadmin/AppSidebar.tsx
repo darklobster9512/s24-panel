@@ -16,6 +16,7 @@ import {
   UserPlus,
   Calendar,
   Send,
+  ShieldCheck,
 
 
 } from "lucide-react";
@@ -35,6 +36,7 @@ import {
 import { SidebarUserFooter } from "@/components/SidebarUserFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 
 type SidebarItem = {
   title: string;
@@ -81,6 +83,7 @@ const finItems = (pendingCount: number): SidebarItem[] => [
 ];
 
 const systemItems: SidebarItem[] = [
+  { title: "Manager", url: "/superadmin/manager", icon: ShieldCheck },
   { title: "Telegram", url: "/superadmin/telegram", icon: Send },
   { title: "Einstellungen", url: "/superadmin/einstellungen", icon: Settings },
 ];
@@ -88,6 +91,8 @@ const systemItems: SidebarItem[] = [
 
 export function SuperadminSidebar() {
   const { state } = useSidebar();
+  const { role } = useAuth();
+  const isManager = role === "manager";
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
 
@@ -183,19 +188,30 @@ export function SuperadminSidebar() {
                 Sekretariat<span className="text-primary">24</span>
               </span>
               <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                Superadmin
+                {isManager ? "Manager" : "Superadmin"}
               </span>
             </div>
           )}
         </div>
       </SidebarHeader>
       <SidebarContent className="gap-1 py-2">
-        {renderGroup("Allgemein", mainItems)}
-        {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount))}
-        {renderGroup("Finanzen", finItems(pendingCount))}
-        {renderGroup("System", systemItems)}
+        {isManager ? (
+          renderGroup(
+            "Betrieb",
+            opsItems(newApplicationsCount, interviewsTodayCount).filter(
+              (i) => i.url === "/superadmin/bewerbungsgespraeche",
+            ),
+          )
+        ) : (
+          <>
+            {renderGroup("Allgemein", mainItems)}
+            {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount))}
+            {renderGroup("Finanzen", finItems(pendingCount))}
+            {renderGroup("System", systemItems)}
+          </>
+        )}
       </SidebarContent>
-      <SidebarUserFooter roleLabel="Superadmin" />
+      <SidebarUserFooter roleLabel={isManager ? "Manager" : "Superadmin"} />
     </Sidebar>
   );
 }
