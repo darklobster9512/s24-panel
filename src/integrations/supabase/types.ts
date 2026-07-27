@@ -55,6 +55,9 @@ export type Database = {
           application_email_subject: string | null
           company_address: string | null
           company_name: string | null
+          confirmation_email_body: string | null
+          confirmation_email_enabled: boolean
+          confirmation_email_subject: string | null
           created_at: string
           id: string
           interview_available_weekdays: number[]
@@ -79,6 +82,9 @@ export type Database = {
           application_email_subject?: string | null
           company_address?: string | null
           company_name?: string | null
+          confirmation_email_body?: string | null
+          confirmation_email_enabled?: boolean
+          confirmation_email_subject?: string | null
           created_at?: string
           id?: string
           interview_available_weekdays?: number[]
@@ -103,6 +109,9 @@ export type Database = {
           application_email_subject?: string | null
           company_address?: string | null
           company_name?: string | null
+          confirmation_email_body?: string | null
+          confirmation_email_enabled?: boolean
+          confirmation_email_subject?: string | null
           created_at?: string
           id?: string
           interview_available_weekdays?: number[]
