@@ -105,7 +105,7 @@ export default function Bewerbungsgespraeche() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const today = new Date().toISOString().slice(0, 10);
-    return rows.filter((r) => {
+    const list = rows.filter((r) => {
       if (view === "upcoming" && r.appointment_date < today) return false;
       if (view === "past" && r.appointment_date >= today) return false;
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
@@ -116,7 +116,17 @@ export default function Bewerbungsgespraeche() {
       }
       return true;
     });
+    // Anstehend: nächster Termin oben. Vergangen: zuletzt gewesener oben.
+    const dir = view === "past" ? -1 : 1;
+    return list.sort(
+      (a, b) =>
+        dir *
+        ((a.appointment_date + a.appointment_time).localeCompare(
+          b.appointment_date + b.appointment_time,
+        )),
+    );
   }, [rows, search, view, statusFilter]);
+
 
   async function setStatus(id: string, status: string) {
     const { error } = await (supabase as any)
