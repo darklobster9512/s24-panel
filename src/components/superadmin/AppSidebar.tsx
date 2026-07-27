@@ -194,7 +194,7 @@ export function SuperadminSidebar() {
           )}
         </div>
       </SidebarHeader>
-      <SidebarContent className="gap-1 py-2">
+      <SidebarContent className="gap-1 py-2 custom-sidebar-scrollbar">
         {isManager ? (
           renderGroup(
             "Betrieb",
