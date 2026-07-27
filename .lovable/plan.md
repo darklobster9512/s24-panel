@@ -1,26 +1,34 @@
 ## Ziel
 
-`/superadmin/bewerbungsgespraeche` zeigt Termine chronologisch (nächster oben) und jeder Termin öffnet eine Detailseite mit allen Bewerbungsdaten inkl. eingebettetem Lebenslauf.
+Auf `/superadmin/bewerbungsgespraeche`:
+1. Ranking-Spalte in der Tabelle (gleiche Optionen/Farben wie bei Bewerbungen)
+2. Status per Dropdown direkt in der Zeile änderbar (statt nur Buttons)
+3. Aktivitätsprotokoll-Card unter dem Seitentitel mit E-Mail, Datum/Uhrzeit und ausgeführter Aktion
 
-## 1. Liste als Kalender
+## Datenbank
 
-- Sortierung bleibt aufsteigend nach Datum + Uhrzeit, in der Ansicht „Anstehend" steht damit der nächste Termin ganz oben (in „Vergangen" absteigend, damit das zuletzt Gewesene oben steht).
-- Zeilen werden klickbar (Cursor, Hover-Highlight); Klick öffnet die Detailseite. Die Buttons rechts (Erfolgreich / Fehlgeschlagen / Löschen) und das Status-Dropdown lösen den Klick nicht mit aus.
-- Optionale Gruppierung nach Datum mit kleinem Datums-Header („Heute", „Morgen", sonst Datum) für Kalender-Gefühl.
+Neue Tabelle `public.activity_log`:
+- `id uuid pk`, `actor_user_id uuid`, `actor_email text`, `action text`, `entity_type text`, `entity_id uuid`, `details jsonb`, `created_at timestamptz default now()`
 
-## 2. Neue Detailseite
+Reihenfolge in der Migration: CREATE TABLE → GRANTs (`SELECT, INSERT` für `authenticated`, `ALL` für `service_role`) → RLS aktivieren → Policies:
+- SELECT: nur `has_role(auth.uid(),'superadmin')`
+- INSERT: nur `has_role(auth.uid(),'superadmin')` und `actor_user_id = auth.uid()`
+- Kein UPDATE/DELETE (Protokoll bleibt unveränderlich)
 
-Neue Route `/superadmin/bewerbungsgespraeche/:id` (neue Datei `src/pages/superadmin/BewerbungsgespraechDetail.tsx`, Route in `src/App.tsx`).
+Optional Index auf `created_at desc`.
 
-Inhalt:
-- Kopf: Name, Termin (Datum, Uhrzeit, Wochentag), Status-Auswahl, Zurück-Button, Buttons „Erfolgreich" / „Fehlgeschlagen" / „Abgesagt".
-- Linke Spalte – alle Bewerbungsdaten aus `applications`: Vorname, Nachname, E-Mail (klickbar), Handynummer (klickbar), Geburtsdatum (+ berechnetes Alter), Staatsangehörigkeit, gewünschte Anstellung, Ranking, Bewerbungsstatus, Eingang der Bewerbung, Buchungszeitpunkt des Termins.
-- Notizfeld zum Termin (`interview_appointments.notes`) mit Speichern.
-- Rechte Spalte – Lebenslauf direkt eingebettet: Signed URL über `supabase.storage.from("applications").createSignedUrl(...)`, Anzeige als `<iframe>` bei PDF bzw. `<img>` bei Bildern, dazu Buttons „In neuem Tab öffnen" und „Download". Fallback-Hinweis, wenn kein Lebenslauf hinterlegt ist.
+## Frontend
 
-## Technische Hinweise
+`src/pages/superadmin/Bewerbungsgespraeche.tsx`:
+- Spaltenraster um eine Ranking-Spalte erweitern; `applications(... , ranking)` mitladen
+- Ranking-Select pro Zeile (Sehr gut / Gut / Mittel / Schlecht / Kein Ranking) mit den gleichen Farbklassen wie in `Bewerbungen.tsx`; schreibt auf `applications.ranking`
+- Status-Select pro Zeile (Offen / Erfolgreich / Fehlgeschlagen / Abgesagt) ersetzt die Häkchen-Buttons; Löschen bleibt
+- Klicks auf die Selects stoppen die Zeilen-Navigation (`e.stopPropagation()`)
+- Neue Card „Aktivitätsprotokoll" direkt unter dem `PageHeader`: die letzten ~20 Einträge, je Zeile Aktion, betroffener Bewerber, E-Mail des Admins und Datum + Uhrzeit; einklappbar bzw. „Mehr anzeigen"
 
-- Daten werden per Einzel-Query geladen: `interview_appointments` gefiltert auf `id`, mit eingebetteter `applications`-Relation (alle Felder). Bestehende RLS für Superadmin greift unverändert; keine Migration nötig.
-- Statuswechsel und Notizen per Update auf `interview_appointments` — gleiche Logik wie in der Liste.
-- Signed URL läuft nach 10 Minuten ab und wird beim Laden der Seite neu erzeugt.
-- Keine Änderungen an Edge Functions oder Datenbankschema.
+Kleine Hilfsfunktion `logActivity()` (z. B. `src/lib/activityLog.ts`), die den aktuellen User aus der Supabase-Session zieht und den Eintrag schreibt. Aufgerufen bei: Status geändert, Ranking geändert, Termin gelöscht. Ebenfalls eingebunden in `BewerbungsgespraechDetail.tsx` (Status/Ranking/Notiz gespeichert), damit das Protokoll vollständig ist.
+
+## Hinweise
+
+- Das Protokoll wird nur beim Schreiben durch das Panel gefüllt; historische Änderungen erscheinen nicht rückwirkend.
+- Ranking bleibt eine Eigenschaft der Bewerbung, ist also in beiden Ansichten synchron.
