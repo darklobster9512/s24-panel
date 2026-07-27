@@ -28,7 +28,9 @@ import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageE
 import SuperadminAuszahlungen from "./pages/superadmin/Auszahlungen";
 import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
+import SuperadminTelegram from "./pages/superadmin/Telegram";
 import SuperadminArbeitsvertraege from "./pages/superadmin/Arbeitsvertraege";
+
 import SuperadminArbeitsvertragDetail from "./pages/superadmin/ArbeitsvertragDetail";
 
 const Kunde = lazy(() => import("./pages/Kunde"));
