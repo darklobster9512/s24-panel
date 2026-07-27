@@ -57,6 +57,15 @@ function formatTime(t: string) {
   return t.slice(0, 5);
 }
 
+function dayLabel(iso: string) {
+  const today = new Date();
+  const t = today.toISOString().slice(0, 10);
+  const tomorrow = new Date(today.getTime() + 86400000).toISOString().slice(0, 10);
+  if (iso === t) return "Heute";
+  if (iso === tomorrow) return "Morgen";
+  return formatDate(iso);
+}
+
 type View = "upcoming" | "past" | "all";
 
 export default function Bewerbungsgespraeche() {
