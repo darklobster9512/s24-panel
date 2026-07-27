@@ -1,13 +1,12 @@
 ````text
-Ziel: Die Scrollbar innerhalb der Superadmin-Sidebar (dunkelblauer Hintergrund #130f40) soll das Brand-Design verwenden – dezente, schmale Scrollbar mit grünem Thumb und dunklem Track.
+Ziel: Der grüne Scrollbar-Thumb in der Superadmin-Sidebar ist zu grell. Er soll dezenter/dunkler werden.
 
 Geplante Änderungen:
-1. In `src/components/superadmin/AppSidebar.tsx` eine Markierung/Klasse an `SidebarContent` oder der Sidebar anbringen, damit das Styling gezielt auf die Sidebar-Scrollbar wirkt (z. B. `data-sidebar-scrollbar`).
-2. In `src/styles.css` einen CSS-Block für Webkit- und Firefox-Scrollbars ergänzen:
-   - `scrollbar-width: thin` (Firefox)
-   - `scrollbar-color: var(--primary) var(--ink)` (Firefox)
-   - Für Webkit: `::-webkit-scrollbar { width: 6px; }`, Track in transparent/dunkelblau, Thumb in Primary-Grün mit abgerundeten Ecken und Hover-State in etwas hellerem Grün.
-3. Sicherstellen, dass die Scrollbar nicht global überschrieben wird, sondern nur innerhalb der Sidebar greift.
+1. In `src/styles.css` den `.custom-sidebar-scrollbar::-webkit-scrollbar-thumb` anpassen:
+   - Thumb nicht mehr in vollem Primary-Grün (#7bed9f), sondern in einer dunkleren, gedämpften Grün-Variante (z. B. #2dd47a oder #22c55e), leicht transparent, damit er sich sanfter vom dunkelblauen Sidebar-Hintergrund abhebt.
+   - Hover-State ebenfalls etwas heller, aber nicht grell.
+2. Falls gewünscht, den Track sehr leicht mit einem dunklen Blau hinterlegen (z. B. `rgba(15, 26, 46, 0.4)`), damit der Scrollbar-Balken besser sichtbar ist, aber dezent bleibt.
+3. Keine Änderungen an der Funktionalität oder der Breite der Scrollbar.
 
-Keine Änderungen an anderen Komponenten oder an der Funktionalität der Sidebar geplant.
+Keine weiteren Dateien betroffen.
 ````
