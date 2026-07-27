@@ -535,6 +535,61 @@ export default function Einstellungen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={confirmationPreviewOpen} onOpenChange={setConfirmationPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Vorschau · Terminbestätigung</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Von</div>
+                <div className="font-medium truncate">
+                  {form.resend_from_name || "—"} &lt;{form.resend_from_email || "no-reply@example.com"}&gt;
+                </div>
+              </div>
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Betreff</div>
+                <div className="font-medium truncate">
+                  {renderTpl(form.confirmation_email_subject ?? "", previewVars)}
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-border bg-[#f5f7f5]">
+              <iframe
+                title="Terminbestätigung Vorschau"
+                sandbox=""
+                style={{ width: "100%", height: 560, border: 0, background: "#f5f7f5" }}
+                srcDoc={renderApplicationEmailHtml({
+                  subject: renderTpl(form.confirmation_email_subject ?? "Ihr Termin ist bestätigt", previewVars),
+                  bodyText: form.confirmation_email_body ?? "",
+                  vars: previewVars,
+                  company: {
+                    name: form.company_name ?? "Sekretariat24",
+                    address: form.company_address,
+                    logoText: form.logo_text ?? form.company_name ?? "Sekretariat24",
+                    accent: form.accent_color ?? "#7bed9f",
+                  },
+                  infoCard: {
+                    label: "Ihr Termin",
+                    lines: [
+                      `${previewVars.wochentag}, ${previewVars.datum}`,
+                      `${previewVars.uhrzeit} Uhr`,
+                    ],
+                  },
+                  steps: [
+                    { title: "Termin notieren", body: "Tragen Sie sich den Termin am besten direkt in Ihren Kalender ein." },
+                    { title: "Kurzes Kennenlerngespräch", body: "Wir sprechen ca. 20–30 Minuten über Ihre Erfahrung und offene Fragen." },
+                    { title: "Rückmeldung & nächste Schritte", body: "Direkt im Anschluss klären wir gemeinsam, wie es weitergeht." },
+                  ],
+                })}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </>
   );
 }
