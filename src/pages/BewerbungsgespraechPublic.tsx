@@ -139,11 +139,16 @@ export default function BewerbungsgespraechPublic() {
       toast.error(msg);
       return;
     }
+    // Telegram-Benachrichtigung (Fehler ignorieren)
+    supabase.functions
+      .invoke("interview-booked-notify", { body: { token } })
+      .catch((e) => console.error("notify failed", e));
     // Refresh
     const { data: iv } = await (supabase as any).rpc("get_interview_by_token", { _token: token });
     if (iv && iv.length) setInterview(iv[0] as Interview);
     setRebook(false);
     toast.success("Termin bestätigt");
+
   }
 
   return (

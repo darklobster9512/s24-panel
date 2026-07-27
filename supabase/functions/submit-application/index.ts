@@ -204,7 +204,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Telegram-Benachrichtigung (Fehler nur loggen)
+    try {
+      const tgRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-notify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-notify-secret': Deno.env.get('TELEGRAM_NOTIFY_SECRET') ?? '',
+        },
+        body: JSON.stringify({ type: 'application', payload: data }),
+      });
+      if (!tgRes.ok) console.error(`telegram-notify failed [${tgRes.status}]: ${await tgRes.text()}`);
+    } catch (e) {
+      console.error('telegram-notify error', e);
+    }
+
     // Bestätigungsmail versenden (Fehler nur loggen)
+
     try {
       const { data: settings } = await supabase
         .from('app_settings')

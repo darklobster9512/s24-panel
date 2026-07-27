@@ -15,6 +15,8 @@ import {
   Headphones,
   UserPlus,
   Calendar,
+  Send,
+
 
 } from "lucide-react";
 
@@ -79,8 +81,10 @@ const finItems = (pendingCount: number): SidebarItem[] => [
 ];
 
 const systemItems: SidebarItem[] = [
+  { title: "Telegram", url: "/superadmin/telegram", icon: Send },
   { title: "Einstellungen", url: "/superadmin/einstellungen", icon: Settings },
 ];
+
 
 export function SuperadminSidebar() {
   const { state } = useSidebar();

@@ -28,7 +28,9 @@ import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageE
 import SuperadminAuszahlungen from "./pages/superadmin/Auszahlungen";
 import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
+import SuperadminTelegram from "./pages/superadmin/Telegram";
 import SuperadminArbeitsvertraege from "./pages/superadmin/Arbeitsvertraege";
+
 import SuperadminArbeitsvertragDetail from "./pages/superadmin/ArbeitsvertragDetail";
 
 const Kunde = lazy(() => import("./pages/Kunde"));
@@ -87,6 +89,8 @@ export default function App() {
                     <Route path="notizen" element={<SuperadminNotizen />} />
                     <Route path="bewerbungen" element={<SuperadminBewerbungen />} />
                     <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
+                    <Route path="telegram" element={<SuperadminTelegram />} />
+
 
                     
                     <Route path="vertraege" element={<SuperadminVertraege />} />
