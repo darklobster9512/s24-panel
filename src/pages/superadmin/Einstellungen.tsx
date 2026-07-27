@@ -57,6 +57,8 @@ export default function Einstellungen() {
   const [showKey, setShowKey] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [interviewPreviewOpen, setInterviewPreviewOpen] = useState(false);
+  const [confirmationPreviewOpen, setConfirmationPreviewOpen] = useState(false);
+
 
   useEffect(() => {
     if (data) setForm(data);
