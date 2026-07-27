@@ -13,7 +13,9 @@ export type ApplicationEmailInput = {
   };
   cta?: { label: string; url: string } | null;
   steps?: Array<{ title: string; body: string }> | null;
+  infoCard?: { label: string; lines: string[] } | null;
 };
+
 
 
 function escapeHtml(s: string) {
@@ -122,12 +124,29 @@ export function renderApplicationEmailHtml(input: ApplicationEmailInput) {
                 </div>
 
                 ${
+                  input.infoCard
+                    ? `<div style="padding:0 44px 32px 44px;">
+                        <div style="border-left:4px solid ${accent};background:${accentTintSoft};border-radius:10px;padding:18px 22px;">
+                          <div style="font-size:12px;font-weight:700;color:${accentDark};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">${escapeHtml(input.infoCard.label)}</div>
+                          ${input.infoCard.lines
+                            .map(
+                              (l) =>
+                                `<div style="font-size:16px;font-weight:600;color:#1a2e1f;line-height:1.6;">${escapeHtml(l)}</div>`,
+                            )
+                            .join("")}
+                        </div>
+                      </div>`
+                    : ""
+                }
+
+                ${
                   input.cta
                     ? `<div style="padding:0 44px 32px 44px;text-align:center;">
                         <a href="${escapeHtml(input.cta.url)}" style="display:inline-block;background:${accent};color:#0f1a2e;text-decoration:none;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;letter-spacing:0.02em;">${escapeHtml(input.cta.label)}</a>
                       </div>`
                     : ""
                 }
+
 
                 <div style="padding:0 44px 40px 44px;">
                   <div style="margin-top:12px;padding:22px 24px;border-radius:10px;background:${accentTint};border:1px solid ${accentBorder};">
