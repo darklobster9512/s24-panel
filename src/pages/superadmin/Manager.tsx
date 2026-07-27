@@ -87,7 +87,7 @@ export default function Manager() {
       toast.success("Manager-Account erstellt");
       await logActivity({
         action: "Manager angelegt",
-        entity_type: "manager",
+        entityType: "manager",
         details: { email: mail },
       });
       setOpen(false);
@@ -112,7 +112,7 @@ export default function Manager() {
       toast.success("Manager gelöscht");
       await logActivity({
         action: "Manager gelöscht",
-        entity_type: "manager",
+        entityType: "manager",
         details: { email: m.email },
       });
       setDeleteTarget(null);
