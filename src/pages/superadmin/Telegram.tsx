@@ -145,6 +145,18 @@ export default function Telegram() {
             kommenden Bewerbungsgespräche auf.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Button variant="outline" onClick={setupWebhook} disabled={setupLoading}>
+            {setupLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <MessageSquare className="mr-2 h-4 w-4" />
+            )}
+            Bot verbinden / Befehle aktivieren
+          </Button>
+        </CardContent>
+
+        </CardHeader>
       </Card>
 
       <Card>
