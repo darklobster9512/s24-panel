@@ -13,7 +13,9 @@ export type ApplicationEmailInput = {
   };
   cta?: { label: string; url: string } | null;
   steps?: Array<{ title: string; body: string }> | null;
+  infoCard?: { label: string; lines: string[] } | null;
 };
+
 
 
 function escapeHtml(s: string) {
