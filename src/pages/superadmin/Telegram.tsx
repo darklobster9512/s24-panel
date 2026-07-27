@@ -109,6 +109,20 @@ export default function Telegram() {
     }
     toast.success("Testnachricht gesendet");
   }
+  const [setupLoading, setSetupLoading] = useState(false);
+
+  async function setupWebhook() {
+    setSetupLoading(true);
+    const { data, error } = await supabase.functions.invoke("telegram-setup", { body: {} });
+    setSetupLoading(false);
+    if (error || (data as any)?.setWebhook?.ok === false) {
+      toast.error("Webhook konnte nicht eingerichtet werden");
+      console.error(error ?? data);
+      return;
+    }
+    toast.success("Bot verbunden – Befehle sind aktiv");
+  }
+
 
   return (
     <div className="space-y-6">
