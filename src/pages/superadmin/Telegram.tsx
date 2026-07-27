@@ -155,8 +155,6 @@ export default function Telegram() {
             Bot verbinden / Befehle aktivieren
           </Button>
         </CardContent>
-
-        </CardHeader>
       </Card>
 
       <Card>
