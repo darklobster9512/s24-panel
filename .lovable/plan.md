@@ -1,12 +1,12 @@
 ````text
-Ziel: Der grüne Scrollbar-Thumb in der Superadmin-Sidebar ist zu grell. Er soll dezenter/dunkler werden.
+Ziel: Der Scrollbar-Thumb in der Sidebar soll nicht mehr grün sein, sondern zur dunkelblauen Sidebar-Hintergrundfarbe (#130f40) passen, nur leicht heller, damit er dezent sichtbar ist.
 
 Geplante Änderungen:
 1. In `src/styles.css` den `.custom-sidebar-scrollbar::-webkit-scrollbar-thumb` anpassen:
-   - Thumb nicht mehr in vollem Primary-Grün (#7bed9f), sondern in einer dunkleren, gedämpften Grün-Variante (z. B. #2dd47a oder #22c55e), leicht transparent, damit er sich sanfter vom dunkelblauen Sidebar-Hintergrund abhebt.
-   - Hover-State ebenfalls etwas heller, aber nicht grell.
-2. Falls gewünscht, den Track sehr leicht mit einem dunklen Blau hinterlegen (z. B. `rgba(15, 26, 46, 0.4)`), damit der Scrollbar-Balken besser sichtbar ist, aber dezent bleibt.
-3. Keine Änderungen an der Funktionalität oder der Breite der Scrollbar.
+   - Thumb-Farbe auf eine hellere Variante des Sidebar-Hintergrundblaus setzen (z. B. `#1a1c4e` oder `#232654`), leicht transparent, damit er sich subtil abhebt.
+   - Hover-State auf eine noch etwas hellere Nuance (z. B. `#2a2d6e`) setzen, aber immer noch im blauen Farbbereich bleiben.
+2. Firefox-`scrollbar-color` entsprechend anpassen (Thumb: helles Blau, Track: transparent).
+3. Keine weiteren Änderungen an Breite, Funktionalität oder anderen Komponenten.
 
 Keine weiteren Dateien betroffen.
 ````
