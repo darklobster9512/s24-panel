@@ -10,7 +10,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "superadmin" | "kunde" | "mitarbeiter";
+export type AppRole = "superadmin" | "manager" | "kunde" | "mitarbeiter";
 
 interface AuthContextValue {
   user: User | null;
@@ -107,6 +107,8 @@ export function roleHome(role: AppRole | null): string {
   switch (role) {
     case "superadmin":
       return "/superadmin";
+    case "manager":
+      return "/superadmin/bewerbungsgespraeche";
     case "mitarbeiter":
       return "/mitarbeiter";
     case "kunde":
