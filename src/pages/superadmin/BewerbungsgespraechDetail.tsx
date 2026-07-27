@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 
 type Detail = {
   id: string;
@@ -180,8 +181,21 @@ export default function BewerbungsgespraechDetail() {
       toast.error("Status-Update fehlgeschlagen");
       return;
     }
+    const prevStatus = row.status;
     setRow({ ...row, status });
     toast.success("Status aktualisiert");
+    void logActivity({
+      action: "Status geändert",
+      entityType: "interview_appointment",
+      entityId: row.id,
+      details: {
+        subject: row.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+        from: STATUS_OPTIONS.find((o) => o.value === prevStatus)?.label ?? prevStatus,
+        to: STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status,
+      },
+    });
   }
 
   async function saveNotes() {
@@ -198,6 +212,16 @@ export default function BewerbungsgespraechDetail() {
     }
     setRow({ ...row, notes });
     toast.success("Notiz gespeichert");
+    void logActivity({
+      action: "Notiz gespeichert",
+      entityType: "interview_appointment",
+      entityId: row.id,
+      details: {
+        subject: row.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+      },
+    });
   }
 
   if (loading) {

@@ -14,6 +14,8 @@ import {
 import { Calendar, Search, Trash2, Check, X, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import ActivityLogCard from "@/components/superadmin/ActivityLogCard";
+import { logActivity } from "@/lib/activityLog";
 
 type Row = {
   id: string;
@@ -29,6 +31,7 @@ type Row = {
     email: string;
     handynummer: string;
     anstellung: string;
+    ranking: string | null;
   } | null;
 };
 
@@ -39,10 +42,33 @@ const STATUS_OPTIONS = [
   { value: "abgesagt", label: "Abgesagt" },
 ];
 
+const RANKING_OPTIONS = [
+  { value: "sehr_gut", label: "Sehr gut" },
+  { value: "gut", label: "Gut" },
+  { value: "mittel", label: "Mittel" },
+  { value: "schlecht", label: "Schlecht" },
+];
+
+const RANKING_CLASSES: Record<string, string> = {
+  sehr_gut: "bg-primary/20 text-primary-foreground border-primary/40",
+  gut: "bg-primary/10 text-foreground border-primary/30",
+  mittel: "bg-muted text-foreground border-border",
+  schlecht: "bg-destructive/15 text-destructive border-destructive/40",
+};
+
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "erfolgreich") return "default";
   if (s === "fehlgeschlagen" || s === "abgesagt") return "destructive";
   return "secondary";
+}
+
+function statusLabelOf(v: string) {
+  return STATUS_OPTIONS.find((s) => s.value === v)?.label ?? v;
+}
+
+function rankingLabelOf(v: string | null) {
+  if (!v) return "Kein Ranking";
+  return RANKING_OPTIONS.find((o) => o.value === v)?.label ?? v;
 }
 
 function formatDate(iso: string) {
@@ -84,7 +110,7 @@ export default function Bewerbungsgespraeche() {
       const { data, error } = await (supabase as any)
         .from("interview_appointments")
         .select(
-          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, applications(vorname, nachname, email, handynummer, anstellung)",
+          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, applications(vorname, nachname, email, handynummer, anstellung, ranking)",
         )
         .order("appointment_date", { ascending: true })
         .order("appointment_time", { ascending: true });
@@ -148,8 +174,53 @@ export default function Bewerbungsgespraeche() {
       toast.error("Status-Update fehlgeschlagen");
       return;
     }
+    const row = rows.find((r) => r.id === id);
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     toast.success("Status aktualisiert");
+    void logActivity({
+      action: "Status geändert",
+      entityType: "interview_appointment",
+      entityId: id,
+      details: {
+        subject: row?.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+        from: statusLabelOf(row?.status ?? ""),
+        to: statusLabelOf(status),
+      },
+    });
+  }
+
+  async function updateRanking(row: Row, value: string) {
+    const ranking = value === "none" ? null : value;
+    const { error } = await (supabase as any)
+      .from("applications")
+      .update({ ranking })
+      .eq("id", row.application_id);
+    if (error) {
+      toast.error("Ranking konnte nicht gespeichert werden");
+      return;
+    }
+    setRows((prev) =>
+      prev.map((r) =>
+        r.application_id === row.application_id && r.applications
+          ? { ...r, applications: { ...r.applications, ranking } }
+          : r,
+      ),
+    );
+    toast.success("Ranking aktualisiert");
+    void logActivity({
+      action: "Ranking geändert",
+      entityType: "interview_appointment",
+      entityId: row.id,
+      details: {
+        subject: row.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+        from: rankingLabelOf(row.applications?.ranking ?? null),
+        to: rankingLabelOf(ranking),
+      },
+    });
   }
 
   async function remove(row: Row) {
@@ -169,6 +240,16 @@ export default function Bewerbungsgespraeche() {
       .eq("id", row.application_id);
     setRows((prev) => prev.filter((r) => r.id !== row.id));
     toast.success("Termin gelöscht");
+    void logActivity({
+      action: "Termin gelöscht",
+      entityType: "interview_appointment",
+      entityId: row.id,
+      details: {
+        subject: row.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+      },
+    });
   }
 
   return (
@@ -177,6 +258,8 @@ export default function Bewerbungsgespraeche() {
         title="Bewerbungsgespräche"
         subtitle="Von Bewerbern gebuchte Termine — verwalte Status und Ergebnis."
       />
+
+      <ActivityLogCard entityType="interview_appointment" />
 
       <Panel>
         <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -232,12 +315,13 @@ export default function Bewerbungsgespraeche() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_150px_140px_180px_120px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1fr_1fr_140px_130px_150px_170px_120px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
               <span>E-Mail</span>
               <span>Telefon</span>
               <span>Anstellung</span>
+              <span>Ranking</span>
               <span>Status</span>
               <span className="text-right">Aktionen</span>
             </div>
@@ -263,7 +347,7 @@ export default function Bewerbungsgespraeche() {
                         navigate(`/superadmin/bewerbungsgespraeche/${r.id}`);
                       }
                     }}
-                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_150px_140px_180px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
+                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_150px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
@@ -275,6 +359,24 @@ export default function Bewerbungsgespraeche() {
                     <span className="truncate text-muted-foreground">{a?.email}</span>
                     <span className="truncate font-mono text-xs">{a?.handynummer}</span>
                     <span className="truncate capitalize text-muted-foreground">{a?.anstellung}</span>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={a?.ranking ?? "none"}
+                        onValueChange={(v) => updateRanking(r, v)}
+                      >
+                        <SelectTrigger
+                          className={`h-8 text-xs ${a?.ranking ? RANKING_CLASSES[a.ranking] ?? "" : ""}`}
+                        >
+                          <SelectValue placeholder="Kein Ranking" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Kein Ranking</SelectItem>
+                          {RANKING_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
