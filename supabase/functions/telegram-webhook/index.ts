@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
     lines.push(
       `  <code>${esc(String(row.appointment_time).slice(0, 5))}</code>  ${esc(name)}`,
     );
-    lines.push(`         ${esc(a.handynummer ?? '—')}`);
+    lines.push(`         <code>${esc(a.handynummer ?? '—')}</code>`);
   });
 
   await send(botToken, chatId, lines.join('\n'), true);
