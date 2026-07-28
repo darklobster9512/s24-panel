@@ -685,6 +685,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          reminder_sent_at: string | null
           status: string
           updated_at: string
         }
@@ -696,6 +697,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           status?: string
           updated_at?: string
         }
@@ -707,6 +709,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
           status?: string
           updated_at?: string
         }
