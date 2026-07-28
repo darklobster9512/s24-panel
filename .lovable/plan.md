@@ -1,39 +1,42 @@
 ## Ziel
 
-Nur der `/kalender`-Befehl im Telegram-Bot wird angepasst. Alle anderen Benachrichtigungen (neue Bewerbung, Termin gebucht, Test) bleiben unverändert.
+1. Telefonnummern in allen Telegram-Nachrichten mit einem Tap kopierbar machen.
+2. 5 Minuten vor jedem gebuchten Bewerbungsgespräch automatisch eine Erinnerung an die aktiven Telegram-Empfänger senden.
 
-Datei: `supabase/functions/telegram-webhook/index.ts`
+## 1. Tap-to-Copy Telefonnummern
 
-## 1. Nur anstehende Termine
+Telegram macht `<code>`-Text mit einem Tap kopierbar. Alle Nummern-Ausgaben werden darauf umgestellt:
 
-Aktuell wird mit `appointment_date >= heute (UTC)` gefiltert, deshalb tauchen heute bereits vergangene Termine auf.
+- `telegram-notify`: Nummern in der Bewerbungs- und der Bewerbungsgespräch-Nachricht (`📱 …`) in `<code>` einfassen.
+- `telegram-webhook`: Nummern in der `/kalender`-Liste ebenfalls in `<code>` einfassen.
+- Layout und Reihenfolge bleiben unverändert.
 
-- „Jetzt“ in Zeitzone `Europe/Berlin` bestimmen (Datum + Uhrzeit).
-- Zeilen verwerfen, deren Datum = heute und Uhrzeit < aktuelle Uhrzeit ist.
-- Query auf ~30 Zeilen laden, Ausgabe nach dem Filtern auf 10 begrenzen.
-- Bleibt nichts übrig: bestehende „Keine anstehenden Bewerbungsgespräche“-Meldung.
+## 2. Erinnerung 5 Minuten vor dem Termin
 
-## 2. Bessere Darstellung der Liste
-
-Gleiche Inhalte (Datum, Uhrzeit, Name, Nummer), nur klarer strukturiert: Termine nach Tag gruppiert, pro Eintrag Uhrzeit + Name in einer Zeile, Nummer eingerückt darunter, Leerzeile zwischen den Tagen, keine Ziffern-Emojis und keine `━━━`-Balken.
+**Neue Edge Function `interview-reminder`**
+- Läuft minütlich, arbeitet in Berlin-Zeit.
+- Sucht Termine, deren Startzeit 5 Minuten in der Zukunft liegt (Zeitfenster von einer Minute, damit nichts doppelt oder gar nicht gesendet wird).
+- Sendet an alle aktiven `telegram_recipients` mit `notify_interviews = true`.
+- Nachricht im bestehenden Stil, z. B.:
 
 ```text
-🗓 Kommende Bewerbungsgespräche
+⏰ Bewerbungsgespräch in 5 Minuten
 
-Mo, 03.08.2026
-  09:00  Max Mustermann
-         +49 170 1234567
-  11:30  Anna Beispiel
-         +49 151 9876543
-
-Di, 04.08.2026
-  14:00  Peter Muster
-         +49 160 5551234
+Max Mustermann
+🗓 Dienstag, 28.07.2026 · 14:30 Uhr
+📱 0170 1234567   (tap-to-copy)
 ```
 
-Der Button „Im Portal öffnen“ bleibt.
+**Schutz vor Doppelversand**
+- Neue Spalte `reminder_sent_at` (timestamptz, nullable) auf `interview_appointments`.
+- Die Function verarbeitet nur Termine mit `reminder_sent_at IS NULL` und setzt die Spalte nach erfolgreichem Versand.
 
-## Technisches
+**Zeitplanung**
+- `pg_cron`-Job, der `interview-reminder` jede Minute per `pg_net` aufruft (analog zum bestehenden Keep-Warm-Job).
 
-- Nur `telegram-webhook` wird geändert und neu deployt.
-- Keine Datenbank- oder Frontend-Änderungen.
+## Technische Details
+
+- Migration: `ALTER TABLE public.interview_appointments ADD COLUMN reminder_sent_at timestamptz;`
+- Cron-Eintrag wird per Insert-Tool angelegt (enthält projektspezifische URL/Key).
+- Die Function nutzt den Service-Role-Key und `TELEGRAM_BOT_TOKEN` wie die bestehenden Telegram-Functions; keine neuen Secrets nötig.
+- Storniert/abgesagte Termine (Status entsprechend) werden von der Erinnerung ausgeschlossen.
