@@ -62,7 +62,7 @@ async function send(botToken: string, chatId: number | string, text: string, wit
 }
 
 const DIVIDER = '━━━━━━━━━━━━━━━━━━';
-const NUMS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -131,14 +131,25 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true }));
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Aktuelles Datum/Uhrzeit in Europe/Berlin
+  const berlin = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Berlin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date());
+  const [today, nowTime] = berlin.split(' ');
+
   const { data: rows, error } = await supabase
     .from('interview_appointments')
-    .select('appointment_date, appointment_time, applications(vorname, nachname, handynummer)')
+    .select('appointment_date, appointment_time, status, applications(vorname, nachname, handynummer)')
     .gte('appointment_date', today)
     .order('appointment_date', { ascending: true })
     .order('appointment_time', { ascending: true })
-    .limit(10);
+    .limit(30);
 
   if (error) {
     console.error('kalender query failed', error);
@@ -146,21 +157,38 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true }));
   }
 
-  if (!rows || rows.length === 0) {
-    await send(botToken, chatId, '🗓 <b>Kommende Bewerbungsgespräche</b>\n' + DIVIDER + '\nKeine anstehenden Bewerbungsgespräche.');
+  const upcoming = (rows ?? [])
+    .filter((row: any) => {
+      const t = String(row.appointment_time ?? '').slice(0, 5);
+      if (row.appointment_date === today && t < nowTime) return false;
+      return true;
+    })
+    .slice(0, 10);
+
+  if (upcoming.length === 0) {
+    await send(
+      botToken,
+      chatId,
+      '🗓 <b>Kommende Bewerbungsgespräche</b>\n\nKeine anstehenden Bewerbungsgespräche.',
+    );
     return new Response(JSON.stringify({ ok: true }));
   }
 
-  const lines = ['🗓 <b>Kommende Bewerbungsgespräche</b>', DIVIDER];
-  rows.forEach((row: any, i: number) => {
+  const lines = ['🗓 <b>Kommende Bewerbungsgespräche</b>'];
+  let lastDate = '';
+  upcoming.forEach((row: any) => {
     const a = row.applications ?? {};
     const name = `${a.vorname ?? ''} ${a.nachname ?? ''}`.trim() || 'Unbekannt';
+    if (row.appointment_date !== lastDate) {
+      lastDate = row.appointment_date;
+      lines.push('');
+      lines.push(`<b>${esc(fmtDate(row.appointment_date))}</b>`);
+    }
     lines.push(
-      `${NUMS[i] ?? '•'} <b>${esc(fmtDate(row.appointment_date))}</b> · ${esc(String(row.appointment_time).slice(0, 5))} Uhr`,
+      `  <code>${esc(String(row.appointment_time).slice(0, 5))}</code>  ${esc(name)}`,
     );
-    lines.push(`     👤 ${esc(name)} · 📱 ${esc(a.handynummer ?? '—')}`);
+    lines.push(`         ${esc(a.handynummer ?? '—')}`);
   });
-  lines.push(DIVIDER);
 
   await send(botToken, chatId, lines.join('\n'), true);
   return new Response(JSON.stringify({ ok: true }));
