@@ -125,12 +125,16 @@ Deno.serve(async (req) => {
     const name = `${a.vorname ?? ''} ${a.nachname ?? ''}`.trim() || 'Unbekannt';
     const time = String((row as any).appointment_time ?? '').slice(0, 5);
     const text = [
-      '⏰ <b>Bewerbungsgespräch in 5 Minuten</b>',
-      DIVIDER,
+      '🔔🔔🔔🔔🔔🔔🔔🔔🔔🔔',
+      '🔔 <b>TERMIN-ERINNERUNG</b>',
+      '🔔 Bewerbungsgespräch in 5 Minuten',
+      '🔔🔔🔔🔔🔔🔔🔔🔔🔔🔔',
+      '',
       `👤 <b>${esc(name)}</b>`,
       `🗓 ${esc(fmtDate((row as any).appointment_date))} · ${esc(time)} Uhr`,
       `📱 <code>${esc(a.handynummer ?? '—')}</code>`,
-      DIVIDER,
+      '',
+      '🔔🔔🔔🔔🔔🔔🔔🔔🔔🔔',
     ].join('\n');
 
     for (const chatId of chatIds) {
