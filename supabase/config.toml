@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.interview-booked-notify]
 verify_jwt = false
+
+[functions.interview-reminder]
+verify_jwt = false
