@@ -1,12 +1,39 @@
-````text
-Ziel: Der Scrollbar-Thumb in der Sidebar soll nicht mehr grün sein, sondern zur dunkelblauen Sidebar-Hintergrundfarbe (#130f40) passen, nur leicht heller, damit er dezent sichtbar ist.
+## Ziel
 
-Geplante Änderungen:
-1. In `src/styles.css` den `.custom-sidebar-scrollbar::-webkit-scrollbar-thumb` anpassen:
-   - Thumb-Farbe auf eine hellere Variante des Sidebar-Hintergrundblaus setzen (z. B. `#1a1c4e` oder `#232654`), leicht transparent, damit er sich subtil abhebt.
-   - Hover-State auf eine noch etwas hellere Nuance (z. B. `#2a2d6e`) setzen, aber immer noch im blauen Farbbereich bleiben.
-2. Firefox-`scrollbar-color` entsprechend anpassen (Thumb: helles Blau, Track: transparent).
-3. Keine weiteren Änderungen an Breite, Funktionalität oder anderen Komponenten.
+Nur der `/kalender`-Befehl im Telegram-Bot wird angepasst. Alle anderen Benachrichtigungen (neue Bewerbung, Termin gebucht, Test) bleiben unverändert.
 
-Keine weiteren Dateien betroffen.
-````
+Datei: `supabase/functions/telegram-webhook/index.ts`
+
+## 1. Nur anstehende Termine
+
+Aktuell wird mit `appointment_date >= heute (UTC)` gefiltert, deshalb tauchen heute bereits vergangene Termine auf.
+
+- „Jetzt“ in Zeitzone `Europe/Berlin` bestimmen (Datum + Uhrzeit).
+- Zeilen verwerfen, deren Datum = heute und Uhrzeit < aktuelle Uhrzeit ist.
+- Query auf ~30 Zeilen laden, Ausgabe nach dem Filtern auf 10 begrenzen.
+- Bleibt nichts übrig: bestehende „Keine anstehenden Bewerbungsgespräche“-Meldung.
+
+## 2. Bessere Darstellung der Liste
+
+Gleiche Inhalte (Datum, Uhrzeit, Name, Nummer), nur klarer strukturiert: Termine nach Tag gruppiert, pro Eintrag Uhrzeit + Name in einer Zeile, Nummer eingerückt darunter, Leerzeile zwischen den Tagen, keine Ziffern-Emojis und keine `━━━`-Balken.
+
+```text
+🗓 Kommende Bewerbungsgespräche
+
+Mo, 03.08.2026
+  09:00  Max Mustermann
+         +49 170 1234567
+  11:30  Anna Beispiel
+         +49 151 9876543
+
+Di, 04.08.2026
+  14:00  Peter Muster
+         +49 160 5551234
+```
+
+Der Button „Im Portal öffnen“ bleibt.
+
+## Technisches
+
+- Nur `telegram-webhook` wird geändert und neu deployt.
+- Keine Datenbank- oder Frontend-Änderungen.
