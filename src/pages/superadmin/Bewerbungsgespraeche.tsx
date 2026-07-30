@@ -25,6 +25,8 @@ type Row = {
   status: string;
   notes: string | null;
   booked_at: string;
+  start_date: string | null;
+  start_asap: boolean | null;
   applications: {
     vorname: string;
     nachname: string;
@@ -34,6 +36,19 @@ type Row = {
     ranking: string | null;
   } | null;
 };
+
+function startLabel(r: Row) {
+  if (r.start_asap) return "Ab sofort";
+  if (r.start_date) {
+    return new Date(r.start_date + "T00:00:00").toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+  return "—";
+}
+
 
 const STATUS_OPTIONS = [
   { value: "neu", label: "Offen" },
