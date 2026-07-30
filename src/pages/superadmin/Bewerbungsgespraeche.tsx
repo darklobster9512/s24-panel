@@ -393,6 +393,11 @@ export default function Bewerbungsgespraeche() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <span
+                      className={`truncate text-xs ${r.start_asap || r.start_date ? "font-medium" : "text-muted-foreground"}`}
+                    >
+                      {startLabel(r)}
+                    </span>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
