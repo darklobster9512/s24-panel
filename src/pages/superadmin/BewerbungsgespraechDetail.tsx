@@ -420,6 +420,69 @@ export default function BewerbungsgespraechDetail() {
             )}
           </Panel>
 
+          <Panel title="Startdatum">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={startAsap ? "" : startInput}
+                  onChange={(e) => setStartInput(e.target.value)}
+                  disabled={startAsap}
+                  placeholder={startAsap ? "Ab sofort" : "TT.MM.JJJJ"}
+                  className="h-9"
+                />
+                <Popover open={calOpen} onOpenChange={setCalOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      disabled={startAsap}
+                      title="Datum auswählen"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      locale={de}
+                      selected={
+                        parseGermanDate(startInput)
+                          ? new Date(parseGermanDate(startInput)! + "T00:00:00")
+                          : undefined
+                      }
+                      onSelect={(d) => {
+                        if (!d) return;
+                        setStartInput(
+                          `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`,
+                        );
+                        setCalOpen(false);
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={startAsap}
+                  onCheckedChange={(v) => setStartAsap(Boolean(v))}
+                />
+                Ab sofort
+              </label>
+
+              <div className="flex justify-end">
+                <Button size="sm" onClick={saveStartDate} disabled={savingStart}>
+                  {savingStart && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Speichern
+                </Button>
+              </div>
+            </div>
+          </Panel>
+
+
           <Panel title="Gesprächsnotizen">
             <Textarea
               value={notes}
