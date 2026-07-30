@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -180,8 +181,8 @@ export function SuperadminSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
       <SidebarHeader>
-        <div className="flex items-center gap-2.5 px-2 py-3">
-          <img src="/logo-icon.png" alt="Sekretariat24" className="h-9 w-9 shrink-0 rounded-xl" />
+        <div className={cn("flex items-center px-2 py-3", collapsed ? "justify-center" : "gap-2.5")}>
+          <img src="/logo-icon.png" alt="Sekretariat24" className={cn("shrink-0 rounded-xl", collapsed ? "h-7 w-7" : "h-9 w-9")} />
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">
