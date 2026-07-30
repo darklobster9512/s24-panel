@@ -363,7 +363,7 @@ export default function Bewerbungsgespraeche() {
                         navigate(`/superadmin/bewerbungsgespraeche/${r.id}`);
                       }
                     }}
-                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_150px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
+                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_150px_130px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
