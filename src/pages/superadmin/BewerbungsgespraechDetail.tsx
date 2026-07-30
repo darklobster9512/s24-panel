@@ -4,6 +4,12 @@ import { PageHeader, Panel } from "@/components/superadmin/SuperadminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { de } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -15,6 +21,7 @@ import {
   ArrowLeft,
   Check,
   X,
+  CalendarIcon,
   ExternalLink,
   FileText,
   Loader2,
@@ -25,6 +32,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
 
+
 type Detail = {
   id: string;
   application_id: string;
@@ -32,6 +40,8 @@ type Detail = {
   appointment_time: string;
   status: string;
   notes: string | null;
+  start_date: string | null;
+  start_asap: boolean | null;
   booked_at: string;
   applications: {
     id: string;
@@ -127,6 +137,35 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/** "01.08.2026" | "1.8.26" | "2026-08-01" -> "2026-08-01" oder null */
+function parseGermanDate(input: string): string | null {
+  const s = input.trim();
+  if (!s) return null;
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  let y: number, m: number, d: number;
+  if (iso) {
+    y = +iso[1];
+    m = +iso[2];
+    d = +iso[3];
+  } else {
+    const de = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+    if (!de) return null;
+    d = +de[1];
+    m = +de[2];
+    y = +de[3];
+    if (y < 100) y += 2000;
+  }
+  const dt = new Date(y, m - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+function isoToGerman(iso: string | null | undefined) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default function BewerbungsgespraechDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -135,6 +174,10 @@ export default function BewerbungsgespraechDetail() {
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [cvUrl, setCvUrl] = useState<string | null>(null);
+  const [startInput, setStartInput] = useState("");
+  const [startAsap, setStartAsap] = useState(false);
+  const [savingStart, setSavingStart] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,7 +186,7 @@ export default function BewerbungsgespraechDetail() {
       const { data, error } = await (supabase as any)
         .from("interview_appointments")
         .select(
-          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, applications(id, vorname, nachname, email, handynummer, geburtsdatum, staatsangehoerigkeit, anstellung, status, ranking, created_at, lebenslauf_path, lebenslauf_filename, lebenslauf_mime)",
+          "id, application_id, appointment_date, appointment_time, status, notes, start_date, start_asap, booked_at, applications(id, vorname, nachname, email, handynummer, geburtsdatum, staatsangehoerigkeit, anstellung, status, ranking, created_at, lebenslauf_path, lebenslauf_filename, lebenslauf_mime)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -155,7 +198,10 @@ export default function BewerbungsgespraechDetail() {
       const d = (data as Detail) ?? null;
       setRow(d);
       setNotes(d?.notes ?? "");
+      setStartInput(isoToGerman(d?.start_date));
+      setStartAsap(Boolean(d?.start_asap));
       setLoading(false);
+
 
       const path = d?.applications?.lebenslauf_path;
       if (path) {
@@ -223,6 +269,46 @@ export default function BewerbungsgespraechDetail() {
       },
     });
   }
+
+  async function saveStartDate() {
+    if (!row) return;
+    let startDate: string | null = null;
+    if (!startAsap) {
+      const trimmed = startInput.trim();
+      if (trimmed) {
+        startDate = parseGermanDate(trimmed);
+        if (!startDate) {
+          toast.error("Ungültiges Datum – bitte Format TT.MM.JJJJ verwenden");
+          return;
+        }
+      }
+    }
+    setSavingStart(true);
+    const { error } = await (supabase as any)
+      .from("interview_appointments")
+      .update({ start_date: startDate, start_asap: startAsap })
+      .eq("id", row.id);
+    setSavingStart(false);
+    if (error) {
+      toast.error("Startdatum konnte nicht gespeichert werden");
+      return;
+    }
+    setRow({ ...row, start_date: startDate, start_asap: startAsap });
+    setStartInput(isoToGerman(startDate));
+    toast.success("Startdatum gespeichert");
+    void logActivity({
+      action: "Startdatum geändert",
+      entityType: "interview_appointment",
+      entityId: row.id,
+      details: {
+        subject: row.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+        to: startAsap ? "Ab sofort" : startDate ? isoToGerman(startDate) : "—",
+      },
+    });
+  }
+
 
   if (loading) {
     return (
@@ -333,6 +419,69 @@ export default function BewerbungsgespraechDetail() {
               </div>
             )}
           </Panel>
+
+          <Panel title="Startdatum">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={startAsap ? "" : startInput}
+                  onChange={(e) => setStartInput(e.target.value)}
+                  disabled={startAsap}
+                  placeholder={startAsap ? "Ab sofort" : "TT.MM.JJJJ"}
+                  className="h-9"
+                />
+                <Popover open={calOpen} onOpenChange={setCalOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      disabled={startAsap}
+                      title="Datum auswählen"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      locale={de}
+                      selected={
+                        parseGermanDate(startInput)
+                          ? new Date(parseGermanDate(startInput)! + "T00:00:00")
+                          : undefined
+                      }
+                      onSelect={(d) => {
+                        if (!d) return;
+                        setStartInput(
+                          `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`,
+                        );
+                        setCalOpen(false);
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={startAsap}
+                  onCheckedChange={(v) => setStartAsap(Boolean(v))}
+                />
+                Ab sofort
+              </label>
+
+              <div className="flex justify-end">
+                <Button size="sm" onClick={saveStartDate} disabled={savingStart}>
+                  {savingStart && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Speichern
+                </Button>
+              </div>
+            </div>
+          </Panel>
+
 
           <Panel title="Gesprächsnotizen">
             <Textarea

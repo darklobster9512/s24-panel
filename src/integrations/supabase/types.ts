@@ -686,6 +686,8 @@ export type Database = {
           id: string
           notes: string | null
           reminder_sent_at: string | null
+          start_asap: boolean
+          start_date: string | null
           status: string
           updated_at: string
         }
@@ -698,6 +700,8 @@ export type Database = {
           id?: string
           notes?: string | null
           reminder_sent_at?: string | null
+          start_asap?: boolean
+          start_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -710,6 +714,8 @@ export type Database = {
           id?: string
           notes?: string | null
           reminder_sent_at?: string | null
+          start_asap?: boolean
+          start_date?: string | null
           status?: string
           updated_at?: string
         }

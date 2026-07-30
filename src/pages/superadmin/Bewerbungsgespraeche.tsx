@@ -25,6 +25,8 @@ type Row = {
   status: string;
   notes: string | null;
   booked_at: string;
+  start_date: string | null;
+  start_asap: boolean | null;
   applications: {
     vorname: string;
     nachname: string;
@@ -34,6 +36,19 @@ type Row = {
     ranking: string | null;
   } | null;
 };
+
+function startLabel(r: Row) {
+  if (r.start_asap) return "Ab sofort";
+  if (r.start_date) {
+    return new Date(r.start_date + "T00:00:00").toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+  return "—";
+}
+
 
 const STATUS_OPTIONS = [
   { value: "neu", label: "Offen" },
@@ -110,7 +125,7 @@ export default function Bewerbungsgespraeche() {
       const { data, error } = await (supabase as any)
         .from("interview_appointments")
         .select(
-          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, applications(vorname, nachname, email, handynummer, anstellung, ranking)",
+          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, start_date, start_asap, applications(vorname, nachname, email, handynummer, anstellung, ranking)",
         )
         .order("appointment_date", { ascending: true })
         .order("appointment_time", { ascending: true });
@@ -315,13 +330,14 @@ export default function Bewerbungsgespraeche() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_140px_130px_150px_170px_120px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1fr_1fr_140px_130px_150px_130px_170px_120px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
               <span>E-Mail</span>
               <span>Telefon</span>
               <span>Anstellung</span>
               <span>Ranking</span>
+              <span>Startdatum</span>
               <span>Status</span>
               <span className="text-right">Aktionen</span>
             </div>
@@ -347,7 +363,7 @@ export default function Bewerbungsgespraeche() {
                         navigate(`/superadmin/bewerbungsgespraeche/${r.id}`);
                       }
                     }}
-                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_150px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
+                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_150px_130px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
@@ -377,6 +393,11 @@ export default function Bewerbungsgespraeche() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <span
+                      className={`truncate text-xs ${r.start_asap || r.start_date ? "font-medium" : "text-muted-foreground"}`}
+                    >
+                      {startLabel(r)}
+                    </span>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
