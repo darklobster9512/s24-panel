@@ -40,6 +40,8 @@ type Detail = {
   appointment_time: string;
   status: string;
   notes: string | null;
+  start_date: string | null;
+  start_asap: boolean | null;
   booked_at: string;
   applications: {
     id: string;
