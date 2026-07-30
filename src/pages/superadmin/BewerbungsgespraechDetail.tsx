@@ -4,6 +4,12 @@ import { PageHeader, Panel } from "@/components/superadmin/SuperadminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { de } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -15,6 +21,7 @@ import {
   ArrowLeft,
   Check,
   X,
+  CalendarIcon,
   ExternalLink,
   FileText,
   Loader2,
@@ -24,6 +31,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
+
 
 type Detail = {
   id: string;
