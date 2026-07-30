@@ -125,7 +125,7 @@ export default function Bewerbungsgespraeche() {
       const { data, error } = await (supabase as any)
         .from("interview_appointments")
         .select(
-          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, applications(vorname, nachname, email, handynummer, anstellung, ranking)",
+          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, start_date, start_asap, applications(vorname, nachname, email, handynummer, anstellung, ranking)",
         )
         .order("appointment_date", { ascending: true })
         .order("appointment_time", { ascending: true });
