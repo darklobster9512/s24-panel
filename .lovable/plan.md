@@ -1,31 +1,16 @@
-## Ziel
-Aus den vorhandenen Gesprächsnotizen das Startdatum bzw. „Ab sofort“ ableiten und in `interview_appointments` (`start_date`, `start_asap`) eintragen. Reine Datenaktualisierung, keine Code-Änderung.
+Fix: Sidebar-Logo beim Einklappen nicht verzerren
 
-## Vorgeschlagene Zuordnung
+Problem: Das Logo-Icon in `SidebarHeader` ist mit `h-9 w-9` (36px) fest skaliert. Die eingeklappte Sidebar ist nur 3rem (48px) breit; mit `px-2` (16px Padding) bleiben nur 32px. Dadurch wird das Icon gestaucht/verzerrt.
 
-| Bewerber | Notiz-Hinweis | Eintrag |
-|---|---|---|
-| Markus Oldach Peters | „Sofort startbereit“ | Ab sofort |
-| Denise Sabrowski | „schnell einsatzbereit“ | Ab sofort |
-| Beate Gräßer | „sofort einsetzbar“ | Ab sofort (bereits gesetzt) |
-| Theresa Schlefsky | „sofort einstellbar“ | Ab sofort |
-| Erij Aghabra | „sofort startbereit“ | Ab sofort (bereits gesetzt) |
-| Patrick Ulmer | „sofort einsatzbereit“ | Ab sofort |
-| Wolfgang Klar | „sofort einsetzbar“ | Ab sofort |
-| Tina Braun | „sofort einsatzbereit“ | Ab sofort |
-| Andreas Dedio | „Start 01.09“ | 01.09.2026 (bereits gesetzt) |
-| Alessandra Fraunholz | „erst zum 01.09“ | 01.09.2026 |
-| Maria Nothaft | „start erst September“ | 01.09.2026 |
-| Julia Rogge | „ab September“ | 01.09.2026 |
-| Michaela Lechter | „Ab 11.08“ | 11.08.2026 |
-| Ralf Weber | „Ab 07.08“ | 07.08.2026 |
-| Luise Radtke | „erst im Oktober“ | 01.10.2026 |
-| Marijana Heel | bis September nur Minijob, danach 25–35h | Ab sofort (Minijob-Start sofort möglich) |
-| Chantal Röder | 4 Wochen Kündigungsfrist, kein festes Datum | kein Startdatum |
-| Cornelia Sujatta | Notiz „2x mb“ ohne Info | kein Startdatum |
-| Stefanie Test | Testeintrag | kein Startdatum |
+Schritte:
+1. In `src/components/superadmin/AppSidebar.tsx` und `src/components/mitarbeiter/AppSidebar.tsx` den Header-Container anpassen:
+   - `justify-center` statt `items-center gap-2.5`, wenn eingeklappt (`collapsed`).
+2. Logo-Icon bedingt kleiner skalieren:
+   - Eingeklappt: `h-7 w-7` (28px) oder `h-8 w-8` (32px).
+   - Ausgeklappt: unverändert `h-9 w-9`.
+3. Überlappung/Komprimierung in der eingeklappten Sidebar verhindern (z.B. kein horizontaler Padding-Overflow).
+4. Preview prüfen: Sidebar ein- und ausklappen, Logo bleibt proportional und nicht verzerrt.
 
-Unklare Monatsangaben („September“, „Oktober“) werden auf den Monatsersten gesetzt.
-
-## Umsetzung
-Ein einzelnes UPDATE-Statement pro Gruppe über die Termin-IDs — „Ab sofort“ setzt `start_asap = true`, konkrete Daten setzen `start_date`.
+Betroffene Dateien:
+- `src/components/superadmin/AppSidebar.tsx`
+- `src/components/mitarbeiter/AppSidebar.tsx`
