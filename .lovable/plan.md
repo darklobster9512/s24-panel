@@ -1,16 +1,6 @@
-Fix: Sidebar-Logo beim Einklappen nicht verzerren
+## Fix für das verzerrte Sidebar-Icon
 
-Problem: Das Logo-Icon in `SidebarHeader` ist mit `h-9 w-9` (36px) fest skaliert. Die eingeklappte Sidebar ist nur 3rem (48px) breit; mit `px-2` (16px Padding) bleiben nur 32px. Dadurch wird das Icon gestaucht/verzerrt.
-
-Schritte:
-1. In `src/components/superadmin/AppSidebar.tsx` und `src/components/mitarbeiter/AppSidebar.tsx` den Header-Container anpassen:
-   - `justify-center` statt `items-center gap-2.5`, wenn eingeklappt (`collapsed`).
-2. Logo-Icon bedingt kleiner skalieren:
-   - Eingeklappt: `h-7 w-7` (28px) oder `h-8 w-8` (32px).
-   - Ausgeklappt: unverändert `h-9 w-9`.
-3. Überlappung/Komprimierung in der eingeklappten Sidebar verhindern (z.B. kein horizontaler Padding-Overflow).
-4. Preview prüfen: Sidebar ein- und ausklappen, Logo bleibt proportional und nicht verzerrt.
-
-Betroffene Dateien:
-- `src/components/superadmin/AppSidebar.tsx`
-- `src/components/mitarbeiter/AppSidebar.tsx`
+- Das Logo in der Superadmin- und Mitarbeiter-Sidebar erhält einen festen quadratischen Wrapper, der beim Collapsen nicht schrumpfen oder gestreckt werden kann.
+- Das Bild selbst wird mit fester Maximalgröße sowie `object-contain` und `aspect-square` proportional dargestellt; Breite und Höhe werden nicht mehr unabhängig durch das Sidebar-Layout beeinflusst.
+- Überschüssiger Header-Inhalt wird sauber ausgeblendet und das Icon im 48px breiten Mini-Sidebar-Modus exakt zentriert.
+- Anschließend wird der Collapse-Zustand im laufenden Preview visuell geprüft, damit das Icon tatsächlich unverzerrt bleibt.
