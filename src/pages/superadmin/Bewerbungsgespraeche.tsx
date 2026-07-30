@@ -330,13 +330,14 @@ export default function Bewerbungsgespraeche() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_140px_130px_150px_170px_120px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1fr_1fr_140px_130px_150px_130px_170px_120px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
               <span>E-Mail</span>
               <span>Telefon</span>
               <span>Anstellung</span>
               <span>Ranking</span>
+              <span>Startdatum</span>
               <span>Status</span>
               <span className="text-right">Aktionen</span>
             </div>
