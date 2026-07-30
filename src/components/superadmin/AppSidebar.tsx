@@ -180,9 +180,15 @@ export function SuperadminSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
-      <SidebarHeader>
-        <div className={cn("flex items-center px-2 py-3", collapsed ? "justify-center" : "gap-2.5")}>
-          <img src="/logo-icon.png" alt="Sekretariat24" className={cn("shrink-0 rounded-xl", collapsed ? "h-7 w-7" : "h-9 w-9")} />
+      <SidebarHeader className="overflow-hidden">
+        <div className={cn("flex items-center py-3", collapsed ? "justify-center px-0" : "gap-2.5 px-2")}>
+          <div className={cn("flex shrink-0 items-center justify-center", collapsed ? "h-7 w-7" : "h-9 w-9")}>
+            <img
+              src="/logo-icon.png"
+              alt="Sekretariat24"
+              className="block h-full w-full object-contain"
+            />
+          </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">
