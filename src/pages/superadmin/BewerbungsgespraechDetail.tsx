@@ -270,6 +270,46 @@ export default function BewerbungsgespraechDetail() {
     });
   }
 
+  async function saveStartDate() {
+    if (!row) return;
+    let startDate: string | null = null;
+    if (!startAsap) {
+      const trimmed = startInput.trim();
+      if (trimmed) {
+        startDate = parseGermanDate(trimmed);
+        if (!startDate) {
+          toast.error("Ungültiges Datum – bitte Format TT.MM.JJJJ verwenden");
+          return;
+        }
+      }
+    }
+    setSavingStart(true);
+    const { error } = await (supabase as any)
+      .from("interview_appointments")
+      .update({ start_date: startDate, start_asap: startAsap })
+      .eq("id", row.id);
+    setSavingStart(false);
+    if (error) {
+      toast.error("Startdatum konnte nicht gespeichert werden");
+      return;
+    }
+    setRow({ ...row, start_date: startDate, start_asap: startAsap });
+    setStartInput(isoToGerman(startDate));
+    toast.success("Startdatum gespeichert");
+    void logActivity({
+      action: "Startdatum geändert",
+      entityType: "interview_appointment",
+      entityId: row.id,
+      details: {
+        subject: row.applications
+          ? `${row.applications.vorname} ${row.applications.nachname}`
+          : undefined,
+        to: startAsap ? "Ab sofort" : startDate ? isoToGerman(startDate) : "—",
+      },
+    });
+  }
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
