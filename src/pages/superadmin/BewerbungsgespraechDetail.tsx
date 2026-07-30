@@ -137,6 +137,35 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/** "01.08.2026" | "1.8.26" | "2026-08-01" -> "2026-08-01" oder null */
+function parseGermanDate(input: string): string | null {
+  const s = input.trim();
+  if (!s) return null;
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  let y: number, m: number, d: number;
+  if (iso) {
+    y = +iso[1];
+    m = +iso[2];
+    d = +iso[3];
+  } else {
+    const de = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+    if (!de) return null;
+    d = +de[1];
+    m = +de[2];
+    y = +de[3];
+    if (y < 100) y += 2000;
+  }
+  const dt = new Date(y, m - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+function isoToGerman(iso: string | null | undefined) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default function BewerbungsgespraechDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -145,6 +174,10 @@ export default function BewerbungsgespraechDetail() {
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [cvUrl, setCvUrl] = useState<string | null>(null);
+  const [startInput, setStartInput] = useState("");
+  const [startAsap, setStartAsap] = useState(false);
+  const [savingStart, setSavingStart] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,7 +186,7 @@ export default function BewerbungsgespraechDetail() {
       const { data, error } = await (supabase as any)
         .from("interview_appointments")
         .select(
-          "id, application_id, appointment_date, appointment_time, status, notes, booked_at, applications(id, vorname, nachname, email, handynummer, geburtsdatum, staatsangehoerigkeit, anstellung, status, ranking, created_at, lebenslauf_path, lebenslauf_filename, lebenslauf_mime)",
+          "id, application_id, appointment_date, appointment_time, status, notes, start_date, start_asap, booked_at, applications(id, vorname, nachname, email, handynummer, geburtsdatum, staatsangehoerigkeit, anstellung, status, ranking, created_at, lebenslauf_path, lebenslauf_filename, lebenslauf_mime)",
         )
         .eq("id", id)
         .maybeSingle();
@@ -165,7 +198,10 @@ export default function BewerbungsgespraechDetail() {
       const d = (data as Detail) ?? null;
       setRow(d);
       setNotes(d?.notes ?? "");
+      setStartInput(isoToGerman(d?.start_date));
+      setStartAsap(Boolean(d?.start_asap));
       setLoading(false);
+
 
       const path = d?.applications?.lebenslauf_path;
       if (path) {
