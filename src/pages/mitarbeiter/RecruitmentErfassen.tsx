@@ -345,27 +345,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         </DialogContent>
       </Dialog>
 
-      <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Erinnerung senden</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            rows={6}
-            value={reminderText}
-            onChange={(e) => setReminderText(e.target.value)}
-            placeholder="SMS-Text der Erinnerung…"
-          />
-          <Button onClick={sendReminder} disabled={busy === "reminder"} className="gap-2">
-            {busy === "reminder" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <BellRing className="h-4 w-4" />
-            )}
-            Senden
-          </Button>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
