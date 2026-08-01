@@ -104,7 +104,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   async function sendPanelLink() {
     setBusy("panel");
     try {
-      await callerApi("send_panel_link", { interview_id: interviewId });
+      await callerApi("send_panel_link", { appointment_id: interviewId });
       toast.success("Panel-Link gesendet");
     } catch (e) {
       toast.error((e as Error).message);
@@ -113,13 +113,27 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
+  /** Holt den Standard-Erinnerungstext der API und öffnet den Dialog. */
+  async function openReminder() {
+    setReminderOpen(true);
+    if (reminderText.trim()) return;
+    try {
+      const preview = await callerApi<any>("send_reminder", {
+        appointment_id: interviewId,
+        preview: true,
+      });
+      if (preview?.message) setReminderText(String(preview.message));
+    } catch {
+      /* Vorschlag optional */
+    }
+  }
+
   async function sendReminder() {
+    const text = reminderText.trim();
+    if (!text) return toast.error("Bitte einen SMS-Text eingeben.");
     setBusy("reminder");
     try {
-      await callerApi("send_reminder", {
-        interview_id: interviewId,
-        ...(reminderText.trim() ? { message: reminderText.trim() } : {}),
-      });
+      await callerApi("send_reminder", { appointment_id: interviewId, text });
       toast.success("Erinnerung gesendet");
       setReminderOpen(false);
     } catch (e) {
@@ -136,9 +150,9 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     setSaving(true);
     try {
       await callerApi("set_status", {
-        interview_id: interviewId,
+        appointment_id: interviewId,
         status: outcome,
-        notes: note.trim() || null,
+        note: note.trim(),
       });
       toast.success("Ergebnis gespeichert");
       navigate("/mitarbeiter/bewerbungsgespraeche");
@@ -148,6 +162,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       setSaving(false);
     }
   }
+
 
   const iv = interview.data;
 
