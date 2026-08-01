@@ -1,22 +1,40 @@
-## Problem
+## Diagnose (verifiziert)
 
-Die Sidebar rendert sofort `Live-Anrufe` als Default, weil `useOutboundProfile()` beim Login noch lädt (`data === undefined`). Erst wenn die Supabase-Abfrage zurückkommt, wird auf `Bewerbungsgespräche` umgeschaltet — das erzeugt das sichtbare Umspringen.
+Der Proxy funktioniert (HTTP 200, `meta` liefert Branding „for.tel Solutions GmbH“, Slot 1). Das Problem sind **falsche Parameternamen** — unser Client spricht ein anderes Protokoll als die echte `caller-api` im Referenzprojekt:
 
-## Lösung
+| Aktion | Wir senden | `caller-api` erwartet |
+|---|---|---|
+| `list_interviews` | `scope`, `limit`, `offset` | `view` (`default` \| `past` \| `future`), `page`, `search` |
+| `set_status` | `interview_id`, `notes` | `appointment_id`, `note` |
+| `send_panel_link` | `interview_id` | `appointment_id` |
+| `send_reminder` | `interview_id`, `message` | `appointment_id`, `text` (bzw. `preview: true` für Textvorschlag) |
+| `resend_success_email` | – | `appointment_id` |
 
-**1. Profil-Modus persistent cachen (`src/hooks/use-outbound-profile.ts`)**
-- Nach erfolgreichem Query das Ergebnis pro User in `localStorage` schreiben (Key: `outbound-profile:<userId>`).
-- Diesen Wert beim Mount als `initialData` (mit `initialDataUpdatedAt`) an React Query geben, damit beim erneuten Login/Reload sofort der korrekte Modus steht und im Hintergrund revalidiert wird.
-- `staleTime` beibehalten, damit Navigationswechsel keinen Refetch auslösen.
+Da `scope` unbekannt ist, fällt die API auf `view = "default"` zurück — das liefert nur Termine von **heute (ab jetzt −3 h) und morgen**. Deshalb kam `{"items":[],"total":0}`.
 
-**2. Kein falscher Default beim allererster Laden (`src/components/mitarbeiter/AppSidebar.tsx`)**
-- `isLoading`/`isPending` aus dem Hook mitnehmen.
-- Solange noch kein Wert (weder Cache noch Response) vorliegt: an dieser Stelle einen dezenten Skeleton-Menüeintrag rendern statt `Live-Anrufe`. So gibt es nie einen sichtbaren Wechsel zwischen zwei echten Reitern.
+Zusätzlich: `view=future` bedeutet upstream „ab übermorgen“, `past` = älter als heute−3 h, `default` = heute+morgen. Für „anstehend“ müssen also `default` + `future` zusammengeführt werden.
 
-**3. Gleiches Verhalten für abhängige Routen**
-- Prüfen, dass `/mitarbeiter/erfassen` und die Route-Weiche für `Bewerbungsgespräche` denselben Hook-Zustand nutzen und beim Laden nicht kurzzeitig die Inbound-Variante rendern (ansonsten dort ebenfalls Skeleton statt Default).
+## Umsetzung
+
+**1. `src/pages/mitarbeiter/Bewerbungsgespraeche.tsx`**
+- Tabs auf die echte API-Semantik umstellen: **Anstehend** (lädt `default` + `future` und führt sie chronologisch zusammen), **Vergangen** (`past`).
+- Statt `limit/offset` die `page`-Paginierung der API nutzen; `total`/`page_size` aus der Antwort für die Blätter-Steuerung verwenden.
+- Suchfeld an den `search`-Parameter der API durchreichen (serverseitige Suche statt lokaler Filterung).
+- Weiterhin 5-Minuten-Polling + manueller Refresh.
+
+**2. `src/hooks/use-caller-api.ts`**
+- `normalizeInterview` an das reale Antwortformat anpassen: `first_name`/`last_name`, `phone`, `email`, `employment_type`, `appointment_date`/`appointment_time`, `status`, `slot`/`slot_total`, `reminder_count`, `probetag_invite_count`, `trial_day`, `notes[]` (Array aus `{status, text, author, created_at}` statt String).
+- Die generische Feld-Rateaufik bleibt als Fallback erhalten.
+
+**3. `src/pages/mitarbeiter/RecruitmentErfassen.tsx`**
+- Alle Aufrufe auf `appointment_id` umstellen.
+- `set_status`: Feld `note` statt `notes`; Pflicht-Notiz bei „fehlgeschlagen“ bereits vorhanden.
+- `send_reminder`: erst `preview: true` aufrufen, um den vorgeschlagenen SMS-Text zu holen und im Dialog vorzubefüllen, dann mit `text` senden.
+- Bisherige Notiz-Anzeige auf das Notiz-Array umstellen.
+
+**4. `supabase/functions/caller-api-proxy/index.ts`**
+- Bleibt ein reiner Durchreicher, aber: Fehlertexte der Upstream-API sauber durchreichen und bei nicht-200 die Antwort loggen (schon vorhanden) — zusätzlich `action` + Statuscode ins Log, damit künftige Protokollabweichungen sofort sichtbar sind.
 
 ## Technische Details
-- Nur Frontend, keine DB-Änderung.
-- localStorage-Cache enthält nur `employeeId`, `outboundRecruitment`, `clientId` — keine sensiblen Daten.
-- Cache wird beim Logout bzw. bei User-Wechsel durch den userId-Key automatisch ungültig.
+- Keine DB-Änderung, kein neuer Secret.
+- Upstream-`PAGE_SIZE` ist serverseitig fix; die UI liest `page_size` aus der Antwort statt es vorzugeben.
