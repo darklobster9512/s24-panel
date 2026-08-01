@@ -34,6 +34,7 @@ import { fmtDauer } from "@/lib/mitarbeiter-mock";
 
 export default function RecruitmentErfassen({ interviewId }: { interviewId: string }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { clients, logoUrls } = useAssignedClients();
   const client = clients[0];
 
