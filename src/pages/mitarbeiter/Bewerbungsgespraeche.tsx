@@ -325,7 +325,9 @@ export default function MitarbeiterBewerbungsgespraeche() {
         )}
 
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Seite {page + 1}</span>
+          <span>
+            Seite {page + 1} · {total} {total === 1 ? "Termin" : "Termine"}
+          </span>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -338,7 +340,7 @@ export default function MitarbeiterBewerbungsgespraeche() {
             <Button
               size="sm"
               variant="outline"
-              disabled={(query.data?.length ?? 0) < PAGE_SIZE || query.isFetching}
+              disabled={!hasNext || query.isFetching}
               onClick={() => setPage((p) => p + 1)}
             >
               Weiter
