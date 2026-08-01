@@ -46,8 +46,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [scriptUrl, setScriptUrl] = useState<string | null>(null);
-  const [reminderOpen, setReminderOpen] = useState(false);
-  const [reminderText, setReminderText] = useState("");
 
   const interview = useQuery({
     queryKey: ["caller-interview", interviewId],
@@ -113,29 +111,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
-  /** Holt den Standard-Erinnerungstext der API und öffnet den Dialog. */
-  async function openReminder() {
-    setReminderOpen(true);
-    if (reminderText.trim()) return;
+  /** Holt den Standardtext der API und sendet die Erinnerung direkt. */
+  async function sendReminder() {
+    setBusy("reminder");
     try {
       const preview = await callerApi<any>("send_reminder", {
         appointment_id: interviewId,
         preview: true,
       });
-      if (preview?.message) setReminderText(String(preview.message));
-    } catch {
-      /* Vorschlag optional */
-    }
-  }
-
-  async function sendReminder() {
-    const text = reminderText.trim();
-    if (!text) return toast.error("Bitte einen SMS-Text eingeben.");
-    setBusy("reminder");
-    try {
+      const text = String(preview?.message ?? "").trim();
+      if (!text) throw new Error("Kein Erinnerungstext von der API erhalten.");
       await callerApi("send_reminder", { appointment_id: interviewId, text });
       toast.success("Erinnerung gesendet");
-      setReminderOpen(false);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -291,9 +278,15 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                 <Button
                   variant="outline"
                   className="gap-2"
-                  onClick={openReminder}
+                  onClick={sendReminder}
+                  disabled={busy === "reminder"}
                 >
-                  <BellRing className="h-4 w-4" /> Erinnerung senden
+                  {busy === "reminder" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <BellRing className="h-4 w-4" />
+                  )}{" "}
+                  Erinnerung senden
                 </Button>
               </div>
 
@@ -345,27 +338,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         </DialogContent>
       </Dialog>
 
-      <Dialog open={reminderOpen} onOpenChange={setReminderOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Erinnerung senden</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            rows={6}
-            value={reminderText}
-            onChange={(e) => setReminderText(e.target.value)}
-            placeholder="SMS-Text der Erinnerung…"
-          />
-          <Button onClick={sendReminder} disabled={busy === "reminder"} className="gap-2">
-            {busy === "reminder" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <BellRing className="h-4 w-4" />
-            )}
-            Senden
-          </Button>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
