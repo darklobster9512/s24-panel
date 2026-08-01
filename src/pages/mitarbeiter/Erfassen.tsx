@@ -269,6 +269,8 @@ function StandardErfassen() {
         if (ccErr) console.warn("caller_contacts upsert failed", ccErr);
       }
 
+      qc.invalidateQueries({ queryKey: ["stat-data"] });
+      qc.invalidateQueries({ queryKey: ["mitarbeiter-notes"] });
       toast.success(closeAfter ? "Anruf gespeichert." : "Anruf gespeichert — neuer Anruf.");
       if (closeAfter) {
         navigate("/mitarbeiter/notizen");
