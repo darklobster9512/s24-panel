@@ -291,7 +291,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                 <Button
                   variant="outline"
                   className="gap-2"
-                  onClick={() => setReminderOpen(true)}
+                  onClick={openReminder}
                 >
                   <BellRing className="h-4 w-4" /> Erinnerung senden
                 </Button>
