@@ -215,6 +215,8 @@ function normalize(values: FormValues, isDraft: boolean) {
   // Remove non-column fields
   delete out.assign_contract;
   delete out.contract_template_id;
+  out.outbound_recruitment = !!values.outbound_recruitment;
+  if (!out.outbound_recruitment) out.caller_api_key = null;
   for (const key of NULLABLE_STRINGS) {
     const v = out[key];
     if (typeof v === "string" && v.trim() === "") out[key] = null;
