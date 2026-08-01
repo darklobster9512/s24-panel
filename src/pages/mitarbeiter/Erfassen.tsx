@@ -20,6 +20,7 @@ import { useAssignedClients } from "@/hooks/use-assigned-clients";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDauer } from "@/lib/mitarbeiter-mock";
+import RecruitmentErfassen from "./RecruitmentErfassen";
 
 const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"] as const;
 
@@ -33,6 +34,13 @@ function normalizePhone(v?: string | null): string {
 }
 
 export default function Erfassen() {
+  const [searchParams] = useSearchParams();
+  const interviewId = searchParams.get("interview");
+  if (interviewId) return <RecruitmentErfassen interviewId={interviewId} />;
+  return <StandardErfassen />;
+}
+
+function StandardErfassen() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const { clients, byId, logoUrls } = useAssignedClients();
