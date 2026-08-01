@@ -11,6 +11,7 @@ import {
   User,
   Headphones,
   FileSignature,
+  CalendarClock,
 } from "lucide-react";
 
 import {
@@ -27,13 +28,20 @@ import {
 } from "@/components/ui/sidebar";
 import { SidebarUserFooter } from "@/components/SidebarUserFooter";
 import { useMyContract } from "@/hooks/use-my-contract";
+import { useOutboundProfile } from "@/hooks/use-outbound-profile";
 
-const workItems = [
+const workItemsBase = [
   { title: "Cockpit", url: "/mitarbeiter", icon: LayoutDashboard, end: true },
   { title: "Meine Kunden", url: "/mitarbeiter/kunden", icon: Building2 },
-  { title: "Live-Anrufe", url: "/mitarbeiter/live", icon: Radio },
-  { title: "Anruf erfassen", url: "/mitarbeiter/erfassen", icon: PhoneCall },
 ];
+
+const liveItem = { title: "Live-Anrufe", url: "/mitarbeiter/live", icon: Radio };
+const interviewItem = {
+  title: "Bewerbungsgespräche",
+  url: "/mitarbeiter/bewerbungsgespraeche",
+  icon: CalendarClock,
+};
+const erfassenItem = { title: "Anruf erfassen", url: "/mitarbeiter/erfassen", icon: PhoneCall };
 
 const docItems = [
   { title: "Notizen", url: "/mitarbeiter/notizen", icon: StickyNote },
@@ -49,6 +57,13 @@ export function MitarbeiterSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { data: contract } = useMyContract();
+  const { data: outbound } = useOutboundProfile();
+
+  const workItems = [
+    ...workItemsBase,
+    outbound?.outboundRecruitment ? interviewItem : liveItem,
+    erfassenItem,
+  ];
 
   const meItems = [
     ...(contract && contract.status !== "completed"
