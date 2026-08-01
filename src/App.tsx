@@ -44,6 +44,7 @@ import MitarbeiterKundeDetail from "./pages/mitarbeiter/KundeDetail";
 import MitarbeiterLive from "./pages/mitarbeiter/LiveAnrufe";
 import MitarbeiterErfassen from "./pages/mitarbeiter/Erfassen";
 import MitarbeiterNotizen from "./pages/mitarbeiter/Notizen";
+import MitarbeiterBewerbungsgespraeche from "./pages/mitarbeiter/Bewerbungsgespraeche";
 
 import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
 import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
