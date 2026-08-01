@@ -185,8 +185,8 @@ export default function MitarbeiterBewerbungsgespraeche() {
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Button
             size="sm"
-            variant={view === "future" ? "default" : "outline"}
-            onClick={() => setView("future")}
+            variant={view === "upcoming" ? "default" : "outline"}
+            onClick={() => setView("upcoming")}
           >
             Anstehend
           </Button>
