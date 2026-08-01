@@ -113,29 +113,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
-  /** Holt den Standard-Erinnerungstext der API und öffnet den Dialog. */
-  async function openReminder() {
-    setReminderOpen(true);
-    if (reminderText.trim()) return;
+  /** Holt den Standardtext der API und sendet die Erinnerung direkt. */
+  async function sendReminder() {
+    setBusy("reminder");
     try {
       const preview = await callerApi<any>("send_reminder", {
         appointment_id: interviewId,
         preview: true,
       });
-      if (preview?.message) setReminderText(String(preview.message));
-    } catch {
-      /* Vorschlag optional */
-    }
-  }
-
-  async function sendReminder() {
-    const text = reminderText.trim();
-    if (!text) return toast.error("Bitte einen SMS-Text eingeben.");
-    setBusy("reminder");
-    try {
+      const text = String(preview?.message ?? "").trim();
+      if (!text) throw new Error("Kein Erinnerungstext von der API erhalten.");
       await callerApi("send_reminder", { appointment_id: interviewId, text });
       toast.success("Erinnerung gesendet");
-      setReminderOpen(false);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
