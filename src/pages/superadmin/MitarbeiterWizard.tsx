@@ -52,6 +52,8 @@ const draftSchema = z.object({
   login_local_part: z.string().trim().max(64).optional().or(z.literal("")),
   password_plain: z.string().trim().max(128).optional().or(z.literal("")),
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
+  outbound_recruitment: z.boolean().optional(),
+  caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
   contract_type: z.enum(["vollzeit", "teilzeit"]).optional().or(z.literal("")),
   start_date: z.string().optional().or(z.literal("")),
   salary: z.string().optional().or(z.literal("")),
@@ -84,6 +86,8 @@ const fullSchema = z.object({
     .regex(LOCAL_RE, "Nur Buchstaben, Zahlen, . _ -"),
   password_plain: z.string().trim().min(6, "Mind. 6 Zeichen").max(128),
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
+  outbound_recruitment: z.boolean().optional(),
+  caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
   contract_type: z.enum(["vollzeit", "teilzeit"], {
     errorMap: () => ({ message: "Bitte wählen" }),
   }),
@@ -121,6 +125,8 @@ const STEPS: StepDef[] = [
       "login_local_part",
       "password_plain",
       "sipgate_user_id",
+      "outbound_recruitment",
+      "caller_api_key",
       "contract_type",
       "start_date",
       "salary",
@@ -154,6 +160,8 @@ const DEFAULTS: FormValues = {
   login_local_part: "",
   password_plain: "",
   sipgate_user_id: "",
+  outbound_recruitment: false,
+  caller_api_key: "",
   contract_type: "" as FormValues["contract_type"],
   start_date: "",
   salary: "",
@@ -179,6 +187,7 @@ const NULLABLE_STRINGS: Field[] = [
   "login_local_part",
   "password_plain",
   "sipgate_user_id",
+  "caller_api_key",
   "birth_place",
   "nationality",
   "marital_status",
@@ -298,6 +307,8 @@ export default function MitarbeiterWizard({
         login_local_part: d.login_local_part ?? "",
         password_plain: d.password_plain ?? "",
         sipgate_user_id: (d as { sipgate_user_id?: string | null }).sipgate_user_id ?? "",
+        outbound_recruitment: !!(d as { outbound_recruitment?: boolean | null }).outbound_recruitment,
+        caller_api_key: (d as { caller_api_key?: string | null }).caller_api_key ?? "",
         contract_type: (d.contract_type as "vollzeit" | "teilzeit") ?? "",
         start_date: d.start_date ?? "",
         salary: d.salary != null ? String(d.salary) : "",
@@ -927,7 +938,51 @@ function StepAccount({
         className="md:col-span-2"
       />
 
+      <OutboundRecruitmentField form={form} />
+
       <ContractAssignField form={form} templates={templates} />
+    </div>
+  );
+}
+
+function OutboundRecruitmentField({ form }: { form: FR }) {
+  const active = !!form.watch("outbound_recruitment");
+  return (
+    <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <FormField
+        control={form.control}
+        name="outbound_recruitment"
+        render={({ field }) => (
+          <FormItem className="flex items-start gap-3 space-y-0">
+            <FormControl>
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+              />
+            </FormControl>
+            <div className="min-w-0">
+              <FormLabel className="cursor-pointer text-sm font-medium">
+                Outbound Recruitment aktivieren
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Der Mitarbeiter sieht statt der Live-Anrufe die Bewerbungsgespräche
+                seines zugewiesenen Recruiting-Kunden.
+              </p>
+            </div>
+          </FormItem>
+        )}
+      />
+
+      {active && (
+        <TextField
+          form={form}
+          name="caller_api_key"
+          label="Caller API Key"
+          placeholder="z. B. clk_live_…"
+        />
+      )}
     </div>
   );
 }
