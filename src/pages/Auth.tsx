@@ -9,11 +9,17 @@ import {
   ShieldCheck,
   Loader2,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  supabase,
+  getRememberMe,
+  setRememberMe,
+} from "@/integrations/supabase/client";
 import { useAuth, roleHome } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -148,11 +154,13 @@ function FormPanel() {
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(() => getRememberMe());
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setRememberMe(remember);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -191,6 +199,21 @@ function LoginForm() {
           placeholder="••••••••"
         />
       </div>
+
+      <div className="flex items-center gap-2 pt-1">
+        <Checkbox
+          id="remember-me"
+          checked={remember}
+          onCheckedChange={(v) => setRemember(v === true)}
+        />
+        <Label
+          htmlFor="remember-me"
+          className="cursor-pointer text-sm font-normal text-muted-foreground"
+        >
+          Angemeldet bleiben
+        </Label>
+      </div>
+
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -198,6 +221,19 @@ function LoginForm() {
           "Anmelden"
         )}
       </Button>
+
+      <Separator className="!mt-8" />
+
+      <p className="text-center text-xs text-muted-foreground">
+        Probleme beim Anmelden?{" "}
+        <a
+          href="mailto:info@sekretariat-24.de"
+          className="font-medium text-primary hover:underline"
+        >
+          info@sekretariat-24.de
+        </a>
+      </p>
     </form>
   );
 }
+
