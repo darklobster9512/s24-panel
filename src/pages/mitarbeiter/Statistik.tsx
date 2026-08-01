@@ -288,9 +288,9 @@ export default function Statistik() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Anrufe"
+          label={isOutbound ? "Gespräche" : "Anrufe"}
           value={loading ? "…" : String(kpis.totalCalls)}
           delta={kpis.callDelta}
           icon={<PhoneCall className="h-4 w-4" />}
@@ -300,6 +300,11 @@ export default function Statistik() {
           value={loading ? "…" : fmtDauer(kpis.avg)}
           delta={kpis.avgDelta}
           icon={<Clock className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Gesamtzeit im Gespräch"
+          value={loading ? "…" : fmtGesamt(kpis.totalSec)}
+          icon={<Timer className="h-4 w-4" />}
         />
         <StatCard
           label="Notizen"
@@ -316,7 +321,10 @@ export default function Statistik() {
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Panel title={tf === "Quartal" ? "Anrufe pro Woche" : "Anrufe pro Tag"}>
+        <Panel
+          title={`${isOutbound ? "Erfasste Gespräche" : "Anrufe"} pro ${tf === "Quartal" ? "Woche" : "Tag"}`}
+        >
+
           <div className="h-64">
             {daily.length === 0 || daily.every((d) => d.calls === 0) ? (
               <EmptyChart />
