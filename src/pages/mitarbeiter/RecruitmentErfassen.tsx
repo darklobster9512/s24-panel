@@ -51,11 +51,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
   const interview = useQuery({
     queryKey: ["caller-interview", interviewId],
-    queryFn: async () => {
-      const data = await callerApi<any>("list_interviews", { interview_id: interviewId });
-      const list = extractList(data).map(normalizeInterview);
-      return list.find((r) => r.id === interviewId) ?? list[0] ?? null;
-    },
+    queryFn: () => findInterviewById(interviewId),
   });
 
   const clientRow = useQuery({
