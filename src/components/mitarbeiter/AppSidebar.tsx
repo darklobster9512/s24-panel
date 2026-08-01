@@ -57,11 +57,12 @@ export function MitarbeiterSidebar() {
   const collapsed = state === "collapsed";
   const { pathname } = useLocation();
   const { data: contract } = useMyContract();
-  const { data: outbound } = useOutboundProfile();
+  const { data: outbound, isPending: outboundPending } = useOutboundProfile();
 
   const workItems = [
     ...workItemsBase,
-    outbound?.outboundRecruitment ? interviewItem : liveItem,
+    // Erst rendern, wenn der Modus bekannt ist (Cache oder Response) -> kein Umspringen
+    ...(outboundPending ? [] : [outbound?.outboundRecruitment ? interviewItem : liveItem]),
     erfassenItem,
   ];
 
