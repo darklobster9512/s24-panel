@@ -54,6 +54,7 @@ function StandardErfassen() {
   const [start, setStart] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
   const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
 
   const [anruferName, setAnruferName] = useState("");
   const [anruferNummer, setAnruferNummer] = useState("");
