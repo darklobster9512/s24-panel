@@ -39,6 +39,13 @@ function fmtDauer(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function fmtGesamt(sec: number) {
+  if (!sec || sec < 0) return "0m";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 function dayKey(d: Date) {
   return d.toISOString().slice(0, 10);
 }
