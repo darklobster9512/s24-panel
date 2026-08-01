@@ -1,17 +1,21 @@
-import { useMemo, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import { PageHeader, Panel, StatCard } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, Clock, StickyNote } from "lucide-react";
+import { PhoneCall, Clock, StickyNote, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 const TIMEFRAMES = ["Woche", "Monat", "Quartal"] as const;
 type TF = (typeof TIMEFRAMES)[number];
+
+/** Normalisierter Gesprächs-Datensatz, unabhängig von der Quelle. */
+type CallEntry = { at: number; durationSec: number; client_id: string | null };
+
 
 const KAT_COLORS: Record<string, string> = {
   Rückruf: "hsl(var(--primary))",
