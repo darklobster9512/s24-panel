@@ -49,8 +49,16 @@ export async function callerApi<T = any>(
   return data as T;
 }
 
+export type InterviewNote = {
+  status: "erfolgreich" | "fehlgeschlagen" | string;
+  text: string;
+  author: string | null;
+  created_at: string | null;
+};
+
 export type RecruitmentInterview = {
   id: string;
+  applicationId: string | null;
   date: string | null;
   time: string | null;
   name: string;
@@ -58,7 +66,12 @@ export type RecruitmentInterview = {
   email: string | null;
   employment: string | null;
   status: string | null;
-  notes: string | null;
+  slot: number | null;
+  slotTotal: number | null;
+  reminderCount: number;
+  probetagInviteCount: number;
+  trialDay: Record<string, any> | null;
+  notes: InterviewNote[];
   raw: Record<string, any>;
 };
 
@@ -70,14 +83,14 @@ function pick(o: Record<string, any>, keys: string[]): any {
   return null;
 }
 
-/** Normalisiert die Antwort der externen API auf ein stabiles Format. */
+/** Normalisiert die Antwort der externen Caller-API auf ein stabiles Format. */
 export function normalizeInterview(item: Record<string, any>): RecruitmentInterview {
-  const first = pick(item, ["vorname", "first_name", "firstName"]);
-  const last = pick(item, ["nachname", "last_name", "lastName"]);
+  const first = pick(item, ["first_name", "vorname", "firstName"]);
+  const last = pick(item, ["last_name", "nachname", "lastName"]);
   const name =
-    pick(item, ["name", "full_name", "fullName", "applicant_name"]) ??
-    [first, last].filter(Boolean).join(" ") ??
-    "";
+    [first, last].filter(Boolean).join(" ").trim() ||
+    pick(item, ["name", "full_name", "fullName", "applicant_name"]) ||
+    "Unbekannt";
 
   let date = pick(item, ["appointment_date", "date", "termin_datum", "scheduled_date"]);
   let time = pick(item, ["appointment_time", "time", "termin_zeit", "scheduled_time"]);
@@ -90,25 +103,112 @@ export function normalizeInterview(item: Record<string, any>): RecruitmentInterv
     }
   }
 
+  const rawNotes = Array.isArray(item.notes) ? item.notes : [];
+  const notes: InterviewNote[] = rawNotes
+    .filter((n: any) => n && typeof n === "object")
+    .map((n: any) => ({
+      status: String(n.status ?? ""),
+      text: String(n.text ?? ""),
+      author: n.author ?? null,
+      created_at: n.created_at ?? null,
+    }));
+
   return {
     id: String(pick(item, ["id", "interview_id", "uuid"]) ?? crypto.randomUUID()),
+    applicationId: pick(item, ["application_id"]),
     date: date ? String(date).slice(0, 10) : null,
     time: time ? String(time).slice(0, 5) : null,
-    name: String(name || "Unbekannt").trim(),
+    name: String(name).trim(),
     phone: pick(item, ["phone", "handynummer", "telefon", "phone_number", "mobile"]),
     email: pick(item, ["email", "e_mail", "mail"]),
-    employment: pick(item, ["anstellung", "employment", "employment_type", "position"]),
+    employment: pick(item, ["employment_type", "anstellung", "employment", "position"]),
     status: pick(item, ["status", "state"]),
-    notes: pick(item, ["notes", "notiz", "note"]),
+    slot: typeof item.slot === "number" ? item.slot : null,
+    slotTotal: typeof item.slot_total === "number" ? item.slot_total : null,
+    reminderCount: Number(item.reminder_count ?? 0),
+    probetagInviteCount: Number(item.probetag_invite_count ?? 0),
+    trialDay: item.trial_day ?? null,
+    notes,
     raw: item,
   };
 }
 
 export function extractList(data: any): Record<string, any>[] {
   if (Array.isArray(data)) return data;
-  for (const key of ["interviews", "items", "data", "results", "rows", "appointments"]) {
+  for (const key of ["items", "interviews", "data", "results", "rows", "appointments"]) {
     const v = data?.[key];
     if (Array.isArray(v)) return v;
   }
   return [];
+}
+
+export type InterviewView = "default" | "past" | "future";
+
+export type InterviewPage = {
+  items: RecruitmentInterview[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/** Ruft eine Seite der Terminliste ab (Protokoll der externen caller-api). */
+export async function listInterviews(
+  view: InterviewView,
+  page = 0,
+  search = "",
+): Promise<InterviewPage> {
+  const data = await callerApi<any>("list_interviews", {
+    view,
+    page,
+    ...(search ? { search } : {}),
+  });
+  return {
+    items: extractList(data).map(normalizeInterview),
+    total: Number(data?.total ?? 0),
+    page: Number(data?.page ?? page),
+    pageSize: Number(data?.page_size ?? 25),
+  };
+}
+
+/**
+ * "Anstehend" = heutige/morgige Termine (view=default) + alles ab übermorgen (view=future).
+ * Die externe API trennt diese beiden Bereiche, deshalb werden sie hier zusammengeführt.
+ */
+export async function listUpcomingInterviews(
+  page = 0,
+  search = "",
+): Promise<InterviewPage> {
+  const [today, later] = await Promise.all([
+    listInterviews("default", page, search),
+    listInterviews("future", page, search),
+  ]);
+
+  const merged = [...today.items, ...later.items].sort((a, b) => {
+    const ka = `${a.date ?? "9999-12-31"} ${a.time ?? "23:59"}`;
+    const kb = `${b.date ?? "9999-12-31"} ${b.time ?? "23:59"}`;
+    return ka.localeCompare(kb);
+  });
+
+  return {
+    items: merged,
+    total: today.total + later.total,
+    page,
+    pageSize: Math.max(today.pageSize, later.pageSize),
+  };
+}
+
+/** Sucht einen Termin über alle Ansichten hinweg anhand seiner ID. */
+export async function findInterviewById(
+  id: string,
+): Promise<RecruitmentInterview | null> {
+  const views: InterviewView[] = ["default", "future", "past"];
+  for (const view of views) {
+    for (let page = 0; page < 5; page++) {
+      const res = await listInterviews(view, page);
+      const hit = res.items.find((r) => r.id === id);
+      if (hit) return hit;
+      if ((page + 1) * res.pageSize >= res.total) break;
+    }
+  }
+  return null;
 }
