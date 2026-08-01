@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Play,
@@ -34,6 +34,7 @@ import { fmtDauer } from "@/lib/mitarbeiter-mock";
 
 export default function RecruitmentErfassen({ interviewId }: { interviewId: string }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { clients, logoUrls } = useAssignedClients();
   const client = clients[0];
 
@@ -130,6 +131,41 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
+  /** Speichert die Notiz lokal in call_notes, damit sie unter /mitarbeiter/notizen erscheint. */
+  async function persistNoteLocally() {
+    if (!client?.id) return;
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) return;
+    const { data: emp } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (!emp?.id) return;
+
+    const iv = interview.data;
+    const text =
+      note.trim() ||
+      (outcome === "erfolgreich"
+        ? "Recruiting-Anruf erfolgreich"
+        : "Recruiting-Anruf fehlgeschlagen");
+
+    const { error } = await supabase.from("call_notes").insert({
+      client_id: client.id,
+      employee_id: emp.id,
+      anrufer_name: iv?.name ?? null,
+      anrufer_nummer: iv?.phone ?? null,
+      anrufer_email: iv?.email ?? null,
+      anliegen: `[${outcome === "erfolgreich" ? "Erfolgreich" : "Fehlgeschlagen"}] ${text}`,
+      kategorie: "Termin",
+      prioritaet: "normal",
+      rueckruf_gewuenscht: false,
+      dauer_sekunden: elapsed,
+    });
+    if (error) throw error;
+  }
+
   async function saveAndClose() {
     if (!outcome) return toast.error("Bitte Ergebnis auswählen.");
     if (outcome === "fehlgeschlagen" && !note.trim())
@@ -141,6 +177,12 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         status: outcome,
         note: note.trim(),
       });
+      try {
+        await persistNoteLocally();
+        qc.invalidateQueries({ queryKey: ["mitarbeiter-notes"] });
+      } catch {
+        toast.warning("Notiz wurde übertragen, konnte aber lokal nicht gespeichert werden.");
+      }
       toast.success("Ergebnis gespeichert");
       navigate("/mitarbeiter/bewerbungsgespraeche");
     } catch (e) {
