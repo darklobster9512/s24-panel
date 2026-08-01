@@ -127,6 +127,7 @@ export default function App() {
                     <Route path="live" element={<MitarbeiterLive />} />
                     <Route path="erfassen" element={<MitarbeiterErfassen />} />
                     <Route path="notizen" element={<MitarbeiterNotizen />} />
+                    <Route path="bewerbungsgespraeche" element={<MitarbeiterBewerbungsgespraeche />} />
                     
                     <Route path="statistik" element={<MitarbeiterStatistik />} />
                     <Route path="profil" element={<MitarbeiterProfil />} />
