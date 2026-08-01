@@ -9,11 +9,17 @@ import {
   ShieldCheck,
   Loader2,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  supabase,
+  getRememberMe,
+  setRememberMe,
+} from "@/integrations/supabase/client";
 import { useAuth, roleHome } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 
 export default function AuthPage() {
   const navigate = useNavigate();
