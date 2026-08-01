@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Play, Square, Save, RotateCcw, PhoneCall, Info, Phone, Mail, Globe, MapPin, User, PhoneForwarded } from "lucide-react";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ function StandardErfassen() {
   const [start, setStart] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
   const [saving, setSaving] = useState(false);
+  const qc = useQueryClient();
 
   const [anruferName, setAnruferName] = useState("");
   const [anruferNummer, setAnruferNummer] = useState("");
@@ -267,6 +269,8 @@ function StandardErfassen() {
         if (ccErr) console.warn("caller_contacts upsert failed", ccErr);
       }
 
+      qc.invalidateQueries({ queryKey: ["stat-data"] });
+      qc.invalidateQueries({ queryKey: ["mitarbeiter-notes"] });
       toast.success(closeAfter ? "Anruf gespeichert." : "Anruf gespeichert — neuer Anruf.");
       if (closeAfter) {
         navigate("/mitarbeiter/notizen");

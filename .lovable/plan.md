@@ -1,24 +1,31 @@
-## Diagnose (verifiziert)
+## Problem
 
-In `src/pages/mitarbeiter/RecruitmentErfassen.tsx` schreibt `saveAndClose()` die Notiz **ausschließlich** an die externe Caller-API (`set_status` mit `note`). Es findet kein Insert in die Tabelle `public.call_notes` statt.
+`/mitarbeiter/statistik` zieht Anrufe und Ø Dauer ausschließlich aus `sipgate_calls`. Für Outbound-Recruitment-Mitarbeiter existieren dort aber keine Zeilen — ihre Gespräche werden nur in `call_notes` gespeichert (inkl. Timer-Wert in `dauer_sekunden`). Deshalb bleibt ihre Statistik leer.
 
-`src/pages/mitarbeiter/Notizen.tsx` liest aber genau aus `call_notes`. Deshalb erscheint die Notiz im anderen Backend, aber nicht unter `/mitarbeiter/notizen`.
+Zusätzlich enthält die Abfrage einen Fehler: es wird `clients.unternehmensname` selektiert, die Spalte heißt `company_name`. Dadurch schlägt die Kundenabfrage fehl und "Anrufe pro Kunde" zeigt nur "—".
 
 ## Umsetzung
 
-**`src/pages/mitarbeiter/RecruitmentErfassen.tsx`**
-- Nach dem erfolgreichen `set_status`-Aufruf zusätzlich einen Datensatz in `call_notes` anlegen:
-  - `client_id`: der zugewiesene Recruitment-Kunde (bereits als `client` vorhanden)
-  - `employee_id`: über `employees.user_id = auth.uid()` ermitteln
-  - `anliegen`: Gesprächsnotiz; falls leer bei „erfolgreich", ein kurzer Standardtext wie „Recruiting-Anruf erfolgreich"
-  - `anrufer_name` / `anrufer_nummer` / `anrufer_email`: Name, Telefon und E-Mail des Bewerbers aus dem geladenen Termin
-  - `kategorie`: `"Termin"`, `prioritaet`: `"normal"`, `dauer_sekunden`: gestoppte Gesprächsdauer
-- Der Insert läuft nach dem API-Call; schlägt nur der lokale Insert fehl, wird eine Warnung getoastet, die Navigation aber nicht blockiert (die externe Übertragung ist bereits erfolgt).
-- React-Query-Cache `["mitarbeiter-notes"]` invalidieren, damit die Notiz sofort sichtbar ist.
+**1. Quelle abhängig vom Mitarbeiter-Modus (`src/pages/mitarbeiter/Statistik.tsx`)**
+- Beim Laden wird neben `employees.id` auch `employees.outbound_recruitment` gelesen.
+- **Normale Caller (Inbound):** Kennzahlen weiterhin aus `sipgate_calls` (`handled_by_employee_id`, Dauer aus `answered_at` → `ended_at`) — unverändertes Verhalten.
+- **Outbound-Recruitment-Caller:** Kennzahlen aus `call_notes` (`employee_id`, Zeitraum über `created_at`, Dauer aus `dauer_sekunden` vom Gesprächs-Timer).
 
-**`src/pages/mitarbeiter/Notizen.tsx`**
-- Ergebnis-Kennzeichnung sichtbar machen: bei Recruitment-Notizen wird das Ergebnis („Erfolgreich"/„Fehlgeschlagen") mit im Text bzw. als Badge über `kategorie` dargestellt — keine Strukturänderung nötig.
+**2. Gemeinsame Auswertungs-Ebene**
+- Beide Quellen werden auf ein einheitliches Format normalisiert (`{ at: Date, durationSec: number, client_id }`), damit KPIs, Tages-/Wochen-Buckets und Charts identisch berechnet werden — nur die Datenherkunft unterscheidet sich.
+- Kacheln: Anrufe, Ø Dauer, Notizen; zusätzlich "Gesamtzeit im Gespräch" (Summe der Dauer, h:mm).
+
+**3. Charts**
+- "Anrufe pro Tag/Woche" und "Ø Gesprächsdauer" nutzen die normalisierten Daten.
+- "Verteilung nach Kategorie" bleibt auf `call_notes.kategorie`.
+- "Anrufe pro Kunde": Spaltenname auf `company_name` korrigiert.
+- Panel-Titel für Outbound-Caller sinngemäß angepasst (z. B. "Erfasste Gespräche pro Tag").
+
+**4. Aktualisierung**
+- Nach dem Speichern in `/mitarbeiter/erfassen` und der Recruitment-Erfassung wird der Query-Cache `["stat-data"]` invalidiert.
+- Realtime-Subscription auf `call_notes` für den eigenen Mitarbeiter, mit sauberem Cleanup im `useEffect`.
 
 ## Technische Details
-- Keine Schema-Änderung: `call_notes` hat bereits alle benötigten Spalten; die bestehenden RLS-Policies erlauben dem Mitarbeiter Insert/Select für zugewiesene Kunden.
-- Bestehende, bereits abgeschickte Recruitment-Notizen liegen nur upstream und lassen sich nicht rückwirkend importieren.
+
+- Keine Schemaänderung nötig: `employees.outbound_recruitment` und `call_notes.dauer_sekunden` existieren bereits.
+- Der Timer in `Erfassen.tsx`/`RecruitmentErfassen.tsx` schreibt `elapsed` (Sekunden) beim Insert — dieser Wert dient als Dauer-Basis für Outbound.

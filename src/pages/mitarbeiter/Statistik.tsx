@@ -1,17 +1,21 @@
-import { useMemo, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import { PageHeader, Panel, StatCard } from "@/components/mitarbeiter/MitarbeiterLayout";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, Clock, StickyNote } from "lucide-react";
+import { PhoneCall, Clock, StickyNote, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 const TIMEFRAMES = ["Woche", "Monat", "Quartal"] as const;
 type TF = (typeof TIMEFRAMES)[number];
+
+/** Normalisierter Gesprächs-Datensatz, unabhängig von der Quelle. */
+type CallEntry = { at: number; durationSec: number; client_id: string | null };
+
 
 const KAT_COLORS: Record<string, string> = {
   Rückruf: "hsl(var(--primary))",
@@ -35,6 +39,13 @@ function fmtDauer(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function fmtGesamt(sec: number) {
+  if (!sec || sec < 0) return "0m";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 function dayKey(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -53,57 +64,90 @@ function labelForDay(d: Date) {
 export default function Statistik() {
   const [tf, setTf] = useState<TF>("Woche");
   const { user } = useAuth();
+  const qc = useQueryClient();
 
-  const { data: employeeId } = useSuspenseQuery({
+  const { data: profile } = useSuspenseQuery({
     queryKey: ["stat-employee-id", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data: emp } = await supabase
         .from("employees")
-        .select("id")
+        .select("id,outbound_recruitment")
         .eq("user_id", user.id)
         .maybeSingle();
-      return emp?.id ?? null;
+      if (!emp) return null;
+      return { id: emp.id as string, outbound: !!emp.outbound_recruitment };
     },
   });
 
+  const employeeId = profile?.id ?? null;
+  const isOutbound = profile?.outbound ?? false;
+
   const { data: statData } = useSuspenseQuery({
-    queryKey: ["stat-data", employeeId, tf],
+    queryKey: ["stat-data", employeeId, isOutbound, tf],
     queryFn: async () => {
-      if (!employeeId) {
-        return { calls: [] as any[], prevCalls: [] as any[], notes: [] as any[], prevNotes: [] as any[], clientMap: {} as Record<string, string> };
-      }
+      const emptyResult = {
+        entries: [] as CallEntry[],
+        prevEntries: [] as CallEntry[],
+        notes: [] as any[],
+        prevNotes: [] as any[],
+        clientMap: {} as Record<string, string>,
+      };
+      if (!employeeId) return emptyResult;
+
       const { days } = tfConfig(tf);
       const now = new Date();
       const from = new Date(now.getTime() - days * 86400000);
       const prevFrom = new Date(now.getTime() - 2 * days * 86400000);
 
       const [callsRes, notesRes, clientsRes] = await Promise.all([
-        supabase
-          .from("sipgate_calls")
-          .select("id,started_at,answered_at,ended_at,status,client_id")
-          .eq("handled_by_employee_id", employeeId)
-          .gte("started_at", prevFrom.toISOString())
-          .order("started_at", { ascending: true }),
+        // Inbound-Quelle: nur laden, wenn der Mitarbeiter kein Outbound-Caller ist
+        isOutbound
+          ? Promise.resolve({ data: [] as any[] })
+          : supabase
+              .from("sipgate_calls")
+              .select("id,started_at,answered_at,ended_at,status,client_id")
+              .eq("handled_by_employee_id", employeeId)
+              .gte("started_at", prevFrom.toISOString())
+              .order("started_at", { ascending: true }),
         supabase
           .from("call_notes")
           .select("id,created_at,kategorie,client_id,dauer_sekunden")
           .eq("employee_id", employeeId)
           .gte("created_at", prevFrom.toISOString())
           .order("created_at", { ascending: true }),
-        supabase.from("clients").select("id,unternehmensname"),
+        supabase.from("clients").select("id,company_name"),
       ]);
 
       const cutoff = from.getTime();
-      const allCalls = callsRes.data ?? [];
       const allNotes = notesRes.data ?? [];
       const cm: Record<string, string> = {};
       (clientsRes.data ?? []).forEach((c: any) => {
-        cm[c.id] = c.unternehmensname ?? "—";
+        cm[c.id] = c.company_name ?? "—";
       });
+
+      // Normalisieren: Outbound => call_notes (Timer), Inbound => sipgate_calls
+      const allEntries: CallEntry[] = isOutbound
+        ? allNotes.map((n: any) => ({
+            at: new Date(n.created_at).getTime(),
+            durationSec: n.dauer_sekunden ?? 0,
+            client_id: n.client_id ?? null,
+          }))
+        : (callsRes.data ?? []).map((c: any) => ({
+            at: new Date(c.started_at).getTime(),
+            durationSec:
+              c.answered_at && c.ended_at
+                ? Math.max(
+                    0,
+                    (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000,
+                  )
+                : 0,
+            client_id: c.client_id ?? null,
+          }));
+
       return {
-        calls: allCalls.filter((c) => new Date(c.started_at).getTime() >= cutoff),
-        prevCalls: allCalls.filter((c) => new Date(c.started_at).getTime() < cutoff),
+        entries: allEntries.filter((e) => e.at >= cutoff),
+        prevEntries: allEntries.filter((e) => e.at < cutoff),
         notes: allNotes.filter((n) => new Date(n.created_at).getTime() >= cutoff),
         prevNotes: allNotes.filter((n) => new Date(n.created_at).getTime() < cutoff),
         clientMap: cm,
@@ -111,22 +155,37 @@ export default function Statistik() {
     },
   });
 
-  const { calls, prevCalls, notes, prevNotes, clientMap } = statData;
+  // Live-Aktualisierung, sobald eine neue Notiz erfasst wird
+  useEffect(() => {
+    if (!employeeId) return;
+    const channel = supabase
+      .channel(`stat-call-notes-${employeeId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "call_notes", filter: `employee_id=eq.${employeeId}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["stat-data"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [employeeId, qc]);
+
+  const { entries, prevEntries, notes, prevNotes, clientMap } = statData;
   const loading = false;
 
   const kpis = useMemo(() => {
-    const totalCalls = calls.length;
-    const prevTotal = prevCalls.length;
+    const totalCalls = entries.length;
+    const prevTotal = prevEntries.length;
     const callDelta =
       prevTotal > 0 ? `${Math.round(((totalCalls - prevTotal) / prevTotal) * 100)}%` : undefined;
 
-    const durs = calls
-      .filter((c) => c.answered_at && c.ended_at)
-      .map((c) => (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000);
+    const durs = entries.filter((e) => e.durationSec > 0).map((e) => e.durationSec);
     const avg = durs.length ? durs.reduce((a, b) => a + b, 0) / durs.length : 0;
-    const prevDurs = prevCalls
-      .filter((c) => c.answered_at && c.ended_at)
-      .map((c) => (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000);
+    const totalSec = durs.reduce((a, b) => a + b, 0);
+    const prevDurs = prevEntries.filter((e) => e.durationSec > 0).map((e) => e.durationSec);
     const prevAvg = prevDurs.length ? prevDurs.reduce((a, b) => a + b, 0) / prevDurs.length : 0;
     const avgDeltaSec = prevAvg ? Math.round(avg - prevAvg) : undefined;
 
@@ -141,6 +200,7 @@ export default function Statistik() {
       totalCalls,
       callDelta: callDelta ? (callDelta.startsWith("-") ? callDelta : `+${callDelta}`) : undefined,
       avg,
+      totalSec,
       avgDelta:
         avgDeltaSec !== undefined
           ? `${avgDeltaSec > 0 ? "+" : ""}${avgDeltaSec}s`
@@ -152,7 +212,7 @@ export default function Statistik() {
           : `+${notesDelta}`
         : undefined,
     };
-  }, [calls, prevCalls, notes, prevNotes]);
+  }, [entries, prevEntries, notes, prevNotes]);
 
   const daily = useMemo(() => {
     const { days, bucket } = tfConfig(tf);
@@ -163,38 +223,27 @@ export default function Statistik() {
         const d = new Date(now.getTime() - i * 86400000);
         buckets.push({ key: dayKey(d), label: labelForDay(d), calls: 0, avg: 0, _sum: 0, _n: 0 });
       }
-      for (const c of calls) {
-        const key = dayKey(new Date(c.started_at));
-        const b = buckets.find((x) => x.key === key);
-        if (!b) continue;
-        b.calls++;
-        if (c.answered_at && c.ended_at) {
-          const dur = (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000;
-          b._sum += dur;
-          b._n++;
-        }
-      }
     } else {
       const weeks = Math.ceil(days / 7);
       for (let i = weeks - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 7 * 86400000);
         buckets.push({ key: weekKey(d), label: `KW ${weekKey(d).slice(-2)}`, calls: 0, avg: 0, _sum: 0, _n: 0 });
       }
-      for (const c of calls) {
-        const key = weekKey(new Date(c.started_at));
-        const b = buckets.find((x) => x.key === key);
-        if (!b) continue;
-        b.calls++;
-        if (c.answered_at && c.ended_at) {
-          const dur = (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000;
-          b._sum += dur;
-          b._n++;
-        }
+    }
+    for (const e of entries) {
+      const d = new Date(e.at);
+      const key = bucket === "day" ? dayKey(d) : weekKey(d);
+      const b = buckets.find((x) => x.key === key);
+      if (!b) continue;
+      b.calls++;
+      if (e.durationSec > 0) {
+        b._sum += e.durationSec;
+        b._n++;
       }
     }
     buckets.forEach((b) => (b.avg = b._n ? Math.round(b._sum / b._n) : 0));
     return buckets;
-  }, [calls, tf]);
+  }, [entries, tf]);
 
   const kategorien = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -211,17 +260,18 @@ export default function Statistik() {
 
   const proKunde = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const n of notes) {
-      if (!n.client_id) continue;
-      counts[n.client_id] = (counts[n.client_id] ?? 0) + 1;
+    for (const e of entries) {
+      if (!e.client_id) continue;
+      counts[e.client_id] = (counts[e.client_id] ?? 0) + 1;
     }
     return Object.entries(counts)
       .map(([id, calls]) => ({ name: clientMap[id] ?? "—", calls }))
       .sort((a, b) => b.calls - a.calls)
       .slice(0, 6);
-  }, [notes, clientMap]);
+  }, [entries, clientMap]);
 
-  const empty = !loading && calls.length === 0 && notes.length === 0;
+  const empty = !loading && entries.length === 0 && notes.length === 0;
+
 
   return (
     <>
@@ -245,9 +295,9 @@ export default function Statistik() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Anrufe"
+          label={isOutbound ? "Gespräche" : "Anrufe"}
           value={loading ? "…" : String(kpis.totalCalls)}
           delta={kpis.callDelta}
           icon={<PhoneCall className="h-4 w-4" />}
@@ -257,6 +307,11 @@ export default function Statistik() {
           value={loading ? "…" : fmtDauer(kpis.avg)}
           delta={kpis.avgDelta}
           icon={<Clock className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Gesamtzeit im Gespräch"
+          value={loading ? "…" : fmtGesamt(kpis.totalSec)}
+          icon={<Timer className="h-4 w-4" />}
         />
         <StatCard
           label="Notizen"
@@ -273,7 +328,10 @@ export default function Statistik() {
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Panel title={tf === "Quartal" ? "Anrufe pro Woche" : "Anrufe pro Tag"}>
+        <Panel
+          title={`${isOutbound ? "Erfasste Gespräche" : "Anrufe"} pro ${tf === "Quartal" ? "Woche" : "Tag"}`}
+        >
+
           <div className="h-64">
             {daily.length === 0 || daily.every((d) => d.calls === 0) ? (
               <EmptyChart />
