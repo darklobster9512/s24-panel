@@ -53,6 +53,7 @@ const draftSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
+  is_recruitment: z.boolean().optional(),
 });
 
 const fullSchema = z.object({
@@ -75,8 +76,17 @@ const fullSchema = z.object({
     .email("Ungültige E-Mail")
     .optional()
     .or(z.literal("")),
-  greeting_text: z.string().trim().min(1, "Pflichtfeld").max(1000),
+  greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
+  is_recruitment: z.boolean().optional(),
+}).superRefine((v, ctx) => {
+  if (!v.is_recruitment && !(v.greeting_text ?? "").trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["greeting_text"],
+      message: "Pflichtfeld",
+    });
+  }
 });
 
 type FormValues = z.infer<typeof draftSchema>;
@@ -113,7 +123,7 @@ const STEPS: StepDef[] = [
   {
     title: "Konfiguration",
     description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
-    fields: ["greeting_text", "forwarding_enabled"],
+    fields: ["greeting_text", "forwarding_enabled", "is_recruitment"],
   },
 ];
 
@@ -133,6 +143,7 @@ const DEFAULTS: FormValues = {
   contact_email: "",
   greeting_text: "",
   forwarding_enabled: false,
+  is_recruitment: false,
 };
 
 const NULLABLE_STRINGS: Field[] = [
@@ -168,6 +179,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [scriptFile, setScriptFile] = useState<File | null>(null);
   const [phoneNumbers, setPhoneNumbers] = useState<
     { id?: string; phone_number: string; label: string }[]
   >([]);
@@ -209,6 +221,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         contact_email: existing.data.contact_email ?? "",
         greeting_text: existing.data.greeting_text ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
+        is_recruitment: (existing.data as { is_recruitment?: boolean | null }).is_recruitment ?? false,
       });
     }
   }, [mode, existing.data, form]);
@@ -244,6 +257,16 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     const { error: upErr } = await supabase.storage
       .from("client-logos")
       .upload(path, logoFile, { upsert: false, contentType: logoFile.type });
+    if (upErr) throw upErr;
+    return path;
+  }
+
+  async function uploadScriptIfNeeded() {
+    if (!scriptFile) return undefined;
+    const path = `${crypto.randomUUID()}.pdf`;
+    const { error: upErr } = await supabase.storage
+      .from("call-scripts")
+      .upload(path, scriptFile, { upsert: false, contentType: "application/pdf" });
     if (upErr) throw upErr;
     return path;
   }
@@ -317,7 +340,11 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       }
 
       const logo_url = await uploadLogoIfNeeded();
-      const base = normalize(values);
+      const call_script_path = await uploadScriptIfNeeded();
+      const base = {
+        ...normalize(values),
+        ...(call_script_path !== undefined ? { call_script_path } : {}),
+      };
 
       if (mode === "edit" && id) {
         const payload = {
@@ -327,7 +354,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
-        await syncPhoneNumbers(id);
+        if (!values.is_recruitment) await syncPhoneNumbers(id);
       } else {
         const { data, error } = await supabase
           .from("clients")
@@ -340,7 +367,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
           .select("id")
           .single();
         if (error) throw error;
-        await syncPhoneNumbers(data.id as string);
+        if (!values.is_recruitment) await syncPhoneNumbers(data.id as string);
       }
     },
     onSuccess: () => {
@@ -357,7 +384,11 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       if (!user) throw new Error("Nicht angemeldet");
       const values = form.getValues();
       const logo_url = await uploadLogoIfNeeded();
-      const base = normalize(values);
+      const call_script_path = await uploadScriptIfNeeded();
+      const base = {
+        ...normalize(values),
+        ...(call_script_path !== undefined ? { call_script_path } : {}),
+      };
 
       if (mode === "edit" && id) {
         const payload = {
@@ -367,7 +398,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         };
         const { error } = await supabase.from("clients").update(payload).eq("id", id);
         if (error) throw error;
-        await syncPhoneNumbers(id);
+        if (!values.is_recruitment) await syncPhoneNumbers(id);
         return { id };
       } else {
         const { data, error } = await supabase
@@ -381,7 +412,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
           .select("id")
           .single();
         if (error) throw error;
-        await syncPhoneNumbers(data.id as string);
+        if (!values.is_recruitment) await syncPhoneNumbers(data.id as string);
         return { id: data.id as string };
       }
     },
@@ -397,7 +428,19 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const isLast = step === STEPS.length - 1;
+  const isRecruitment = !!form.watch("is_recruitment");
+  const visibleSteps = STEPS.map((_, i) => i).filter(
+    (i) => !(isRecruitment && i === 3),
+  );
+  const goNext = () => {
+    const pos = visibleSteps.indexOf(step);
+    setStep(visibleSteps[Math.min(pos + 1, visibleSteps.length - 1)]);
+  };
+  const goPrev = () => {
+    const pos = visibleSteps.indexOf(step);
+    setStep(visibleSteps[Math.max(pos - 1, 0)]);
+  };
+  const isLast = step === visibleSteps[visibleSteps.length - 1];
   const busy = submitMutation.isPending || draftMutation.isPending;
   const current = STEPS[step];
 
@@ -482,6 +525,12 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                         logoFile={logoFile}
                         setLogoFile={setLogoFile}
                         existingLogo={existing.data?.logo_url ?? null}
+                        scriptFile={scriptFile}
+                        setScriptFile={setScriptFile}
+                        existingScript={
+                          (existing.data as { call_script_path?: string | null } | null)
+                            ?.call_script_path ?? null
+                        }
                       />
                     )}
                   </div>
@@ -491,7 +540,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setStep((s) => Math.max(0, s - 1))}
+                    onClick={goPrev}
                     disabled={step === 0 || busy}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
@@ -524,9 +573,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                     ) : (
                       <Button
                         type="button"
-                        onClick={() =>
-                          setStep((s) => Math.min(s + 1, STEPS.length - 1))
-                        }
+                        onClick={goNext}
                         disabled={busy}
                       >
                         Weiter <ArrowRight className="ml-2 h-4 w-4" />
@@ -707,6 +754,7 @@ function StepUnternehmen({ form }: { form: FR }) {
           </FormItem>
         )}
       />
+      )}
     </div>
   );
 }
@@ -878,12 +926,19 @@ function StepKonfig({
   logoFile,
   setLogoFile,
   existingLogo,
+  scriptFile,
+  setScriptFile,
+  existingScript,
 }: {
   form: FR;
   logoFile: File | null;
   setLogoFile: (f: File | null) => void;
   existingLogo: string | null;
+  scriptFile: File | null;
+  setScriptFile: (f: File | null) => void;
+  existingScript: string | null;
 }) {
+  const isRecruitment = !!form.watch("is_recruitment");
   const logoLabel = useMemo(() => {
     if (logoFile) return logoFile.name;
     if (existingLogo) return `Aktuell: ${existingLogo}`;
@@ -904,6 +959,31 @@ function StepKonfig({
             <p className="text-xs text-muted-foreground">{logoLabel}</p>
           )}
         </div>
+
+        <FormField
+          control={form.control}
+          name="is_recruitment"
+          render={({ field }) => (
+            <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
+              <FormControl>
+                <Checkbox
+                  checked={!!field.value}
+                  onCheckedChange={field.onChange}
+                  className="mt-0.5"
+                />
+              </FormControl>
+              <div className="space-y-1">
+                <FormLabel className="!mt-0 cursor-pointer">
+                  Recruitment-Kunde (Outbound Calls)
+                </FormLabel>
+                <p className="text-xs text-muted-foreground">
+                  Statt Begrüßungstext wird ein Call-Skript als PDF hinterlegt.
+                  Rufnummern entfallen.
+                </p>
+              </div>
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -930,6 +1010,23 @@ function StepKonfig({
         />
       </div>
 
+      {isRecruitment ? (
+        <div className="space-y-2">
+          <Label>Call-Skript (PDF)</Label>
+          <Input
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => setScriptFile(e.target.files?.[0] ?? null)}
+          />
+          <p className="text-xs text-muted-foreground">
+            {scriptFile
+              ? scriptFile.name
+              : existingScript
+                ? `Aktuell: ${existingScript}`
+                : "Noch kein Skript hochgeladen."}
+          </p>
+        </div>
+      ) : (
       <FormField
         control={form.control}
         name="greeting_text"
@@ -948,6 +1045,7 @@ function StepKonfig({
           </FormItem>
         )}
       />
+      )}
     </div>
   );
 }
