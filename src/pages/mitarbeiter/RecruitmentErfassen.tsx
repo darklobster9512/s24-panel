@@ -180,6 +180,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       try {
         await persistNoteLocally();
         qc.invalidateQueries({ queryKey: ["mitarbeiter-notes"] });
+        qc.invalidateQueries({ queryKey: ["stat-data"] });
       } catch {
         toast.warning("Notiz wurde übertragen, konnte aber lokal nicht gespeichert werden.");
       }
