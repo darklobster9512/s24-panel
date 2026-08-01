@@ -18,13 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   callerApi,
-  extractList,
-  normalizeInterview,
+  listInterviews,
+  listUpcomingInterviews,
   CallerApiError,
   type RecruitmentInterview,
 } from "@/hooks/use-caller-api";
 
-const PAGE_SIZE = 20;
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -65,15 +64,21 @@ function relTime(ts: number | null) {
 export default function MitarbeiterBewerbungsgespraeche() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [view, setView] = useState<"future" | "past">("future");
+  const [view, setView] = useState<"upcoming" | "past">("upcoming");
   const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
   const [page, setPage] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const knownIds = useRef<Set<string> | null>(null);
   const errorCount = useRef(0);
 
-  useEffect(() => setPage(0), [view, search]);
+  useEffect(() => setPage(0), [view, debounced]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const meta = useQuery({
     queryKey: ["caller-meta"],
@@ -82,20 +87,16 @@ export default function MitarbeiterBewerbungsgespraeche() {
   });
 
   const query = useQuery({
-    queryKey: ["caller-interviews", view, page],
+    queryKey: ["caller-interviews", view, page, debounced],
     // Alle 5 Minuten automatisch neue Termine holen
     refetchInterval: () => (errorCount.current >= 3 ? false : 5 * 60_000),
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     staleTime: 60_000,
-    queryFn: async () => {
-      const data = await callerApi<any>("list_interviews", {
-        scope: view,
-        limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
-      });
-      return extractList(data).map(normalizeInterview);
-    },
+    queryFn: () =>
+      view === "upcoming"
+        ? listUpcomingInterviews(page, debounced)
+        : listInterviews("past", page, debounced),
   });
 
   // Tickt für die "zuletzt aktualisiert"-Anzeige
@@ -120,8 +121,8 @@ export default function MitarbeiterBewerbungsgespraeche() {
   // Toast bei neuen Terminen
   useEffect(() => {
     if (!query.data) return;
-    const ids = new Set(query.data.map((r) => r.id));
-    if (knownIds.current && page === 0 && view === "future") {
+    const ids = new Set<string>(query.data.items.map((r) => r.id));
+    if (knownIds.current && page === 0 && view === "upcoming") {
       const fresh = [...ids].filter((id) => !knownIds.current!.has(id));
       if (fresh.length > 0) {
         toast.success(
@@ -132,14 +133,11 @@ export default function MitarbeiterBewerbungsgespraeche() {
     knownIds.current = ids;
   }, [query.data, page, view]);
 
-  const rows = useMemo(() => {
-    const list = query.data ?? [];
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((r) =>
-      [r.name, r.email, r.phone].filter(Boolean).join(" ").toLowerCase().includes(q),
-    );
-  }, [query.data, search]);
+  const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
+  const pageSize = query.data?.pageSize ?? 25;
+  const hasNext = (page + 1) * pageSize < total;
+
 
   const brandLabel =
     (meta.data as any)?.label ??
@@ -153,10 +151,21 @@ export default function MitarbeiterBewerbungsgespraeche() {
   ) {
     setBusyId(row.id + action);
     try {
-      await callerApi(action, { interview_id: row.id });
-      toast.success(
-        action === "send_panel_link" ? "Panel-Link gesendet" : "Erinnerung gesendet",
-      );
+      if (action === "send_reminder") {
+        // Die API liefert den Standardtext per preview und versendet ihn dann als `text`
+        const preview = await callerApi<any>("send_reminder", {
+          appointment_id: row.id,
+          preview: true,
+        });
+        await callerApi("send_reminder", {
+          appointment_id: row.id,
+          text: preview?.message ?? "",
+        });
+        toast.success("Erinnerung gesendet");
+      } else {
+        await callerApi("send_panel_link", { appointment_id: row.id });
+        toast.success("Panel-Link gesendet");
+      }
       qc.invalidateQueries({ queryKey: ["caller-interviews"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -164,6 +173,7 @@ export default function MitarbeiterBewerbungsgespraeche() {
       setBusyId(null);
     }
   }
+
 
   const lastUpdated = query.dataUpdatedAt || null;
 
@@ -187,8 +197,8 @@ export default function MitarbeiterBewerbungsgespraeche() {
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Button
             size="sm"
-            variant={view === "future" ? "default" : "outline"}
-            onClick={() => setView("future")}
+            variant={view === "upcoming" ? "default" : "outline"}
+            onClick={() => setView("upcoming")}
           >
             Anstehend
           </Button>
@@ -327,7 +337,9 @@ export default function MitarbeiterBewerbungsgespraeche() {
         )}
 
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Seite {page + 1}</span>
+          <span>
+            Seite {page + 1} · {total} {total === 1 ? "Termin" : "Termine"}
+          </span>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -340,7 +352,7 @@ export default function MitarbeiterBewerbungsgespraeche() {
             <Button
               size="sm"
               variant="outline"
-              disabled={(query.data?.length ?? 0) < PAGE_SIZE || query.isFetching}
+              disabled={!hasNext || query.isFetching}
               onClick={() => setPage((p) => p + 1)}
             >
               Weiter
