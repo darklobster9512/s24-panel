@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -357,14 +357,4 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       </Dialog>
     </>
   );
-}
-
-/** Erzwingt ein Re-Render im Sekundentakt für die Timer-Anzeige. */
-function useTickValue() {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setV((x) => x + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return v;
 }
