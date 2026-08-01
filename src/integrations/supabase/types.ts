@@ -384,6 +384,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          call_script_path: string | null
           city: string | null
           company_description: string | null
           company_name: string | null
@@ -398,6 +399,7 @@ export type Database = {
           id: string
           industry: string | null
           is_draft: boolean
+          is_recruitment: boolean
           logo_url: string | null
           phone: string | null
           postal_code: string | null
@@ -407,6 +409,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          call_script_path?: string | null
           city?: string | null
           company_description?: string | null
           company_name?: string | null
@@ -421,6 +424,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_draft?: boolean
+          is_recruitment?: boolean
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -430,6 +434,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          call_script_path?: string | null
           city?: string | null
           company_description?: string | null
           company_name?: string | null
@@ -444,6 +449,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_draft?: boolean
+          is_recruitment?: boolean
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -592,6 +598,7 @@ export type Database = {
           bic: string | null
           birth_date: string | null
           birth_place: string | null
+          caller_api_key: string | null
           contract_type: string | null
           created_at: string
           created_by: string
@@ -605,6 +612,7 @@ export type Database = {
           login_local_part: string | null
           marital_status: string | null
           nationality: string | null
+          outbound_recruitment: boolean
           password_plain: string | null
           personal_email: string | null
           personal_phone: string | null
@@ -621,6 +629,7 @@ export type Database = {
           bic?: string | null
           birth_date?: string | null
           birth_place?: string | null
+          caller_api_key?: string | null
           contract_type?: string | null
           created_at?: string
           created_by: string
@@ -634,6 +643,7 @@ export type Database = {
           login_local_part?: string | null
           marital_status?: string | null
           nationality?: string | null
+          outbound_recruitment?: boolean
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
@@ -650,6 +660,7 @@ export type Database = {
           bic?: string | null
           birth_date?: string | null
           birth_place?: string | null
+          caller_api_key?: string | null
           contract_type?: string | null
           created_at?: string
           created_by?: string
@@ -663,6 +674,7 @@ export type Database = {
           login_local_part?: string | null
           marital_status?: string | null
           nationality?: string | null
+          outbound_recruitment?: boolean
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
