@@ -754,7 +754,6 @@ function StepUnternehmen({ form }: { form: FR }) {
           </FormItem>
         )}
       />
-      )}
     </div>
   );
 }
