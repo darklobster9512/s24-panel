@@ -86,10 +86,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }, [running]);
 
-  const elapsed = useMemo(
-    () => (start ? Math.floor((Date.now() - start) / 1000) : 0),
-    [start, running, useTickValue()],
-  );
+  const elapsed = start ? Math.floor((Date.now() - start) / 1000) : 0;
 
   async function openScript() {
     const path = clientRow.data?.call_script_path;
