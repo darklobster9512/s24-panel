@@ -18,13 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   callerApi,
-  extractList,
-  normalizeInterview,
+  listInterviews,
+  listUpcomingInterviews,
   CallerApiError,
   type RecruitmentInterview,
 } from "@/hooks/use-caller-api";
 
-const PAGE_SIZE = 20;
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
