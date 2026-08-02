@@ -246,22 +246,34 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                   {iv.date ?? "—"} {iv.time ? `· ${iv.time} Uhr` : ""}
                 </div>
                 {iv.phone && (
-                  <a
-                    href={`tel:${iv.phone}`}
-                    className="flex items-center gap-2 hover:text-primary hover:underline"
+                  <button
+                    type="button"
+                    title="Zum Kopieren klicken"
+                    onClick={() => copyValue(iv.phone!, "phone")}
+                    className="flex w-full items-center gap-2 rounded text-left hover:text-primary hover:underline"
                   >
-                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    {copied === "phone" ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                     <span className="font-mono text-xs">{iv.phone}</span>
-                  </a>
+                  </button>
                 )}
                 {iv.email && (
-                  <a
-                    href={`mailto:${iv.email}`}
-                    className="flex items-center gap-2 hover:text-primary hover:underline"
+                  <button
+                    type="button"
+                    title="Zum Kopieren klicken"
+                    onClick={() => copyValue(iv.email!, "email")}
+                    className="flex w-full items-center gap-2 rounded text-left hover:text-primary hover:underline"
                   >
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    {copied === "email" ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                     <span className="truncate text-xs">{iv.email}</span>
-                  </a>
+                  </button>
                 )}
                 {iv.employment && (
                   <div className="text-xs capitalize text-muted-foreground">
