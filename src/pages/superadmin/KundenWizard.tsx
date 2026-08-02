@@ -23,7 +23,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { TipTapEditor } from "@/components/superadmin/vertraege/TipTapEditor";
+import { CALL_SCRIPT_TEMPLATE } from "@/lib/call-script-template";
 import { cn } from "@/lib/utils";
+
 
 const draftSchema = z.object({
   company_name: z.string().trim().max(200).optional().or(z.literal("")),

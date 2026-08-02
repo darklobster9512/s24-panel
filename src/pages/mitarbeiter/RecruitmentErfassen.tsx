@@ -59,7 +59,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("id, is_recruitment, call_script_path")
+        .select("id, is_recruitment, call_script_path, call_script_content")
         .eq("id", client!.id)
         .maybeSingle();
       return data;
@@ -83,7 +83,17 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
   const elapsed = start ? Math.floor((Date.now() - start) / 1000) : 0;
 
+  const scriptHtml = (clientRow.data as { call_script_content?: string | null } | null)
+    ?.call_script_content;
+
   async function openScript() {
+    // Bevorzugt: im Portal gepflegtes Skript
+    if (scriptHtml && scriptHtml.replace(/<[^>]*>/g, "").trim()) {
+      setScriptUrl(null);
+      setScriptOpen(true);
+      return;
+    }
+    // Fallback: alte PDF aus dem Storage
     const path = clientRow.data?.call_script_path;
     if (!path) {
       toast.error("Für diesen Kunden ist kein Call-Skript hinterlegt.");
@@ -99,6 +109,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     setScriptUrl(data.signedUrl);
     setScriptOpen(true);
   }
+
 
   async function sendPanelLink() {
     setBusy("panel");
