@@ -1,15 +1,21 @@
-## Ziel
-Bei `/mitarbeiter/erfassen?interview=…` (Recruiting-Anruf) soll beim Scrollen nur die linke Spalte (Bewerber, Kunde, Call-Skript) laufen. Der obere Bereich – App-Header und der Seitentitel „Recruiting-Anruf“ – bleibt stehen, ebenso die rechte Spalte.
+Problem: In der Vertragsvorlage "Teilzeit - 20 Stunden/Woche" sind die Abstände zwischen Titel/Arbeitgeber-/Arbeitnehmer-Blöcken zu groß, weil jeder `<p>`-Absatz im `.rich-text`-Container `margin-block: 0.65em` oben und unten erhält.
 
-## Aktueller Stand
-- Der App-Header in `src/components/mitarbeiter/MitarbeiterLayout.tsx` ist bereits `sticky top-0 z-30` (bleibt also schon stehen).
-- Der Seitentitel kommt aus `PageHeader` und scrollt aktuell mit weg.
-- Die rechte Spalte in `src/pages/mitarbeiter/RecruitmentErfassen.tsx` ist bereits `lg:sticky lg:top-6`, klebt aber zu weit oben, weil sie den Header nicht berücksichtigt.
+Geplante Änderung:
 
-## Umsetzung (nur `src/pages/mitarbeiter/RecruitmentErfassen.tsx`)
-1. Den `PageHeader`-Block der Recruiting-Ansicht in einen sticky Container wickeln: `sticky top-14 z-20` mit deckendem Hintergrund (`bg-surface`, leichter Blur + untere Trennlinie), damit darunter scrollende Karten nicht durchscheinen. Negative horizontale Margins + Padding, damit der Hintergrund die volle Breite des Content-Bereichs abdeckt.
-2. Das Sticky-Offset der rechten Spalte von `lg:top-6` auf einen Wert unterhalb von App-Header + Titelzeile anpassen (ca. `lg:top-36`), damit sie beim Scrollen nicht unter den Titel rutscht.
-3. Nur die Recruiting-Variante anpassen – die normale Inbound-Erfassung (`Erfassen.tsx`) bleibt unverändert.
+1. CSS-Regel für `.rich-text p` anpassen
+   - Datei: `src/styles.css`
+   - `margin-block: 0.65em` auf `0.65em` ist zu großzügig im Vertrags-PDF-Kontext.
+   - Lösung: Die globale Regel bleibt für den Editor und die meisten Rich-Text-Views erhalten, aber wir fügen eine spezifischere Regel für die Vertragsvorschau hinzu, die die Absatzabstände im PDF-Renderer auf einen kompakteren Wert reduziert.
+   - Konkret: Im Vertrags-Preview-Container (`src/pages/superadmin/ArbeitsvertragDetail.tsx`) wird die `rich-text`-Klasse erweitert oder ein zusätzlicher Wrapper ergänzt, der für `p` z.B. `margin-block: 0.25em` setzt, damit Titel und Adresszeilen enger zusammenrücken.
+   - Optional: Überschriften (`h1, h2, h3`) innerhalb der Vertragsvorschau erhalten ebenfalls reduzierte `margin-block`-Werte, damit der gesamte Briefkopf kompakter wirkt.
 
-## Hinweis
-Das Sticky-Verhalten funktioniert, weil der Scroll-Container die Seite selbst ist; es sind keine Änderungen am Layout-Wrapper nötig.
+2. Sicherstellen, dass die Änderung nur das Vertrags-PDF kompakt hält
+   - Der Editor (`TipTapEditor`) und andere Rich-Text-Views (z.B. Recruitment Call-Skript, Bewerbungsgesprächs-Notizen) sollen ihre bisherigen Abstände behalten, damit bestehende Inhalte nicht ungewollt verändert werden.
+   - Daher wird der spezifischere Selektor nur auf den Vertrags-Preview-Container angewendet, nicht auf die globale `.rich-text`-Klasse.
+
+3. Überprüfung
+   - Nach der Änderung die Vorlage "Teilzeit - 20 Stunden/Woche" unter `/superadmin/vertraege/<id>` öffnen.
+   - Visuell prüfen, dass zwischen "Arbeitsvertrag", "Arbeitgeber:", Adressblock und "Arbeitnehmer:" weniger Leerzeichen vorhanden ist.
+   - Build laufen lassen, um sicherzustellen, dass keine CSS-Validierungsfehler auftreten.
+
+Keine Datenbank- oder Backend-Änderungen notwendig.
