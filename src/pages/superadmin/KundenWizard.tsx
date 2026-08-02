@@ -134,7 +134,14 @@ const STEPS: StepDef[] = [
   {
     title: "Konfiguration",
     description: "Logo, Begrüßung bzw. Call-Skript und Weiterleitungs-Einstellungen.",
-    fields: ["greeting_text", "call_script_content", "forwarding_enabled", "is_recruitment"],
+    fields: [
+      "greeting_text",
+      "call_script_content",
+      "call_script_my_name",
+      "call_script_company_name",
+      "forwarding_enabled",
+      "is_recruitment",
+    ],
   },
 ];
 
