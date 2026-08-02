@@ -193,7 +193,7 @@ export default function ArbeitsvertragDetail() {
         <div data-atomic="true" style="margin-top:48px;">
           <table style="width:100%;table-layout:fixed;"><tr>
             ${sigCell("Arbeitgeber", employerImg, signatureQ.data?.signer_name ?? "—", signatureQ.data?.signer_title ?? "")}
-            ${sigCell("Arbeitnehmer", employeeImg, fullNameOf(emp), signedLabel)}
+            ${sigCell("Arbeitnehmer", employeeImg, fullNameOf(emp ?? null), signedLabel)}
           </tr></table>
         </div>`;
 
