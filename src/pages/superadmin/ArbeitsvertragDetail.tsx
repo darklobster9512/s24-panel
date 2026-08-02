@@ -62,6 +62,25 @@ type Signature = {
   signature_url: string | null;
 };
 
+async function toDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function fullNameOf(e: { first_name: string | null; last_name: string | null } | null) {
+  return [e?.first_name, e?.last_name].filter(Boolean).join(" ") || "—";
+}
+
 export default function ArbeitsvertragDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
