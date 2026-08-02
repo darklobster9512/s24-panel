@@ -1054,6 +1054,57 @@ function StepKonfig({
       </div>
 
       {isRecruitment && (
+        <div className="space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <div>
+            <h4 className="text-sm font-medium">Skript-Variablen</h4>
+            <p className="text-xs text-muted-foreground">
+              Verfügbar im Skript:{" "}
+              <code className="rounded bg-background px-1">[Bewerber_Name]</code>{" "}
+              (Nachname des Bewerbers, automatisch),{" "}
+              <code className="rounded bg-background px-1">[Mein_Name]</code>,{" "}
+              <code className="rounded bg-background px-1">[Firmenname]</code>
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="call_script_my_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mein Name ([Mein_Name])</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="z. B. Lisa Müller"
+                      {...field}
+                      value={(field.value as string) ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="call_script_company_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Firmenname ([Firmenname])</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="z. B. Audi AG"
+                      {...field}
+                      value={(field.value as string) ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+      )}
+
+      {isRecruitment && (
         <FormField
           control={form.control}
           name="call_script_content"
