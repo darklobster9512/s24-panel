@@ -94,8 +94,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
   const elapsed = start ? Math.floor((Date.now() - start) / 1000) : 0;
 
-  const scriptHtml = (clientRow.data as { call_script_content?: string | null } | null)
-    ?.call_script_content;
+  const clientData = clientRow.data as {
+    call_script_content?: string | null;
+    call_script_my_name?: string | null;
+    call_script_company_name?: string | null;
+  } | null;
+  const scriptHtml = clientData?.call_script_content;
+
+  const renderedScript = renderCallScript(scriptHtml ?? "", {
+    Bewerber_Name: lastNameOf(interview.data?.name),
+    Mein_Name: clientData?.call_script_my_name ?? "",
+    Firmenname: clientData?.call_script_company_name ?? client?.name ?? "",
+  });
 
   function openScript() {
     if (scriptOpen) {
