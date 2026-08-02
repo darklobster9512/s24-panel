@@ -386,15 +386,12 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
           <DialogHeader>
             <DialogTitle>Call-Skript</DialogTitle>
           </DialogHeader>
-          {scriptUrl ? (
-            <iframe src={scriptUrl} title="Call-Skript" className="h-[70vh] w-full rounded-md border" />
-          ) : (
-            <div
-              className="prose prose-sm max-w-none overflow-y-auto rounded-md border bg-card p-6 [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
-              style={{ maxHeight: "70vh" }}
-              dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
-            />
-          )}
+          <div
+            className="prose prose-sm max-w-none overflow-y-auto rounded-md border bg-card p-6 [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
+            style={{ maxHeight: "70vh" }}
+            dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
+          />
+
 
         </DialogContent>
       </Dialog>
