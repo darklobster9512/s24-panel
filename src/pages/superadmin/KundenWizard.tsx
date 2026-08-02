@@ -85,6 +85,8 @@ const fullSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   call_script_content: z.string().max(100000).optional().or(z.literal("")),
+  call_script_my_name: z.string().trim().max(200).optional().or(z.literal("")),
+  call_script_company_name: z.string().trim().max(200).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 }).superRefine((v, ctx) => {
