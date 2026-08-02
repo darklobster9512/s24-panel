@@ -23,7 +23,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { TipTapEditor } from "@/components/superadmin/vertraege/TipTapEditor";
+import { CALL_SCRIPT_TEMPLATE } from "@/lib/call-script-template";
 import { cn } from "@/lib/utils";
+
 
 const draftSchema = z.object({
   company_name: z.string().trim().max(200).optional().or(z.literal("")),
@@ -52,9 +55,11 @@ const draftSchema = z.object({
     .optional()
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
+  call_script_content: z.string().max(100000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 });
+
 
 const fullSchema = z.object({
   company_name: z.string().trim().min(1, "Pflichtfeld").max(200),
@@ -77,6 +82,7 @@ const fullSchema = z.object({
     .optional()
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
+  call_script_content: z.string().max(100000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 }).superRefine((v, ctx) => {
@@ -88,6 +94,7 @@ const fullSchema = z.object({
     });
   }
 });
+
 
 type FormValues = z.infer<typeof draftSchema>;
 type Field = FieldPath<FormValues>;
@@ -122,10 +129,11 @@ const STEPS: StepDef[] = [
   },
   {
     title: "Konfiguration",
-    description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
-    fields: ["greeting_text", "forwarding_enabled", "is_recruitment"],
+    description: "Logo, Begrüßung bzw. Call-Skript und Weiterleitungs-Einstellungen.",
+    fields: ["greeting_text", "call_script_content", "forwarding_enabled", "is_recruitment"],
   },
 ];
+
 
 const DEFAULTS: FormValues = {
   company_name: "",
@@ -143,7 +151,9 @@ const DEFAULTS: FormValues = {
   contact_email: "",
   greeting_text: "",
   forwarding_enabled: false,
+  call_script_content: "",
   is_recruitment: false,
+
 };
 
 const NULLABLE_STRINGS: Field[] = [
@@ -161,7 +171,9 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_phone",
   "contact_email",
   "greeting_text",
+  "call_script_content",
 ];
+
 
 function normalize(values: FormValues) {
   const out: Record<string, unknown> = { ...values };
@@ -179,7 +191,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [scriptFile, setScriptFile] = useState<File | null>(null);
+  
   const [phoneNumbers, setPhoneNumbers] = useState<
     { id?: string; phone_number: string; label: string }[]
   >([]);
@@ -220,8 +232,11 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         contact_phone: existing.data.contact_phone ?? "",
         contact_email: existing.data.contact_email ?? "",
         greeting_text: existing.data.greeting_text ?? "",
+        call_script_content:
+          (existing.data as { call_script_content?: string | null }).call_script_content ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
         is_recruitment: (existing.data as { is_recruitment?: boolean | null }).is_recruitment ?? false,
+
       });
     }
   }, [mode, existing.data, form]);
@@ -261,15 +276,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     return path;
   }
 
-  async function uploadScriptIfNeeded() {
-    if (!scriptFile) return undefined;
-    const path = `${crypto.randomUUID()}.pdf`;
-    const { error: upErr } = await supabase.storage
-      .from("call-scripts")
-      .upload(path, scriptFile, { upsert: false, contentType: "application/pdf" });
-    if (upErr) throw upErr;
-    return path;
-  }
+
+
 
   function normalizePhoneNumber(raw: string): string {
     const trimmed = raw.trim().replace(/[^\d+]/g, "");
@@ -340,11 +348,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       }
 
       const logo_url = await uploadLogoIfNeeded();
-      const call_script_path = await uploadScriptIfNeeded();
-      const base = {
-        ...normalize(values),
-        ...(call_script_path !== undefined ? { call_script_path } : {}),
-      };
+      const base = normalize(values);
+
 
       if (mode === "edit" && id) {
         const payload = {
@@ -384,11 +389,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       if (!user) throw new Error("Nicht angemeldet");
       const values = form.getValues();
       const logo_url = await uploadLogoIfNeeded();
-      const call_script_path = await uploadScriptIfNeeded();
-      const base = {
-        ...normalize(values),
-        ...(call_script_path !== undefined ? { call_script_path } : {}),
-      };
+      const base = normalize(values);
+
 
       if (mode === "edit" && id) {
         const payload = {
@@ -525,14 +527,9 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                         logoFile={logoFile}
                         setLogoFile={setLogoFile}
                         existingLogo={existing.data?.logo_url ?? null}
-                        scriptFile={scriptFile}
-                        setScriptFile={setScriptFile}
-                        existingScript={
-                          (existing.data as { call_script_path?: string | null } | null)
-                            ?.call_script_path ?? null
-                        }
                       />
                     )}
+
                   </div>
                 </div>
 
@@ -925,17 +922,11 @@ function StepKonfig({
   logoFile,
   setLogoFile,
   existingLogo,
-  scriptFile,
-  setScriptFile,
-  existingScript,
 }: {
   form: FR;
   logoFile: File | null;
   setLogoFile: (f: File | null) => void;
   existingLogo: string | null;
-  scriptFile: File | null;
-  setScriptFile: (f: File | null) => void;
-  existingScript: string | null;
 }) {
   const isRecruitment = !!form.watch("is_recruitment");
   const logoLabel = useMemo(() => {
@@ -945,106 +936,129 @@ function StepKonfig({
   }, [logoFile, existingLogo]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Label>Logo (optional)</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label>Logo (optional)</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+            />
+            {logoLabel && (
+              <p className="text-xs text-muted-foreground">{logoLabel}</p>
+            )}
+          </div>
+
+          <FormField
+            control={form.control}
+            name="is_recruitment"
+            render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={!!field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="space-y-1">
+                  <FormLabel className="!mt-0 cursor-pointer">
+                    Recruitment-Kunde (Outbound Calls)
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Statt Begrüßungstext wird ein Call-Skript direkt im Editor
+                    gepflegt. Rufnummern entfallen.
+                  </p>
+                </div>
+              </FormItem>
+            )}
           />
-          {logoLabel && (
-            <p className="text-xs text-muted-foreground">{logoLabel}</p>
-          )}
+
+          <FormField
+            control={form.control}
+            name="forwarding_enabled"
+            render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="space-y-1">
+                  <FormLabel className="!mt-0 cursor-pointer">
+                    Weiterleitung erwünscht
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Anrufe werden an den Ansprechpartner durchgestellt.
+                  </p>
+                </div>
+              </FormItem>
+            )}
+          />
         </div>
 
-        <FormField
-          control={form.control}
-          name="is_recruitment"
-          render={({ field }) => (
-            <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
-              <FormControl>
-                <Checkbox
-                  checked={!!field.value}
-                  onCheckedChange={field.onChange}
-                  className="mt-0.5"
-                />
-              </FormControl>
-              <div className="space-y-1">
-                <FormLabel className="!mt-0 cursor-pointer">
-                  Recruitment-Kunde (Outbound Calls)
-                </FormLabel>
-                <p className="text-xs text-muted-foreground">
-                  Statt Begrüßungstext wird ein Call-Skript als PDF hinterlegt.
-                  Rufnummern entfallen.
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="forwarding_enabled"
-          render={({ field }) => (
-            <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="mt-0.5"
-                />
-              </FormControl>
-              <div className="space-y-1">
-                <FormLabel className="!mt-0 cursor-pointer">
-                  Weiterleitung erwünscht
-                </FormLabel>
-                <p className="text-xs text-muted-foreground">
-                  Anrufe werden an den Ansprechpartner durchgestellt.
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
+        {!isRecruitment && (
+          <FormField
+            control={form.control}
+            name="greeting_text"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Begrüßungstext</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={8}
+                    placeholder="Guten Tag, Sie sind verbunden mit …"
+                    {...field}
+                    value={(field.value as string) ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       </div>
 
-      {isRecruitment ? (
-        <div className="space-y-2">
-          <Label>Call-Skript (PDF)</Label>
-          <Input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setScriptFile(e.target.files?.[0] ?? null)}
-          />
-          <p className="text-xs text-muted-foreground">
-            {scriptFile
-              ? scriptFile.name
-              : existingScript
-                ? `Aktuell: ${existingScript}`
-                : "Noch kein Skript hochgeladen."}
-          </p>
-        </div>
-      ) : (
-      <FormField
-        control={form.control}
-        name="greeting_text"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Begrüßungstext</FormLabel>
-            <FormControl>
-              <Textarea
-                rows={8}
-                placeholder="Guten Tag, Sie sind verbunden mit …"
-                {...field}
-                value={(field.value as string) ?? ""}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {isRecruitment && (
+        <FormField
+          control={form.control}
+          name="call_script_content"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <FormLabel>Call-Skript</FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Wird dem Mitarbeiter beim Recruiting-Anruf im Portal angezeigt.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => field.onChange(CALL_SCRIPT_TEMPLATE)}
+                >
+                  Vorlage einfügen
+                </Button>
+              </div>
+              <FormControl>
+                <div className="mt-2">
+                  <TipTapEditor
+                    value={(field.value as string) ?? ""}
+                    onChange={field.onChange}
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       )}
     </div>
   );
 }
+
