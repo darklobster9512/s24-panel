@@ -14,6 +14,8 @@ import {
   X,
   Phone,
   Mail,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { PageHeader, Panel, ClientLogo } from "@/components/mitarbeiter/MitarbeiterLayout";
@@ -21,12 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
 import { callerApi, findInterviewById } from "@/hooks/use-caller-api";
