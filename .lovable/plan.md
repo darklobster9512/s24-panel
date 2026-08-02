@@ -1,35 +1,38 @@
-## Ziel
+## Ausgangslage
 
-Die bestehende Vorlage „Teilzeit - 20 Stunden/Woche" enthält noch den Text aus dem Referenzprojekt (Online-Prozess Tester/in, App-Testing). Sie wird inhaltlich auf die reale Stelle aus der Karriereseite umgeschrieben: **Sekretärin im Homeoffice (m/w/d)** – Telefonservice für Kundenunternehmen, 100 % Homeoffice, festes Monatsgehalt.
+- Stellenanzeige (sekretariat-24.de/karriere): **20 € pro Stunde**, Teilzeit/Vollzeit, Homeoffice.
+- Bestehende Vorlage „Teilzeit – 20 Std./Woche · Sekretär:in (Homeoffice)" hat aktuell **1.600,00 €** hinterlegt — das passt nicht zu 20 €/Std.
 
-Arbeitgeberblock (aigis one GmbH, Simone Heße, Liefergasse 5, 40213 Düsseldorf) bleibt unverändert. Es wird keine neue Vorlage angelegt – die bestehende wird überschrieben (Version hochgezählt).
+## Berechnung (auf volle Euro gerundet)
 
-## Neuer Vertragsinhalt
+Monatsgehalt = Wochenstunden × 20 € × 4,333 (13 Wochen / 3 Monate), kaufmännisch gerundet:
 
-- **§ 1 Beginn und Art des Arbeitsverhältnisses** – Beginn `{{ startdatum }}`, Tätigkeit als **Sekretärin / Telefonservice-Mitarbeiter/in (m/w/d)**, unbefristet, Teilzeit 20 Std./Woche, ausschließlich Homeoffice innerhalb Deutschlands, ruhiger Arbeitsplatz ohne Hintergrundgeräusche.
-- **§ 2 Tätigkeitsbereich** (aus der Stellenanzeige):
-  - Entgegennahme von Anrufen im Namen der jeweiligen Kundenunternehmen
-  - Saubere Dokumentation von Nachrichten und Anliegen
-  - Koordination von Terminen und Organisation von Rückrufen
-  - Pflege von Daten in CRM- und Ticketsystemen der Kunden
-  - Freundlicher, verbindlicher Kontakt zu Anrufer:innen
-  - Einhaltung der Gesprächsleitfäden und Qualitätsvorgaben
-  - Hinweis auf strukturierte Einarbeitung/Onboarding und Schulungen
-- **§ 3 Vergütung** – festes Monatsgehalt `{{ monatsgehalt }}` brutto, abgegolten sind bis zu 20 Arbeitsstunden pro Woche; Auszahlung zum Monatsende auf das benannte Konto; freiwillige Bonuszahlungen ohne Rechtsanspruch.
-- **§ 4 Arbeitszeit** – planbare Schichten nach Dienstplan, Abstimmung im Voraus, Verlässlichkeit/Pünktlichkeit bei Schichtbeginn, Erreichbarkeit während der Schicht.
-- **§ 5 Probezeit** – unverändert (4 Wochen, 14 Tage Kündigungsfrist).
-- **§ 6 Arbeitsmittel** – eigener Computer/Laptop, Headset und stabile Internetverbindung als Voraussetzung (statt Tablet/Smartphone-Formulierung); Zugänge zu den Systemen stellt der Arbeitgeber.
-- **§ 7 Urlaub** – unverändert (32 Tage, Tippfehler „pro jahr" → „pro Jahr" korrigiert).
-- **§ 8 Vertraulichkeit und Datenschutz** – erweitert um Telefonie-Bezug: besondere Verschwiegenheit über Anruferdaten und Kundendaten, DSGVO-konforme Verarbeitung, keine Aufzeichnung/Weitergabe von Gesprächsinhalten.
-- **§ 9 Kündigung**, **§ 10 Schlussbestimmungen**, **§ 11 Geltendes Recht** – unverändert.
+```text
+20 Std./Woche  →  1.733,33 €  →  1.733,00 €
+30 Std./Woche  →  2.600,00 €  →  2.600,00 €
+40 Std./Woche  →  3.466,67 €  →  3.467,00 €
+```
 
-Der bestehende Kopfblock (Arbeitgeber/Arbeitnehmer mit `{{ vollname }}`, `{{ strasse }}`, `{{ plz }}`, `{{ stadt }}`) und alle Platzhalter bleiben erhalten, ebenso die Formatierung (zentrierter Kopf, `<h2>`-Paragraphen, Bulletlisten) – damit greifen die bereits reduzierten Abstände der `.contract-preview`-Klasse weiterhin.
+Es werden keine Nachkommacent-Beträge verwendet — alle Vorlagen enden auf ,00.
 
-## Technische Umsetzung
+## Umsetzung
 
-- Ein Daten-Update auf `contract_templates` (Zeile `6aef9913-…`):
-  - `content_html` = neuer Vertragstext
-  - `title` = „Teilzeit – 20 Std./Woche · Sekretärin (Homeoffice)"
-  - `version` = 2, `updated_at` = now()
-  - `monthly_salary` bleibt bei 1.600,00 € (jederzeit im Editor änderbar; sag Bescheid, wenn ein anderer Betrag rein soll)
-- Keine Schema-Änderung, keine Code-Änderung nötig. Bereits signierte Verträge (`employee_contracts`) sind nicht betroffen, da PDFs separat gespeichert sind.
+1. **Bestehende Vorlage aktualisieren (20 Std.)**
+   - `monthly_salary` von 1.600,00 auf **1.733,00** setzen.
+   - Im Vertragstext (§ Vergütung) Betrag und Herleitung anpassen: „20 € pro Stunde; bei 20 Stunden pro Woche entspricht dies durchschnittlich 1.733,00 € brutto monatlich."
+
+2. **Neue Vorlage: Teilzeit – 30 Std./Woche**
+   - Kopie der bestehenden Vorlage, Kategorie „Teilzeit", `monthly_salary` = **2.600,00**.
+   - Im Text: „30 Stunden pro Woche", Vergütungsabsatz entsprechend, Urlaubsanspruch anteilig.
+
+3. **Neue Vorlage: Vollzeit – 40 Std./Woche**
+   - Kategorie „Vollzeit", `monthly_salary` = **3.467,00**.
+   - Im Text: „unbefristetes Vollzeitarbeitsverhältnis", „40 Stunden pro Woche", voller Urlaubsanspruch, Vergütungsabsatz entsprechend.
+
+Alle drei Vorlagen behalten identische Struktur (Arbeitgeber-/Arbeitnehmerblock, Platzhalter `{{ vollname }}`, `{{ startdatum }}`, `{{ monatsgehalt }}` etc.), damit PDF-Generierung und Signatur-Workflow unverändert funktionieren.
+
+## Technische Details
+
+- Datenänderungen laufen über das Insert/Update-Tool auf `public.contract_templates` (keine Schemaänderung nötig).
+- Neue Vorlagen mit `is_active = true`, `version = 1`; sie erscheinen automatisch unter `/superadmin/vertraege` und in der Vertragsauswahl im Mitarbeiter-Wizard.
+- Beträge werden im Text als „X.XXX,00 €" formatiert.
