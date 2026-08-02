@@ -46,7 +46,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
-  const [scriptUrl, setScriptUrl] = useState<string | null>(null);
+
 
   const interview = useQuery({
     queryKey: ["caller-interview", interviewId],
