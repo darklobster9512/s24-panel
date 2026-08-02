@@ -52,9 +52,11 @@ const draftSchema = z.object({
     .optional()
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
+  call_script_content: z.string().max(100000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 });
+
 
 const fullSchema = z.object({
   company_name: z.string().trim().min(1, "Pflichtfeld").max(200),
@@ -77,6 +79,7 @@ const fullSchema = z.object({
     .optional()
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
+  call_script_content: z.string().max(100000).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 }).superRefine((v, ctx) => {
@@ -88,6 +91,7 @@ const fullSchema = z.object({
     });
   }
 });
+
 
 type FormValues = z.infer<typeof draftSchema>;
 type Field = FieldPath<FormValues>;
@@ -122,10 +126,11 @@ const STEPS: StepDef[] = [
   },
   {
     title: "Konfiguration",
-    description: "Logo, Begrüßung und Weiterleitungs-Einstellungen.",
-    fields: ["greeting_text", "forwarding_enabled", "is_recruitment"],
+    description: "Logo, Begrüßung bzw. Call-Skript und Weiterleitungs-Einstellungen.",
+    fields: ["greeting_text", "call_script_content", "forwarding_enabled", "is_recruitment"],
   },
 ];
+
 
 const DEFAULTS: FormValues = {
   company_name: "",
@@ -143,7 +148,9 @@ const DEFAULTS: FormValues = {
   contact_email: "",
   greeting_text: "",
   forwarding_enabled: false,
+  call_script_content: "",
   is_recruitment: false,
+
 };
 
 const NULLABLE_STRINGS: Field[] = [
@@ -161,7 +168,9 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_phone",
   "contact_email",
   "greeting_text",
+  "call_script_content",
 ];
+
 
 function normalize(values: FormValues) {
   const out: Record<string, unknown> = { ...values };
@@ -179,7 +188,7 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [scriptFile, setScriptFile] = useState<File | null>(null);
+  
   const [phoneNumbers, setPhoneNumbers] = useState<
     { id?: string; phone_number: string; label: string }[]
   >([]);
@@ -220,8 +229,11 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         contact_phone: existing.data.contact_phone ?? "",
         contact_email: existing.data.contact_email ?? "",
         greeting_text: existing.data.greeting_text ?? "",
+        call_script_content:
+          (existing.data as { call_script_content?: string | null }).call_script_content ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
         is_recruitment: (existing.data as { is_recruitment?: boolean | null }).is_recruitment ?? false,
+
       });
     }
   }, [mode, existing.data, form]);
@@ -261,15 +273,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
     return path;
   }
 
-  async function uploadScriptIfNeeded() {
-    if (!scriptFile) return undefined;
-    const path = `${crypto.randomUUID()}.pdf`;
-    const { error: upErr } = await supabase.storage
-      .from("call-scripts")
-      .upload(path, scriptFile, { upsert: false, contentType: "application/pdf" });
-    if (upErr) throw upErr;
-    return path;
-  }
+
+
 
   function normalizePhoneNumber(raw: string): string {
     const trimmed = raw.trim().replace(/[^\d+]/g, "");
@@ -340,11 +345,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       }
 
       const logo_url = await uploadLogoIfNeeded();
-      const call_script_path = await uploadScriptIfNeeded();
-      const base = {
-        ...normalize(values),
-        ...(call_script_path !== undefined ? { call_script_path } : {}),
-      };
+      const base = normalize(values);
+
 
       if (mode === "edit" && id) {
         const payload = {
@@ -384,11 +386,8 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
       if (!user) throw new Error("Nicht angemeldet");
       const values = form.getValues();
       const logo_url = await uploadLogoIfNeeded();
-      const call_script_path = await uploadScriptIfNeeded();
-      const base = {
-        ...normalize(values),
-        ...(call_script_path !== undefined ? { call_script_path } : {}),
-      };
+      const base = normalize(values);
+
 
       if (mode === "edit" && id) {
         const payload = {
@@ -525,14 +524,9 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
                         logoFile={logoFile}
                         setLogoFile={setLogoFile}
                         existingLogo={existing.data?.logo_url ?? null}
-                        scriptFile={scriptFile}
-                        setScriptFile={setScriptFile}
-                        existingScript={
-                          (existing.data as { call_script_path?: string | null } | null)
-                            ?.call_script_path ?? null
-                        }
                       />
                     )}
+
                   </div>
                 </div>
 
