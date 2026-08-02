@@ -353,7 +353,7 @@ export default function Arbeitsvertrag() {
         <Panel className="!p-0">
           <div className="max-h-[70vh] overflow-y-auto p-6">
             <div
-              className="prose prose-sm mx-auto max-w-3xl rounded-lg bg-white p-8 text-black"
+              className="rich-text prose prose-sm mx-auto max-w-3xl rounded-lg bg-white p-8 text-black"
               // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: renderedHtml }}
             />
@@ -455,7 +455,7 @@ export default function Arbeitsvertrag() {
           <Panel className="!p-0">
             <div className="max-h-[70vh] overflow-y-auto p-6">
               <div
-                className="prose prose-sm mx-auto max-w-3xl rounded-lg bg-white p-8 text-black"
+                className="rich-text prose prose-sm mx-auto max-w-3xl rounded-lg bg-white p-8 text-black"
                 // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: renderedHtml }}
               />

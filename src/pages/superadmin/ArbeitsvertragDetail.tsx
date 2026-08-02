@@ -245,7 +245,7 @@ export default function ArbeitsvertragDetail() {
               style={{ minHeight: "1123px", width: "794px" }}
             >
               <div
-                className="prose prose-sm max-w-none"
+                className="rich-text prose prose-sm max-w-none"
                 // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: renderedHtml }}
               />

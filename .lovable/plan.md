@@ -1,31 +1,25 @@
-## Ziel
+## Ursache (verifiziert)
 
-1. Handynummer und E-Mail in der Bewerber-Card (`/mitarbeiter/erfassen`, Recruiting) per Klick ins Clipboard kopieren.
-2. Platzhalter in eckigen Klammern im Call-Skript als Variablen behandeln und beim Öffnen automatisch ersetzen.
+Das Projekt nutzt Tailwind v4 (`@tailwindcss/vite`), aber das Typography-Plugin (`@tailwindcss/typography`) ist **nicht** installiert — in `package.json` gibt es keinen Eintrag, und `src/styles.css` enthält keine `prose`-Definitionen. Die `prose`-Klassen im TipTap-Editor (`TipTapEditor.tsx`) und in der Skript-Anzeige (`RecruitmentErfassen.tsx`, Zeile 317) sind daher wirkungslos. Durch Tailwinds Preflight-Reset haben `<p>` keine Abstände (Absätze "verschwinden") und `<ul>/<ol>` keine Aufzählungszeichen.
 
-## 1. Bewerber-Card: Click-to-Copy
+Der Editor hat bereits Buttons für Aufzählung und nummerierte Liste (StarterKit) — sie erzeugen Listen, die aber unsichtbar/unformatiert dargestellt werden.
 
-In `src/pages/mitarbeiter/RecruitmentErfassen.tsx` werden die `tel:`/`mailto:`-Links durch Buttons ersetzt, die `navigator.clipboard.writeText(...)` aufrufen und eine kurze Bestätigung zeigen (Toast + kurzzeitiges Häkchen-Icon statt Phone/Mail-Icon). Optik bleibt identisch (Icon + Text, Hover-Highlight), Cursor wird `pointer`, Tooltip/`title` „Zum Kopieren klicken".
+## Umsetzung
 
-## 2. Variablen im Call-Skript
+1. **Typography-Styles bereitstellen**
+   - `@tailwindcss/typography` installieren und in `src/styles.css` per `@plugin "@tailwindcss/typography";` aktivieren (Tailwind-v4-Syntax).
+   - Alternativ, falls das Plugin Probleme macht: eine eigene `.rich-text`-Klasse in `styles.css` mit Regeln für `p`, `h1–h3`, `ul/ol/li`, `strong`, `em`, `a`, `blockquote` — nur diese eine Stelle, mit Design-Tokens.
 
-**Datenbank** — zwei neue Spalten auf `public.clients` (Migration):
-- `call_script_my_name text` (Wert für `[Mein_Name]`)
-- `call_script_company_name text` (Wert für `[Firmenname]`)
+2. **Editor-Fläche** (`src/components/superadmin/vertraege/TipTapEditor.tsx`)
+   - Editor-Attribut-Klassen so ergänzen, dass Absatzabstände und Listenpunkte während des Schreibens sichtbar sind (Listen mit `list-disc`/`list-decimal` innerhalb der Prose-Regeln).
+   - Leere Absätze (Leerzeilen) erhalten eine Mindesthöhe, damit bewusste Zeilenabstände sichtbar bleiben.
 
-**Kunden-Wizard** (`src/pages/superadmin/KundenWizard.tsx`, Schritt 5 „Konfiguration"): Wenn „Recruitment-Kunde" aktiv ist, erscheinen über dem Editor zwei Eingabefelder „Mein Name" und „Firmenname". Darunter ein kleiner Hinweis mit den verfügbaren Variablen: `[Bewerber_Name]`, `[Mein_Name]`, `[Firmenname]`. Beide Felder werden beim Speichern/Laden im Wizard-Schema mitgeführt.
+3. **Anzeige beim Mitarbeiter** (`src/pages/mitarbeiter/RecruitmentErfassen.tsx`)
+   - Der Container mit `dangerouslySetInnerHTML` bekommt dieselben Styles, sodass die Formatierung im Portal 1:1 wie im Editor aussieht (inkl. Absätze, Bullets, Nummerierung).
 
-**Vorlage** (`src/lib/call-script-template.ts`): Die aktuell uneinheitlichen Platzhalter (`[Name]` sowohl für Bewerber als auch für den Anrufer) werden auf `[Bewerber_Name]`, `[Mein_Name]`, `[Firmenname]` vereinheitlicht.
+4. **Konsistenzcheck**
+   - Gleiche Styles auch dort anwenden, wo Vertragsvorlagen mit demselben Editor gerendert werden, damit die Darstellung überall identisch ist.
 
-**Anzeige beim Anruf** (`RecruitmentErfassen.tsx`): Neue kleine Hilfsfunktion (z. B. `src/lib/call-script-vars.ts`), die vor dem Rendern alle `[…]`-Platzhalter im HTML ersetzt:
-- `[Bewerber_Name]` → Nachname des Bewerbers (letztes Wort aus dem Namen des Bewerbungsgespräch-Teilnehmers)
-- `[Mein_Name]` → `clients.call_script_my_name`
-- `[Firmenname]` → `clients.call_script_company_name`, Fallback: Kundenname
+## Ergebnis
 
-Der Client-Query wird um die beiden neuen Spalten erweitert. Ersetzung ist case-insensitiv und toleriert Leerzeichen in den Klammern. Nicht befüllte Variablen bleiben sichtbar stehen und werden dezent hervorgehoben (gelbe Markierung), damit der Mitarbeiter sie erkennt.
-
-## Technische Details
-
-- Ersetzung erfolgt nur zur Anzeige, das gespeicherte Skript bleibt mit Platzhaltern erhalten.
-- Nachname-Ableitung: Name trimmen, an Leerzeichen splitten, letztes Segment nehmen; bei einteiligem Namen wird dieser genutzt.
-- Migration braucht keine neuen GRANTs (bestehende Tabelle).
+Absätze und Leerzeilen im Call-Skript werden gespeichert *und* angezeigt, Aufzählungen sind im Editor nutzbar und erscheinen mit Punkten bzw. Nummern in der Mitarbeiter-Ansicht.

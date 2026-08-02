@@ -314,7 +314,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
           {scriptOpen && (
             <Panel title="Call-Skript">
               <div
-                className="prose prose-sm max-w-none [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
+                className="rich-text prose prose-sm max-w-none [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
                 dangerouslySetInnerHTML={{ __html: renderedScript }}
               />
             </Panel>
