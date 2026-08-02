@@ -935,6 +935,16 @@ function StepKonfig({
     return null;
   }, [logoFile, existingLogo]);
 
+  // Recruitment-Kunden ohne gepflegtes Skript bekommen die Vorlage vorgeschlagen.
+  useEffect(() => {
+    if (!isRecruitment) return;
+    const current = (form.getValues("call_script_content") as string) ?? "";
+    if (!current.replace(/<[^>]*>/g, "").trim()) {
+      form.setValue("call_script_content", CALL_SCRIPT_TEMPLATE, { shouldDirty: false });
+    }
+  }, [isRecruitment, form]);
+
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
