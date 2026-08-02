@@ -56,6 +56,8 @@ const draftSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   call_script_content: z.string().max(100000).optional().or(z.literal("")),
+  call_script_my_name: z.string().trim().max(200).optional().or(z.literal("")),
+  call_script_company_name: z.string().trim().max(200).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 });
@@ -83,6 +85,8 @@ const fullSchema = z.object({
     .or(z.literal("")),
   greeting_text: z.string().trim().max(1000).optional().or(z.literal("")),
   call_script_content: z.string().max(100000).optional().or(z.literal("")),
+  call_script_my_name: z.string().trim().max(200).optional().or(z.literal("")),
+  call_script_company_name: z.string().trim().max(200).optional().or(z.literal("")),
   forwarding_enabled: z.boolean(),
   is_recruitment: z.boolean().optional(),
 }).superRefine((v, ctx) => {
@@ -130,7 +134,14 @@ const STEPS: StepDef[] = [
   {
     title: "Konfiguration",
     description: "Logo, Begrüßung bzw. Call-Skript und Weiterleitungs-Einstellungen.",
-    fields: ["greeting_text", "call_script_content", "forwarding_enabled", "is_recruitment"],
+    fields: [
+      "greeting_text",
+      "call_script_content",
+      "call_script_my_name",
+      "call_script_company_name",
+      "forwarding_enabled",
+      "is_recruitment",
+    ],
   },
 ];
 
@@ -152,6 +163,8 @@ const DEFAULTS: FormValues = {
   greeting_text: "",
   forwarding_enabled: false,
   call_script_content: "",
+  call_script_my_name: "",
+  call_script_company_name: "",
   is_recruitment: false,
 
 };
@@ -172,6 +185,8 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_email",
   "greeting_text",
   "call_script_content",
+  "call_script_my_name",
+  "call_script_company_name",
 ];
 
 
@@ -234,6 +249,11 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         greeting_text: existing.data.greeting_text ?? "",
         call_script_content:
           (existing.data as { call_script_content?: string | null }).call_script_content ?? "",
+        call_script_my_name:
+          (existing.data as { call_script_my_name?: string | null }).call_script_my_name ?? "",
+        call_script_company_name:
+          (existing.data as { call_script_company_name?: string | null })
+            .call_script_company_name ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
         is_recruitment: (existing.data as { is_recruitment?: boolean | null }).is_recruitment ?? false,
 
@@ -1032,6 +1052,57 @@ function StepKonfig({
           />
         )}
       </div>
+
+      {isRecruitment && (
+        <div className="space-y-4 rounded-lg border border-border/60 bg-muted/30 p-4">
+          <div>
+            <h4 className="text-sm font-medium">Skript-Variablen</h4>
+            <p className="text-xs text-muted-foreground">
+              Verfügbar im Skript:{" "}
+              <code className="rounded bg-background px-1">[Bewerber_Name]</code>{" "}
+              (Nachname des Bewerbers, automatisch),{" "}
+              <code className="rounded bg-background px-1">[Mein_Name]</code>,{" "}
+              <code className="rounded bg-background px-1">[Firmenname]</code>
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="call_script_my_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mein Name ([Mein_Name])</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="z. B. Lisa Müller"
+                      {...field}
+                      value={(field.value as string) ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="call_script_company_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Firmenname ([Firmenname])</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="z. B. Audi AG"
+                      {...field}
+                      value={(field.value as string) ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+      )}
 
       {isRecruitment && (
         <FormField

@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
 import { callerApi, findInterviewById } from "@/hooks/use-caller-api";
 import { fmtDauer } from "@/lib/mitarbeiter-mock";
+import { renderCallScript, lastNameOf } from "@/lib/call-script-vars";
 
 export default function RecruitmentErfassen({ interviewId }: { interviewId: string }) {
   const navigate = useNavigate();
@@ -43,7 +44,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
+  const [copied, setCopied] = useState<"phone" | "email" | null>(null);
 
+  async function copyValue(value: string, kind: "phone" | "email") {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      toast.success(kind === "phone" ? "Nummer kopiert" : "E-Mail kopiert");
+      setTimeout(() => setCopied((c) => (c === kind ? null : c)), 1500);
+    } catch {
+      toast.error("Kopieren nicht möglich");
+    }
+  }
 
   const interview = useQuery({
     queryKey: ["caller-interview", interviewId],
@@ -56,7 +68,9 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("id, is_recruitment, call_script_path, call_script_content")
+        .select(
+          "id, is_recruitment, call_script_path, call_script_content, call_script_my_name, call_script_company_name",
+        )
         .eq("id", client!.id)
         .maybeSingle();
       return data;
@@ -80,8 +94,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
   const elapsed = start ? Math.floor((Date.now() - start) / 1000) : 0;
 
-  const scriptHtml = (clientRow.data as { call_script_content?: string | null } | null)
-    ?.call_script_content;
+  const clientData = clientRow.data as {
+    call_script_content?: string | null;
+    call_script_my_name?: string | null;
+    call_script_company_name?: string | null;
+  } | null;
+  const scriptHtml = clientData?.call_script_content;
+
+  const renderedScript = renderCallScript(scriptHtml ?? "", {
+    Bewerber_Name: lastNameOf(interview.data?.name),
+    Mein_Name: clientData?.call_script_my_name ?? "",
+    Firmenname: clientData?.call_script_company_name ?? client?.name ?? "",
+  });
 
   function openScript() {
     if (scriptOpen) {
@@ -222,22 +246,34 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                   {iv.date ?? "—"} {iv.time ? `· ${iv.time} Uhr` : ""}
                 </div>
                 {iv.phone && (
-                  <a
-                    href={`tel:${iv.phone}`}
-                    className="flex items-center gap-2 hover:text-primary hover:underline"
+                  <button
+                    type="button"
+                    title="Zum Kopieren klicken"
+                    onClick={() => copyValue(iv.phone!, "phone")}
+                    className="flex w-full items-center gap-2 rounded text-left hover:text-primary hover:underline"
                   >
-                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    {copied === "phone" ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                     <span className="font-mono text-xs">{iv.phone}</span>
-                  </a>
+                  </button>
                 )}
                 {iv.email && (
-                  <a
-                    href={`mailto:${iv.email}`}
-                    className="flex items-center gap-2 hover:text-primary hover:underline"
+                  <button
+                    type="button"
+                    title="Zum Kopieren klicken"
+                    onClick={() => copyValue(iv.email!, "email")}
+                    className="flex w-full items-center gap-2 rounded text-left hover:text-primary hover:underline"
                   >
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    {copied === "email" ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                     <span className="truncate text-xs">{iv.email}</span>
-                  </a>
+                  </button>
                 )}
                 {iv.employment && (
                   <div className="text-xs capitalize text-muted-foreground">
@@ -279,7 +315,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
             <Panel title="Call-Skript">
               <div
                 className="prose prose-sm max-w-none [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
-                dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
+                dangerouslySetInnerHTML={{ __html: renderedScript }}
               />
             </Panel>
           )}

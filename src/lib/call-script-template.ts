@@ -6,8 +6,8 @@ export const CALL_SCRIPT_TEMPLATE = `
 <h1>Bewerber-Onboarding – Gesprächsleitfaden</h1>
 
 <h2>1. Begrüßung</h2>
-<p>Hallo Herr/Frau [Name],</p>
-<p>mein Name ist [Name] von [Firmenname].</p>
+<p>Hallo Herr/Frau [Bewerber_Name],</p>
+<p>mein Name ist [Mein_Name] von [Firmenname].</p>
 <p>Vielen Dank für Ihre Bewerbung und dafür, dass Sie sich heute Zeit für unser Gespräch nehmen.</p>
 <p>Bevor wir starten, hätte ich noch eine kurze Frage:</p>
 <p><strong>Wäre es für Sie in Ordnung, wenn wir uns duzen?</strong> Bei uns im Unternehmen sprechen wir uns alle mit „Du“ an – das macht die Zusammenarbeit meist etwas persönlicher und unkomplizierter.</p>
