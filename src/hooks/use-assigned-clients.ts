@@ -21,6 +21,10 @@ export interface AssignedClient {
   plz: string | null;
   stadt: string | null;
   vatId: string | null;
+  istRecruitment: boolean;
+  callSkript: string | null;
+  skriptMeinName: string | null;
+  skriptFirmenname: string | null;
 }
 
 function buildAdresse(street: string | null, plz: string | null, city: string | null) {
@@ -44,7 +48,8 @@ export function useAssignedClients() {
           id, company_name, industry, phone, logo_url,
           company_description, greeting_text, forwarding_enabled,
           contact_person, contact_phone, contact_email,
-          email, website, street, postal_code, city, vat_id, is_draft
+          email, website, street, postal_code, city, vat_id, is_draft,
+          is_recruitment, call_script_content, call_script_my_name, call_script_company_name
         )`,
       );
       if (error) throw error;
@@ -77,6 +82,10 @@ export function useAssignedClients() {
           stadt: c.city,
           adresse: buildAdresse(c.street, c.postal_code, c.city),
           vatId: c.vat_id,
+          istRecruitment: !!c.is_recruitment,
+          callSkript: c.call_script_content ?? null,
+          skriptMeinName: c.call_script_my_name ?? null,
+          skriptFirmenname: c.call_script_company_name ?? null,
         });
       }
 

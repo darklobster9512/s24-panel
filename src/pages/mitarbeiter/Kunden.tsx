@@ -113,7 +113,14 @@ export default function Kunden() {
                         </p>
                       </div>
                       <div className="shrink-0">
-                        {c.weiterleitung ? (
+                        {c.istRecruitment ? (
+                          <Badge
+                            variant="secondary"
+                            className="gap-1 bg-primary/15 text-ink hover:bg-primary/25"
+                          >
+                            Recruiting
+                          </Badge>
+                        ) : c.weiterleitung ? (
                           <Badge
                             variant="secondary"
                             className="gap-1 bg-primary/15 text-ink hover:bg-primary/25"
