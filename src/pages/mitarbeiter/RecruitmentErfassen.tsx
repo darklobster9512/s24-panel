@@ -44,7 +44,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
+  const [copied, setCopied] = useState<"phone" | "email" | null>(null);
 
+  async function copyValue(value: string, kind: "phone" | "email") {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      toast.success(kind === "phone" ? "Nummer kopiert" : "E-Mail kopiert");
+      setTimeout(() => setCopied((c) => (c === kind ? null : c)), 1500);
+    } catch {
+      toast.error("Kopieren nicht möglich");
+    }
+  }
 
   const interview = useQuery({
     queryKey: ["caller-interview", interviewId],
@@ -57,7 +68,9 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("id, is_recruitment, call_script_path, call_script_content")
+        .select(
+          "id, is_recruitment, call_script_path, call_script_content, call_script_my_name, call_script_company_name",
+        )
         .eq("id", client!.id)
         .maybeSingle();
       return data;
