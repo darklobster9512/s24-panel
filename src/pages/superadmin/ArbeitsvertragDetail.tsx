@@ -9,8 +9,8 @@ import {
   FileSignature,
   Loader2,
 } from "lucide-react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas-pro";
+import { generateContractPdfBlob } from "@/lib/contract-pdf";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
