@@ -146,31 +146,44 @@ export default function ArbeitsvertragDetail() {
     mutationFn: async () => {
       if (!contract || !user) throw new Error("Nicht bereit");
       setGenerating(true);
-      // Render to PDF via html2canvas
-      const el = previewRef.current;
-      if (!el) throw new Error("Vorschau nicht gefunden");
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
+
+      const employerImg = signatureUrl ? await toDataUrl(signatureUrl) : null;
+      const employeeImg = contract.employee_signature_data_url;
+      const signedLabel = contract.signed_at
+        ? `Unterzeichnet am ${new Date(contract.signed_at).toLocaleDateString("de-DE")}`
+        : "Noch nicht unterzeichnet";
+
+      const sigCell = (
+        heading: string,
+        img: string | null,
+        name: string,
+        sub: string,
+      ) => `
+        <td style="width:50%;padding-right:24px;vertical-align:bottom;">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,0,0,.55);border-bottom:1px solid rgba(0,0,0,.3);padding-bottom:4px;margin-bottom:8px;">${heading}</div>
+          ${
+            img
+              ? `<img src="${img}" alt="" style="max-height:72px;margin-bottom:4px;" />`
+              : `<div style="height:72px;"></div>`
+          }
+          <div style="font-size:13px;font-weight:600;">${name}</div>
+          <div style="font-size:11px;color:rgba(0,0,0,.6);">${sub}</div>
+        </td>`;
+
+      const signatureHtml = `
+        <div data-atomic="true" style="margin-top:48px;">
+          <table style="width:100%;table-layout:fixed;"><tr>
+            ${sigCell("Arbeitgeber", employerImg, signatureQ.data?.signer_name ?? "—", signatureQ.data?.signer_title ?? "")}
+            ${sigCell("Arbeitnehmer", employeeImg, fullNameOf(emp), signedLabel)}
+          </tr></table>
+        </div>`;
+
+      const blob = await generateContractPdfBlob({
+        contentHtml: renderedHtml,
+        signatureHtml,
+        footerLabel: contract.template?.title ?? "Arbeitsvertrag",
       });
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pdf = new jsPDF({ unit: "pt", format: "a4" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW - 40;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      let heightLeft = imgH;
-      let position = 20;
-      pdf.addImage(imgData, "JPEG", 20, position, imgW, imgH);
-      heightLeft -= pageH - 40;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH + 20;
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 20, position, imgW, imgH);
-        heightLeft -= pageH - 40;
-      }
-      const blob = pdf.output("blob");
+
       const path = `contracts/${contract.employee_id}/${contract.id}.pdf`;
       const { error: upErr } = await supabase.storage
         .from("contract-assets")
