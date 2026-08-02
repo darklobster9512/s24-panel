@@ -381,20 +381,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         </div>
       </div>
 
-      <Dialog open={scriptOpen} onOpenChange={setScriptOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Call-Skript</DialogTitle>
-          </DialogHeader>
-          <div
-            className="prose prose-sm max-w-none overflow-y-auto rounded-md border bg-card p-6 [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
-            style={{ maxHeight: "70vh" }}
-            dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
-          />
 
-
-        </DialogContent>
-      </Dialog>
 
     </>
   );
