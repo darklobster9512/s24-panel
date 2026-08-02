@@ -222,17 +222,20 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
   return (
     <>
-      <PageHeader
-        title="Recruiting-Anruf"
-        subtitle="Gesprächsleitfaden, Kontaktdaten und Ergebnis in einem Screen."
-        actions={
-          <Badge variant="outline" className="gap-1.5">
-            <Phone className="h-3 w-3" /> Outbound
-          </Badge>
-        }
-      />
+      <div className="sticky top-14 z-20 -mx-6 -mt-8 border-b border-border/60 bg-surface/90 px-6 pt-8 backdrop-blur">
+        <PageHeader
+          title="Recruiting-Anruf"
+          subtitle="Gesprächsleitfaden, Kontaktdaten und Ergebnis in einem Screen."
+          actions={
+            <Badge variant="outline" className="gap-1.5">
+              <Phone className="h-3 w-3" /> Outbound
+            </Badge>
+          }
+        />
+      </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.2fr]">
+
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
           <Panel title="Bewerber">
             {interview.isLoading ? (
@@ -321,7 +324,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
           )}
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+        <div className="space-y-6 lg:sticky lg:top-44 lg:self-start">
 
           <Panel
             title="Gesprächs-Timer"
