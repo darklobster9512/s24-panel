@@ -235,7 +235,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       </div>
 
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.2fr]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
           <Panel title="Bewerber">
             {interview.isLoading ? (
@@ -324,7 +324,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
           )}
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+        <div className="space-y-6 lg:sticky lg:top-44 lg:self-start">
 
           <Panel
             title="Gesprächs-Timer"
