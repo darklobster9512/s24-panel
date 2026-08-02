@@ -1,25 +1,40 @@
-## Ursache (verifiziert)
+## Ausgangslage (geprüft)
 
-Das Projekt nutzt Tailwind v4 (`@tailwindcss/vite`), aber das Typography-Plugin (`@tailwindcss/typography`) ist **nicht** installiert — in `package.json` gibt es keinen Eintrag, und `src/styles.css` enthält keine `prose`-Definitionen. Die `prose`-Klassen im TipTap-Editor (`TipTapEditor.tsx`) und in der Skript-Anzeige (`RecruitmentErfassen.tsx`, Zeile 317) sind daher wirkungslos. Durch Tailwinds Preflight-Reset haben `<p>` keine Abstände (Absätze "verschwinden") und `<ul>/<ol>` keine Aufzählungszeichen.
-
-Der Editor hat bereits Buttons für Aufzählung und nummerierte Liste (StarterKit) — sie erzeugen Listen, die aber unsichtbar/unformatiert dargestellt werden.
+- `src/hooks/use-assigned-clients.ts` lädt **nicht** `is_recruitment`, `call_script_content`, `call_script_my_name`, `call_script_company_name` — die Detailseite kennt den Recruitment-Status nicht.
+- `src/pages/mitarbeiter/KundeDetail.tsx` zeigt „Begrüßungstext", „Weiterleitung" sowie „Letzte Anrufe"/„Notizen" — letztere beide kommen aus `MOCK_RECENT_CALLS` / `MOCK_NOTES` (`src/lib/mitarbeiter-mock.ts`), sind also nicht an Supabase angebunden.
+- Echte Datenquellen existieren bereits und werden anderswo genutzt: `sipgate_calls` (Inbound, z. B. `use-live-calls.ts`, `Cockpit.tsx`) und `call_notes` (`Notizen.tsx`, `Statistik.tsx`).
 
 ## Umsetzung
 
-1. **Typography-Styles bereitstellen**
-   - `@tailwindcss/typography` installieren und in `src/styles.css` per `@plugin "@tailwindcss/typography";` aktivieren (Tailwind-v4-Syntax).
-   - Alternativ, falls das Plugin Probleme macht: eine eigene `.rich-text`-Klasse in `styles.css` mit Regeln für `p`, `h1–h3`, `ul/ol/li`, `strong`, `em`, `a`, `blockquote` — nur diese eine Stelle, mit Design-Tokens.
+### 1. Hook erweitern (`use-assigned-clients.ts`)
+`is_recruitment`, `call_script_content`, `call_script_my_name`, `call_script_company_name` mitselektieren und als `istRecruitment`, `callSkript`, `skriptMeinName`, `skriptFirmenname` im `AssignedClient`-Interface bereitstellen.
 
-2. **Editor-Fläche** (`src/components/superadmin/vertraege/TipTapEditor.tsx`)
-   - Editor-Attribut-Klassen so ergänzen, dass Absatzabstände und Listenpunkte während des Schreibens sichtbar sind (Listen mit `list-disc`/`list-decimal` innerhalb der Prose-Regeln).
-   - Leere Absätze (Leerzeilen) erhalten eine Mindesthöhe, damit bewusste Zeilenabstände sichtbar bleiben.
+### 2. Neuer Hook für Kundendaten (`src/hooks/use-client-detail-data.ts`)
+Lädt pro Kunde echte Daten aus Supabase:
+- **Anrufe**: `sipgate_calls` gefiltert auf `client_id`, sortiert nach `started_at` absteigend, Limit 20 — mit `status`, `from_number`, `caller_name`, Dauer aus `answered_at`/`ended_at`.
+- **Notizen**: `call_notes` gefiltert auf `client_id`, sortiert nach `created_at` absteigend, Limit 20 — mit `anrufer_name`, `anrufer_nummer`, `anliegen`, `kategorie`, `prioritaet`, `dauer_sekunden`.
+- Realtime-Subscription auf beide Tabellen (gefiltert auf `client_id`), sauber in `useEffect` mit `removeChannel`-Cleanup.
+- Die bestehenden RLS-Policies (`is_client_assigned_to_me`) decken den Zugriff ab; nur lesende Queries, keine Migration nötig.
 
-3. **Anzeige beim Mitarbeiter** (`src/pages/mitarbeiter/RecruitmentErfassen.tsx`)
-   - Der Container mit `dangerouslySetInnerHTML` bekommt dieselben Styles, sodass die Formatierung im Portal 1:1 wie im Editor aussieht (inkl. Absätze, Bullets, Nummerierung).
+### 3. Detailseite umbauen (`KundeDetail.tsx`)
+Mock-Importe entfernen, Daten aus dem neuen Hook beziehen und je nach `istRecruitment` unterschiedlich rendern:
 
-4. **Konsistenzcheck**
-   - Gleiche Styles auch dort anwenden, wo Vertragsvorlagen mit demselben Editor gerendert werden, damit die Darstellung überall identisch ist.
+**Für alle Kunden**
+- „Letzte Anrufe": echte `sipgate_calls`-Einträge (verpasst / angenommen inkl. Gesprächsdauer, relatives Datum), leerer Zustand statt Mock.
+- „Notizen": echte `call_notes`-Einträge inkl. Kategorie-/Prioritäts-Badge und Gesprächsdauer.
 
-## Ergebnis
+**Nur Recruitment-Kunden**
+- Header-Badge „Recruitment-Kunde", Aktions-Button „Recruiting-Anruf starten".
+- Statt „Begrüßungstext" ein ein-/ausklappbares Panel „Call-Skript", gerendert über `renderCallScript` mit gefüllten Variablen `[Mein_Name]`/`[Firmenname]` (`[Bewerber_Name]` bleibt markiert) und den `rich-text prose`-Styles.
+- Statt „Weiterleitung" ein Panel „Anruf-Modus" mit Hinweis auf Outbound/Recruiting.
+- Panel „Letzte Anrufe" (Inbound/Sipgate) entfällt; stattdessen werden nur die Recruiting-Gesprächsnotizen aus `call_notes` gezeigt.
 
-Absätze und Leerzeilen im Call-Skript werden gespeichert *und* angezeigt, Aufzählungen sind im Editor nutzbar und erscheinen mit Punkten bzw. Nummern in der Mitarbeiter-Ansicht.
+**Nur reguläre Kunden**
+- „Begrüßungstext" und „Weiterleitung" bleiben wie bisher, zusätzlich die echte Sipgate-Anrufliste.
+
+### 4. Kundenliste (`Kunden.tsx`)
+Recruitment-Kunden bekommen das Badge „Recruiting" statt „Weiterleitung aktiv"/„Nur Notiz".
+
+## Technische Details
+- Keine Schema-Änderung nötig — alle Felder existieren bereits (`clients.is_recruitment`, `call_script_*`, `sipgate_calls`, `call_notes`).
+- Datenabruf über `@tanstack/react-query` analog zu den bestehenden Mitarbeiter-Seiten, damit Caching und Invalidierung konsistent bleiben.
