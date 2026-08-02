@@ -249,6 +249,11 @@ export default function KundenWizard({ mode }: { mode: "create" | "edit" }) {
         greeting_text: existing.data.greeting_text ?? "",
         call_script_content:
           (existing.data as { call_script_content?: string | null }).call_script_content ?? "",
+        call_script_my_name:
+          (existing.data as { call_script_my_name?: string | null }).call_script_my_name ?? "",
+        call_script_company_name:
+          (existing.data as { call_script_company_name?: string | null })
+            .call_script_company_name ?? "",
         forwarding_enabled: existing.data.forwarding_enabled ?? false,
         is_recruitment: (existing.data as { is_recruitment?: boolean | null }).is_recruitment ?? false,
 
