@@ -919,17 +919,11 @@ function StepKonfig({
   logoFile,
   setLogoFile,
   existingLogo,
-  scriptFile,
-  setScriptFile,
-  existingScript,
 }: {
   form: FR;
   logoFile: File | null;
   setLogoFile: (f: File | null) => void;
   existingLogo: string | null;
-  scriptFile: File | null;
-  setScriptFile: (f: File | null) => void;
-  existingScript: string | null;
 }) {
   const isRecruitment = !!form.watch("is_recruitment");
   const logoLabel = useMemo(() => {
@@ -939,106 +933,129 @@ function StepKonfig({
   }, [logoFile, existingLogo]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Label>Logo (optional)</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label>Logo (optional)</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+            />
+            {logoLabel && (
+              <p className="text-xs text-muted-foreground">{logoLabel}</p>
+            )}
+          </div>
+
+          <FormField
+            control={form.control}
+            name="is_recruitment"
+            render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={!!field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="space-y-1">
+                  <FormLabel className="!mt-0 cursor-pointer">
+                    Recruitment-Kunde (Outbound Calls)
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Statt Begrüßungstext wird ein Call-Skript direkt im Editor
+                    gepflegt. Rufnummern entfallen.
+                  </p>
+                </div>
+              </FormItem>
+            )}
           />
-          {logoLabel && (
-            <p className="text-xs text-muted-foreground">{logoLabel}</p>
-          )}
+
+          <FormField
+            control={form.control}
+            name="forwarding_enabled"
+            render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="space-y-1">
+                  <FormLabel className="!mt-0 cursor-pointer">
+                    Weiterleitung erwünscht
+                  </FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Anrufe werden an den Ansprechpartner durchgestellt.
+                  </p>
+                </div>
+              </FormItem>
+            )}
+          />
         </div>
 
-        <FormField
-          control={form.control}
-          name="is_recruitment"
-          render={({ field }) => (
-            <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
-              <FormControl>
-                <Checkbox
-                  checked={!!field.value}
-                  onCheckedChange={field.onChange}
-                  className="mt-0.5"
-                />
-              </FormControl>
-              <div className="space-y-1">
-                <FormLabel className="!mt-0 cursor-pointer">
-                  Recruitment-Kunde (Outbound Calls)
-                </FormLabel>
-                <p className="text-xs text-muted-foreground">
-                  Statt Begrüßungstext wird ein Call-Skript als PDF hinterlegt.
-                  Rufnummern entfallen.
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="forwarding_enabled"
-          render={({ field }) => (
-            <FormItem className="flex items-start gap-3 space-y-0 rounded-lg border border-border/60 bg-muted/30 p-4">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="mt-0.5"
-                />
-              </FormControl>
-              <div className="space-y-1">
-                <FormLabel className="!mt-0 cursor-pointer">
-                  Weiterleitung erwünscht
-                </FormLabel>
-                <p className="text-xs text-muted-foreground">
-                  Anrufe werden an den Ansprechpartner durchgestellt.
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
+        {!isRecruitment && (
+          <FormField
+            control={form.control}
+            name="greeting_text"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Begrüßungstext</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={8}
+                    placeholder="Guten Tag, Sie sind verbunden mit …"
+                    {...field}
+                    value={(field.value as string) ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       </div>
 
-      {isRecruitment ? (
-        <div className="space-y-2">
-          <Label>Call-Skript (PDF)</Label>
-          <Input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setScriptFile(e.target.files?.[0] ?? null)}
-          />
-          <p className="text-xs text-muted-foreground">
-            {scriptFile
-              ? scriptFile.name
-              : existingScript
-                ? `Aktuell: ${existingScript}`
-                : "Noch kein Skript hochgeladen."}
-          </p>
-        </div>
-      ) : (
-      <FormField
-        control={form.control}
-        name="greeting_text"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Begrüßungstext</FormLabel>
-            <FormControl>
-              <Textarea
-                rows={8}
-                placeholder="Guten Tag, Sie sind verbunden mit …"
-                {...field}
-                value={(field.value as string) ?? ""}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {isRecruitment && (
+        <FormField
+          control={form.control}
+          name="call_script_content"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <FormLabel>Call-Skript</FormLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Wird dem Mitarbeiter beim Recruiting-Anruf im Portal angezeigt.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => field.onChange(CALL_SCRIPT_TEMPLATE)}
+                >
+                  Vorlage einfügen
+                </Button>
+              </div>
+              <FormControl>
+                <div className="mt-2">
+                  <TipTapEditor
+                    value={(field.value as string) ?? ""}
+                    onChange={field.onChange}
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       )}
     </div>
   );
 }
+
