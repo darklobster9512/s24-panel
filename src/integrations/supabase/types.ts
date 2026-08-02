@@ -384,7 +384,9 @@ export type Database = {
       }
       clients: {
         Row: {
+          call_script_company_name: string | null
           call_script_content: string | null
+          call_script_my_name: string | null
           call_script_path: string | null
           city: string | null
           company_description: string | null
@@ -410,7 +412,9 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          call_script_company_name?: string | null
           call_script_content?: string | null
+          call_script_my_name?: string | null
           call_script_path?: string | null
           city?: string | null
           company_description?: string | null
@@ -436,7 +440,9 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          call_script_company_name?: string | null
           call_script_content?: string | null
+          call_script_my_name?: string | null
           call_script_path?: string | null
           city?: string | null
           company_description?: string | null
