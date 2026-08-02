@@ -203,29 +203,8 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
-          <Panel title="Kunde">
-            {!client ? (
-              <p className="text-sm text-muted-foreground">
-                Dir ist noch kein Kunde zugewiesen.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <ClientLogo logoUrl={logoUrls[client.id]} name={client.name} size="lg" />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold">{client.name}</div>
-                    <div className="text-xs text-muted-foreground">{client.branche}</div>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full gap-2" onClick={openScript}>
-                  <FileText className="h-4 w-4" /> Call-Skript öffnen
-                </Button>
-              </div>
-            )}
-          </Panel>
-
           <Panel title="Bewerber">
             {interview.isLoading ? (
               <p className="text-sm text-muted-foreground">Lade Termin…</p>
@@ -263,9 +242,46 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
               </div>
             )}
           </Panel>
+
+          <Panel title="Kunde">
+            {!client ? (
+              <p className="text-sm text-muted-foreground">
+                Dir ist noch kein Kunde zugewiesen.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <ClientLogo logoUrl={logoUrls[client.id]} name={client.name} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold">{client.name}</div>
+                    <div className="text-xs text-muted-foreground">{client.branche}</div>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full gap-2" onClick={openScript}>
+                  <FileText className="h-4 w-4" />
+                  {scriptOpen ? "Call-Skript schließen" : "Call-Skript öffnen"}
+                  {scriptOpen ? (
+                    <ChevronUp className="ml-auto h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="ml-auto h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            )}
+          </Panel>
+
+          {scriptOpen && (
+            <Panel title="Call-Skript">
+              <div
+                className="prose prose-sm max-w-none [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
+                dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
+              />
+            </Panel>
+          )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+
           <Panel
             title="Gesprächs-Timer"
             action={
