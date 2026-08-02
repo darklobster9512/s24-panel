@@ -33,6 +33,22 @@
   margin-block: 0.75em;
 }
 
+/* Vertrags-PDF-Vorschau: kompaktere Abstände im Briefkopf */
+.contract-preview.rich-text p {
+  margin-block: 0.25em;
+}
+.contract-preview.rich-text h1,
+.contract-preview.rich-text h2,
+.contract-preview.rich-text h3 {
+  margin-block: 0.5em 0.3em;
+}
+.contract-preview.rich-text *:first-child {
+  margin-top: 0;
+}
+.contract-preview.rich-text *:last-child {
+  margin-bottom: 0;
+}
+
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
