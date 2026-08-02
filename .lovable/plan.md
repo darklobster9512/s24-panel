@@ -1,17 +1,19 @@
-## Befund
+## Änderungen in `src/pages/mitarbeiter/RecruitmentErfassen.tsx`
 
-Der Code ist bereits korrekt: `/mitarbeiter/erfassen` zeigt das im Portal gepflegte Skript an und greift nur dann auf die alte PDF zurück, wenn kein Text hinterlegt ist.
+**1. Reihenfolge tauschen (linke Spalte)**
+- Panel „Bewerber" nach oben, Panel „Kunde" darunter.
 
-Die Datenbank zeigt: beim einzigen Recruitment-Kunden (**Audi AG**) ist `call_script_content` leer, aber `call_script_path` enthält noch die alte PDF. Deshalb greift der Fallback und die PDF wird geöffnet.
+**2. Call-Skript inline statt Popup**
+- Dialog komplett entfernen (inkl. `Dialog`-Imports).
+- Button „Call-Skript öffnen" wird zu einem Toggle („Call-Skript öffnen" / „Call-Skript schließen", mit Chevron-Icon).
+- Bei geöffnetem Zustand wird das Skript als aufklappender Bereich direkt in der linken Spalte unter der Kunden-Card gerendert (volle Länge, kein inneres Scrollen — man scrollt die Seite).
+- Ist kein Skript gepflegt, bleibt der bestehende Toast-Hinweis.
 
-## Änderungen
-
-1. **Bestehende Daten migrieren**: Beim Kunden Audi AG das Standard-Skript aus `src/lib/call-script-template.ts` als `call_script_content` eintragen und `call_script_path` auf leer setzen, damit kein PDF-Rest bleibt.
-2. **PDF-Fallback entfernen** in `src/pages/mitarbeiter/RecruitmentErfassen.tsx`: Kein Signed-URL-Laden aus dem Bucket `call-scripts` mehr, kein iframe-Viewer. Ist kein Text hinterlegt, erscheint stattdessen ein klarer Hinweis („Kein Call-Skript hinterlegt – bitte im Kunden-Wizard, Schritt 5 pflegen“).
-3. **Wizard-Komfort**: Beim Bearbeiten eines Recruitment-Kunden ohne Skript-Text wird die Vorlage automatisch vorgeschlagen (Button bleibt bestehen), damit dieser Zustand nicht erneut entsteht.
+**3. Rechte Spalte sticky**
+- Die rechte Spalte (Timer, Aktionen & Ergebnis, Speichern) bekommt `lg:sticky lg:top-6 lg:self-start`, damit sie beim Scrollen durch das lange Skript sichtbar bleibt.
+- Grid-Container auf `items-start` gesetzt, damit Sticky greift.
+- Auf Mobil/Tablet bleibt das Verhalten normal untereinander.
 
 ## Technisches
-
-- Datenmigration per Update auf `public.clients` (nur betroffene Zeile).
-- Entfernung von `scriptUrl`-State und Storage-Aufruf; Dialog rendert ausschließlich das gerenderte HTML.
-- Der Storage-Bucket `call-scripts` bleibt bestehen, wird aber nicht mehr gelesen.
+- Nur Präsentationsebene; Datenlogik, Timer und Speichern bleiben unverändert.
+- Falls ein übergeordneter Layout-Container `overflow` setzt, wird das geprüft und ggf. angepasst, da Sticky sonst nicht funktioniert.
