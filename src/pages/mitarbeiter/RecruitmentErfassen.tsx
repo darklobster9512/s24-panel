@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAssignedClients } from "@/hooks/use-assigned-clients";
 import { callerApi, findInterviewById } from "@/hooks/use-caller-api";
 import { fmtDauer } from "@/lib/mitarbeiter-mock";
+import { renderCallScript, lastNameOf } from "@/lib/call-script-vars";
 
 export default function RecruitmentErfassen({ interviewId }: { interviewId: string }) {
   const navigate = useNavigate();
