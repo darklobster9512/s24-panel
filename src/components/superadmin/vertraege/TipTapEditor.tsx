@@ -36,7 +36,7 @@ export function TipTapEditor({ value, onChange, onEditorReady }: Props) {
     content: value || "<p></p>",
     editorProps: {
       attributes: {
-        class: "prose prose-sm max-w-none min-h-[400px] focus:outline-none px-4 py-3",
+        class: "rich-text prose prose-sm max-w-none min-h-[400px] focus:outline-none px-4 py-3",
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),

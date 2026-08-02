@@ -27,9 +27,9 @@
   margin-block: 0;
 }
 .rich-text blockquote {
-  border-left: 3px solid hsl(var(--border));
+  border-left: 3px solid var(--border);
   padding-left: 0.75rem;
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   margin-block: 0.75em;
 }
 
