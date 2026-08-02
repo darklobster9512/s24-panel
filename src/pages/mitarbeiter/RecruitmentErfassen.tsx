@@ -83,7 +83,11 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const scriptHtml = (clientRow.data as { call_script_content?: string | null } | null)
     ?.call_script_content;
 
-  async function openScript() {
+  function openScript() {
+    if (scriptOpen) {
+      setScriptOpen(false);
+      return;
+    }
     if (scriptHtml && scriptHtml.replace(/<[^>]*>/g, "").trim()) {
       setScriptOpen(true);
       return;
@@ -92,6 +96,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       "Kein Call-Skript hinterlegt – bitte im Kunden-Wizard, Schritt 5 pflegen.",
     );
   }
+
 
 
 
