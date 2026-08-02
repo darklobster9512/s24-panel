@@ -46,7 +46,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
-  const [scriptUrl, setScriptUrl] = useState<string | null>(null);
+
 
   const interview = useQuery({
     queryKey: ["caller-interview", interviewId],
@@ -87,28 +87,15 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     ?.call_script_content;
 
   async function openScript() {
-    // Bevorzugt: im Portal gepflegtes Skript
     if (scriptHtml && scriptHtml.replace(/<[^>]*>/g, "").trim()) {
-      setScriptUrl(null);
       setScriptOpen(true);
       return;
     }
-    // Fallback: alte PDF aus dem Storage
-    const path = clientRow.data?.call_script_path;
-    if (!path) {
-      toast.error("Für diesen Kunden ist kein Call-Skript hinterlegt.");
-      return;
-    }
-    const { data, error } = await supabase.storage
-      .from("call-scripts")
-      .createSignedUrl(path, 3600);
-    if (error || !data?.signedUrl) {
-      toast.error("Call-Skript konnte nicht geladen werden.");
-      return;
-    }
-    setScriptUrl(data.signedUrl);
-    setScriptOpen(true);
+    toast.error(
+      "Kein Call-Skript hinterlegt – bitte im Kunden-Wizard, Schritt 5 pflegen.",
+    );
   }
+
 
 
   async function sendPanelLink() {
@@ -386,15 +373,12 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
           <DialogHeader>
             <DialogTitle>Call-Skript</DialogTitle>
           </DialogHeader>
-          {scriptUrl ? (
-            <iframe src={scriptUrl} title="Call-Skript" className="h-[70vh] w-full rounded-md border" />
-          ) : (
-            <div
-              className="prose prose-sm max-w-none overflow-y-auto rounded-md border bg-card p-6 [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
-              style={{ maxHeight: "70vh" }}
-              dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
-            />
-          )}
+          <div
+            className="prose prose-sm max-w-none overflow-y-auto rounded-md border bg-card p-6 [&_h1]:mt-0 [&_h2]:mt-6 [&_h2]:text-primary"
+            style={{ maxHeight: "70vh" }}
+            dangerouslySetInnerHTML={{ __html: scriptHtml ?? "" }}
+          />
+
 
         </DialogContent>
       </Dialog>

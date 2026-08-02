@@ -1,26 +1,17 @@
-## Ziel
+## Befund
 
-Bei Kunden (Schritt 5 „Konfiguration") wird das Call-Skript nicht mehr als PDF hochgeladen, sondern direkt im Portal als formatierter Text gepflegt. Im Mitarbeiter-Panel öffnet sich das Skript weiterhin per Popup — nur eben als schön formatierte Seite statt PDF-Viewer. Der Leitfaden aus der hochgeladenen PDF wird als Standard-Vorlage hinterlegt.
+Der Code ist bereits korrekt: `/mitarbeiter/erfassen` zeigt das im Portal gepflegte Skript an und greift nur dann auf die alte PDF zurück, wenn kein Text hinterlegt ist.
 
-## Was gebaut wird
+Die Datenbank zeigt: beim einzigen Recruitment-Kunden (**Audi AG**) ist `call_script_content` leer, aber `call_script_path` enthält noch die alte PDF. Deshalb greift der Fallback und die PDF wird geöffnet.
 
-**1. Datenbank**
-- Neue Spalte `clients.call_script_content` (Text/HTML). `call_script_path` bleibt bestehen, damit bereits hochgeladene PDFs nicht verloren gehen (Fallback), wird aber nicht mehr neu befüllt.
+## Änderungen
 
-**2. Kunden-Wizard, Schritt 5**
-- PDF-Upload-Feld entfällt bei Recruitment-Kunden.
-- Stattdessen der bereits im Projekt vorhandene Rich-Text-Editor (wie bei den Vertragsvorlagen): Überschriften, Fett/Kursiv, Aufzählungen.
-- Button „Vorlage einfügen" füllt den Editor mit dem Gesprächsleitfaden aus der PDF (Begrüßung, Kennenlernen, Vorstellung der Tätigkeit, Registrierung, Mitarbeiterportal, Wichtige Hinweise, Nächste Schritte, Verbindlicher Abschluss, Abschluss) — inkl. Platzhaltern `[Name]` / `[Firmenname]`.
-- Hinweistext im Recruitment-Checkbox-Block wird von „PDF" auf „Call-Skript im Editor" angepasst.
+1. **Bestehende Daten migrieren**: Beim Kunden Audi AG das Standard-Skript aus `src/lib/call-script-template.ts` als `call_script_content` eintragen und `call_script_path` auf leer setzen, damit kein PDF-Rest bleibt.
+2. **PDF-Fallback entfernen** in `src/pages/mitarbeiter/RecruitmentErfassen.tsx`: Kein Signed-URL-Laden aus dem Bucket `call-scripts` mehr, kein iframe-Viewer. Ist kein Text hinterlegt, erscheint stattdessen ein klarer Hinweis („Kein Call-Skript hinterlegt – bitte im Kunden-Wizard, Schritt 5 pflegen“).
+3. **Wizard-Komfort**: Beim Bearbeiten eines Recruitment-Kunden ohne Skript-Text wird die Vorlage automatisch vorgeschlagen (Button bleibt bestehen), damit dieser Zustand nicht erneut entsteht.
 
-**3. Mitarbeiter — Recruiting-Anruf**
-- „Call-Skript öffnen" zeigt den gepflegten Text im bestehenden Popup, sauber typografiert und scrollbar (statt iframe/PDF).
-- Falls ein Kunde noch kein Text-Skript, aber eine alte PDF hat, wird weiterhin die PDF angezeigt.
+## Technisches
 
-## Technische Details
-
-- Migration: `ALTER TABLE public.clients ADD COLUMN call_script_content text;` (keine neuen Grants nötig, bestehende Tabelle).
-- `src/pages/superadmin/KundenWizard.tsx`: `scriptFile`/`uploadScriptIfNeeded` entfernen, `call_script_content` ins Zod-Schema + `normalize()` aufnehmen, `StepKonfig` auf `TipTapEditor` umstellen.
-- Neue Datei `src/lib/call-script-template.ts` mit dem HTML-Standardleitfaden.
-- `src/pages/mitarbeiter/RecruitmentErfassen.tsx`: `openScript()` liest `call_script_content`; Dialog rendert das HTML in einem `prose`-Container; PDF-Signed-URL nur noch als Fallback.
-- Storage-Bucket `call-scripts` bleibt für Altbestände erhalten.
+- Datenmigration per Update auf `public.clients` (nur betroffene Zeile).
+- Entfernung von `scriptUrl`-State und Storage-Aufruf; Dialog rendert ausschließlich das gerenderte HTML.
+- Der Storage-Bucket `call-scripts` bleibt bestehen, wird aber nicht mehr gelesen.
