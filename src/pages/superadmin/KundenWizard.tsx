@@ -163,6 +163,8 @@ const DEFAULTS: FormValues = {
   greeting_text: "",
   forwarding_enabled: false,
   call_script_content: "",
+  call_script_my_name: "",
+  call_script_company_name: "",
   is_recruitment: false,
 
 };
@@ -183,6 +185,8 @@ const NULLABLE_STRINGS: Field[] = [
   "contact_email",
   "greeting_text",
   "call_script_content",
+  "call_script_my_name",
+  "call_script_company_name",
 ];
 
 
