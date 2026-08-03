@@ -67,6 +67,9 @@ type ContractData = {
     tax_id: string | null;
     social_security_number: string | null;
     health_insurance: string | null;
+    street: string | null;
+    postal_code: string | null;
+    city: string | null;
   };
   template: {
     id: string;
@@ -86,6 +89,9 @@ const wizardSchema = z.object({
   birth_place: z.string().trim().min(1, "Pflichtfeld"),
   nationality: z.string().trim().min(1, "Pflichtfeld"),
   marital_status: z.string().trim().min(1, "Pflichtfeld"),
+  street: z.string().trim().min(1, "Pflichtfeld"),
+  postal_code: z.string().trim().min(1, "Pflichtfeld"),
+  city: z.string().trim().min(1, "Pflichtfeld"),
   iban: z.string().trim().min(1, "Pflichtfeld"),
   bic: z.string().trim().min(1, "Pflichtfeld"),
   bank_name: z.string().trim().min(1, "Pflichtfeld"),
@@ -144,6 +150,9 @@ export default function Arbeitsvertrag() {
       birth_place: "",
       nationality: "",
       marital_status: "",
+      street: "",
+      postal_code: "",
+      city: "",
       iban: "",
       bic: "",
       bank_name: "",
@@ -161,6 +170,9 @@ export default function Arbeitsvertrag() {
       birth_place: e.birth_place ?? "",
       nationality: e.nationality ?? "",
       marital_status: e.marital_status ?? "",
+      street: e.street ?? "",
+      postal_code: e.postal_code ?? "",
+      city: e.city ?? "",
       iban: formatIBAN(e.iban ?? ""),
       bic: e.bic ?? "",
       bank_name: e.bank_name ?? "",
@@ -183,6 +195,9 @@ export default function Arbeitsvertrag() {
       geburtsdatum: values.birth_date || e.birth_date,
       geburtsort: values.birth_place || e.birth_place,
       familienstand: values.marital_status || e.marital_status,
+      strasse: values.street || e.street,
+      plz: values.postal_code || e.postal_code,
+      stadt: values.city || e.city,
       beschaeftigungsart: e.contract_type,
       startdatum: e.start_date,
       iban: values.iban || e.iban,
@@ -206,6 +221,9 @@ export default function Arbeitsvertrag() {
           birth_place: values.birth_place || null,
           nationality: values.nationality || null,
           marital_status: values.marital_status || null,
+          street: values.street || null,
+          postal_code: values.postal_code || null,
+          city: values.city || null,
           iban: values.iban.replace(/\s/g, "").toUpperCase() || null,
           bic: values.bic || null,
           bank_name: values.bank_name || null,
@@ -392,6 +410,9 @@ export default function Arbeitsvertrag() {
                     <TF form={form} name="birth_place" label="Geburtsort" placeholder="z.B. Berlin" />
                     <TF form={form} name="nationality" label="Nationalität" placeholder="z.B. Deutsch" />
                     <TF form={form} name="marital_status" label="Familienstand" placeholder="z.B. ledig, verheiratet" />
+                    <TF form={form} name="street" label="Straße & Hausnummer" placeholder="z.B. Musterstraße 12" className="md:col-span-2" />
+                    <TF form={form} name="postal_code" label="PLZ" placeholder="z.B. 10115" />
+                    <TF form={form} name="city" label="Stadt" placeholder="z.B. Berlin" />
                   </div>
                 )}
 
@@ -593,9 +614,17 @@ const SUB_STEPS: {
 }[] = [
   {
     title: "Persönliches",
-    description: "Geburt, Herkunft & Familienstand",
+    description: "Geburt, Herkunft, Adresse & Familienstand",
     icon: User,
-    fields: ["birth_date", "birth_place", "nationality", "marital_status"],
+    fields: [
+      "birth_date",
+      "birth_place",
+      "nationality",
+      "marital_status",
+      "street",
+      "postal_code",
+      "city",
+    ],
   },
   {
     title: "Bankdaten",
