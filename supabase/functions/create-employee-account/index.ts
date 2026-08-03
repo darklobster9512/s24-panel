@@ -167,7 +167,14 @@ Deno.serve(async (req) => {
       return json({ error: updErr.message }, 500);
     }
 
-    return json({ user_id: newUserId }, 200);
+    let email_sent = false;
+    try {
+      email_sent = await sendWelcomeEmail(admin, employee_id, login_email, password);
+    } catch (mailErr) {
+      console.error("welcome email error", mailErr);
+    }
+
+    return json({ user_id: newUserId, email_sent }, 200);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
