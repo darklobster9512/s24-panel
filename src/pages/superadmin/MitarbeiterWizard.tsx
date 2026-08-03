@@ -508,6 +508,8 @@ export default function MitarbeiterWizard({
   const loading = mode === "edit" && existing.isLoading;
 
   function onSubmit(values: FormValues) {
+    // Safety net: never submit unless the user is on the final step
+    if (step !== STEPS.length - 1) return;
     submitMutation.mutate(values);
   }
 
@@ -609,7 +611,12 @@ export default function MitarbeiterWizard({
                     </Button>
 
                     {isLast ? (
-                      <Button type="submit" disabled={busy}>
+                      <Button
+                        key="wizard-submit"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => form.handleSubmit(onSubmit)()}
+                      >
                         {submitMutation.isPending ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -621,6 +628,7 @@ export default function MitarbeiterWizard({
                       </Button>
                     ) : (
                       <Button
+                        key="wizard-next"
                         type="button"
                         onClick={() =>
                           setStep((s) => Math.min(s + 1, STEPS.length - 1))

@@ -1,21 +1,15 @@
-## Ziel
-Wenn im Mitarbeiter-Wizard (Schritt 2) „Arbeitsvertrag zuweisen“ aktiviert und eine Vertragsvorlage gewählt wird, sollen **Vertragsart** und **Gehalt (€ / Monat)** automatisch aus der Vorlage übernommen werden.
+## Problem
+In `src/pages/superadmin/MitarbeiterWizard.tsx` steht an derselben Stelle im Footer entweder der „Weiter“-Button (`type="button"`) oder – im letzten Schritt – der „Mitarbeiter anlegen“-Button (`type="submit"`).
 
-## Datenlage (geprüft)
-`contract_templates` enthält bereits passende Felder:
-- Teilzeit – 20 Std./Woche → Kategorie „Teilzeit“, 1.733,00 €
-- Teilzeit – 30 Std./Woche → Kategorie „Teilzeit“, 2.600,00 €
-- Vollzeit – 40 Std./Woche → Kategorie „Vollzeit“, 3.467,00 €
+Klickt man in Schritt 2 auf „Weiter“, setzt der Klick-Handler den Schritt auf 3, React rendert das Element neu, und derselbe DOM-Button trägt nun `type="submit"`. Der Browser wertet die Default-Aktion des Klicks erst nach dem Handler aus – und löst dann das Form-Submit aus. Ergebnis: Der Mitarbeiter inkl. Auth-Account wird sofort beim Wechsel zu Schritt 3 angelegt.
 
-## Umsetzung (`src/pages/superadmin/MitarbeiterWizard.tsx`)
-1. Vorlagen-Query um `category` und `monthly_salary` erweitern (aktuell nur `id,title,version,is_active`).
-2. Beim Auswählen einer Vorlage im Select:
-   - `contract_type` auf `vollzeit`/`teilzeit` setzen (aus `category`, klein geschrieben; Fallback: aus dem Titel ableiten).
-   - `salary` auf `monthly_salary` setzen (als Zahl ohne Nachkomma-Nullen, z. B. `1733`).
-   - Beide Felder mit Validierung neu setzen, damit die Schritt-Prüfung sofort grün ist.
-3. Werden die Felder danach manuell geändert, bleibt die manuelle Eingabe erhalten (Auto-Fill nur bei Vorlagen-Auswahl, nicht dauerhaft erzwungen).
-4. Deaktiviert man die Checkbox wieder, bleiben die übernommenen Werte stehen (sie sind ganz normal editierbar).
-5. Kleiner Hinweistext unter dem Vorlagen-Select: „Vertragsart und Gehalt wurden aus der Vorlage übernommen.“
+Zusätzlich löst Enter in einem der optionalen Felder in Schritt 3 ebenfalls direkt das Anlegen aus (implicit submission).
+
+## Lösung
+1. **Getrennte Buttons statt Umschalten desselben Elements:** „Weiter“ und „Mitarbeiter anlegen“ bekommen jeweils einen stabilen `key`, damit React sie nicht als dasselbe Element wiederverwendet.
+2. **Kein `type="submit"` mehr:** Der Anlegen-Button wird `type="button"` und ruft im `onClick` explizit `form.handleSubmit(onSubmit)()` auf. Damit kann kein Klick-Default und kein Enter-Druck ungewollt absenden.
+3. **Sicherheitsnetz:** `onSubmit` bricht ab, wenn nicht der letzte Schritt aktiv ist – so wird auch bei einem versehentlichen Submit (z. B. Enter) nichts angelegt.
+4. **Form-Element:** `onSubmit={form.handleSubmit(onSubmit)}` bleibt bestehen (für Barrierefreiheit), greift aber durch die Guard nur im letzten Schritt.
 
 ## Nicht betroffen
-Keine Datenbank-Änderungen, keine Änderungen am Vertrags-Workflow oder an der PDF-Generierung.
+„Als Entwurf speichern“ verhält sich unverändert; Datenbank, Edge Function und Vertragszuweisung bleiben identisch.
