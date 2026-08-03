@@ -1,15 +1,22 @@
 ## Ziel
-In Schritt 1 („Person“) des Mitarbeiter-Wizards eine durchsuchbare Dropdown-Auswahl für Bewerber ergänzen. Nach Auswahl werden Vorname, Nachname, persönliche E-Mail und persönliche Telefonnummer automatisch übernommen (weiterhin manuell überschreibbar).
+Der Mitarbeiter gibt im Arbeitsvertrag-Wizard zusätzlich Straße + Hausnummer, PLZ und Stadt ein. Diese Daten erscheinen auch im Superadmin-Mitarbeiter-Wizard (Schritt 3 „Persönliches“) sowie in der Mitarbeiter-Detailansicht und werden im Vertrag an den Variablen `{{ strasse }}`, `{{ plz }}`, `{{ stadt }}`, `{{ adresse }}` eingesetzt.
 
-## Umsetzung
-- Neue Query in `MitarbeiterWizard.tsx`, die aus `applications` die Felder `id, vorname, nachname, email, handynummer, status, ranking` lädt (sortiert nach Erstelldatum, neueste zuerst).
-- Neue Komponente `BewerberSelect` (Combobox aus `Popover` + `Command` der bestehenden UI-Bibliothek) mit Suchfeld über Name und E-Mail.
-- Anzeige pro Eintrag: „Vorname Nachname“ plus E-Mail als Zusatzzeile, optional Status-Badge.
-- Bei Auswahl: `form.setValue` für `first_name`, `last_name`, `personal_email`, `personal_phone` (mit Validierung/Dirty-Flag), Toast-Bestätigung.
-- Zusätzlicher „Auswahl aufheben“-Eintrag, der die Verknüpfung entfernt (Felder bleiben unverändert, damit nichts versehentlich gelöscht wird).
-- Platzierung: über den vier Eingabefeldern, volle Breite; Hinweistext „Optional – Felder werden automatisch befüllt“.
+## Datenbank
+Migration: drei neue optionale Textspalten in `public.employees`:
+- `street` (Straße + Hausnummer)
+- `postal_code`
+- `city`
+
+## Mitarbeiter-Arbeitsvertrag-Wizard (`src/pages/mitarbeiter/Arbeitsvertrag.tsx`)
+- Schritt „Persönliche Daten“ um drei Pflichtfelder erweitern (Straße & Hausnummer, PLZ, Stadt) — im Zod-Schema und in der Schrittvalidierung.
+- Vorbelegung aus bestehenden Mitarbeiterdaten, Speicherung beim Signieren zusammen mit den übrigen Feldern.
+- Live-Vorschau: `renderContractHtml` erhält `strasse`, `plz`, `stadt` aus den Formularwerten (Fallback auf gespeicherte Werte).
+
+## Superadmin
+- `MitarbeiterWizard.tsx`: Schritt 3 „Persönliches“ um die drei Felder erweitern (optional), inkl. Schema, Defaults, Feldliste und Laden beim Bearbeiten.
+- `MitarbeiterDetail.tsx`: Adresse als zusätzliche Zeile anzeigen.
+- `ArbeitsvertragDetail.tsx`: Adressfelder an `renderContractHtml` übergeben (damit Vorschau und PDF die Variablen befüllen) und in der Datenübersicht anzeigen.
 
 ## Technische Details
-- Keine Datenbankänderung nötig; `applications` enthält alle benötigten Felder.
-- Im Bearbeiten-Modus wird die Auswahl nicht vorbelegt (kein Verknüpfungsfeld in `employees`); die Combobox dient rein zum Vorbefüllen.
-- Ladezustand und leerer Zustand („Keine Bewerber gefunden“) werden abgefangen.
+- `renderContractHtml` und `contract-placeholders.ts` unterstützen die Tokens bereits — nur die Datenzuführung fehlt.
+- Vertragsvorlagen selbst bleiben unverändert; leere Werte werden weiterhin als `____________` gerendert.
