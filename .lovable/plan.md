@@ -1,16 +1,20 @@
-Zwei neue Vollzeit-Vertragsvorlagen anlegen: **37,5h/Woche** und **35h/Woche**.
+# Neue Vertragsvorlage: Teilzeit 22,5 Std./Woche
 
-**Gehaltsberechnung** (Stundenlohn 20 €, wie bestehende Vorlagen):
-- 37,5h × 20 € × 52 / 12 = **3.250,00 € brutto/Monat**
-- 35h × 20 € × 52 / 12 = **3.033,33 € brutto/Monat**
+## Was entsteht
+Eine weitere Vorlage unter `/superadmin/vertraege`, aufgebaut wie die bestehenden Vorlagen.
 
-**Vorgehen**
-1. Bestehende Vertragsvorlage (z. B. 20h-Teilzeit) aus `contract_templates` auslesen und als Inhaltsvorlage verwenden.
-2. Zwei neue Zeilen in `contract_templates` einfügen:
-   - Titel: **„Vollzeit 37,5h/Woche“** – Kategorie: **Vollzeit** – Gehalt: **3250.00**
-   - Titel: **„Vollzeit 35h/Woche“** – Kategorie: **Vollzeit** – Gehalt: **3033.33**
-3. Inhalt anpassen: alle Stundenangaben und Gehalts-/Stundenverweise auf 37,5h bzw. 35h umstellen, Platzhalter (`{{ monatsgehalt }}`, `{{ startdatum }}`, `{{ vollname }}`, Adresse etc.) beibehalten.
-4. Beide Vorlagen auf **aktiv** setzen, damit sie sofort im Mitarbeiter-Wizard unter „Vertragsvorlage auswählen“ zur Verfügung stehen.
-5. Im UI unter `/superadmin/vertraege` prüfen, dass beide Karten korrekt angezeigt werden.
+- Titel: `Teilzeit – 22,5 Std./Woche · Sekretär:in (Homeoffice)` (gleiches Schema wie die anderen Titel)
+- Kategorie: `Teilzeit`
+- Gehalt: **1950 €/Monat** (22,5 h × 20 €/h × 52 ÷ 12 = exakt 1950, keine Kommastellen)
+- Status: aktiv, Version 1
 
-**Hinweis**: Die Vorlagen enthalten aktuell noch den Arbeitgeber-Namen „aigis one GmbH“ aus der Vorlage. Falls du den auf „Sekretariat24“ oder deinen aktuellen Firmennamen ändern möchtest, sag kurz Bescheid – das passiert im selben Zug.
+## Inhalt
+Der Vertragstext wird 1:1 von der bestehenden Teilzeit-Vorlage übernommen; angepasst werden nur:
+- Wochenarbeitszeit: 22,5 Stunden
+- Tägliche Arbeitszeit: Montag bis Freitag je 4,5 Stunden, 08:30–14:00 Uhr, inkl. 60 Minuten unbezahlter Pause
+- Beschäftigungsform bleibt „Teilzeit“
+
+Alle Platzhalter (`{{ vollname }}`, `{{ monatsgehalt }}`, Adresse, Startdatum usw.) bleiben unverändert erhalten.
+
+## Technisch
+Ein einzelner Insert in `public.contract_templates` mit angepasstem `content_html`. Kein Code-Änderungsbedarf — die Vorlage erscheint automatisch in der Übersicht und im Mitarbeiter-Wizard unter „Arbeitsvertrag zuweisen“ (mit automatischer Übernahme von Vertragsart und Gehalt).
