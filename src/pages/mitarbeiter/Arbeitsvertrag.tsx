@@ -259,6 +259,9 @@ export default function Arbeitsvertrag() {
       if (error) throw error;
     },
     onSuccess: () => {
+      void supabase.functions
+        .invoke("contract-signed-notify", { body: { contract_id: q.data?.id } })
+        .catch((e) => console.error("contract-signed-notify failed", e));
       toast.success("Danke — dein Vertrag wurde eingereicht.");
       qc.invalidateQueries({ queryKey: ["my-contract-full", user?.id] });
       qc.invalidateQueries({ queryKey: ["my-contract", user?.id] });
