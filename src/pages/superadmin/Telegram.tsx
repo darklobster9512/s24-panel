@@ -226,6 +226,7 @@ export default function Telegram() {
                     <TableHead className="text-center">Aktiv</TableHead>
                     <TableHead className="text-center">Bewerbungen</TableHead>
                     <TableHead className="text-center">Gespräche</TableHead>
+                    <TableHead className="text-center">Verträge</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
