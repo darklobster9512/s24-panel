@@ -22,6 +22,14 @@ export type ContractVars = {
   firma?: string | null;
 };
 
+/** Wandelt ISO-Datumswerte (YYYY-MM-DD[...]) in TT.MM.JJJJ um. */
+function formatDate(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return v;
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
 function esc(v: unknown): string {
   if (v === null || v === undefined || v === "") return "____________";
   return String(v);
