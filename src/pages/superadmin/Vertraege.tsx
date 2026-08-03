@@ -143,7 +143,7 @@ export default function Vertraege() {
     const { error } = await (supabase as any)
       .from("company_signature")
       .upsert(
-        { singleton: true, signer_name: nameDraft, signer_title: titleDraft, signature_url: path, signature_source: "upload", signature_style: null },
+        { singleton: true, signer_name: nameDraft, signer_title: titleDraft, signature_url: path, signature_source: "uploaded", signature_style: null },
         { onConflict: "singleton" },
       );
     if (error) return toast.error(error.message);
