@@ -989,6 +989,28 @@ function OutboundRecruitmentField({ form }: { form: FR }) {
   );
 }
 
+type TemplateOption = {
+  id: string;
+  title: string;
+  version: number;
+  is_active: boolean;
+  category: string | null;
+  monthly_salary: number | null;
+};
+
+function deriveContractType(t: TemplateOption): "vollzeit" | "teilzeit" | null {
+  const hay = `${t.category ?? ""} ${t.title ?? ""}`.toLowerCase();
+  if (hay.includes("vollzeit")) return "vollzeit";
+  if (hay.includes("teilzeit")) return "teilzeit";
+  return null;
+}
+
+function formatSalary(v: number | string): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  return String(Math.round(n * 100) / 100);
+}
+
 function ContractAssignField({
   form,
   templates,
