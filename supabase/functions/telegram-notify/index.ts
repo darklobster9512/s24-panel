@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
   }
 
   const type = payload.type ?? '';
-  if (!['application', 'interview', 'test'].includes(type)) {
+  if (!['application', 'interview', 'contract', 'test'].includes(type)) {
     return new Response(JSON.stringify({ error: 'Unbekannter Typ' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
