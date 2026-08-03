@@ -76,6 +76,9 @@ const draftSchema = z.object({
   birth_place: z.string().trim().max(120).optional().or(z.literal("")),
   nationality: z.string().trim().max(80).optional().or(z.literal("")),
   marital_status: z.string().trim().max(60).optional().or(z.literal("")),
+  street: z.string().trim().max(200).optional().or(z.literal("")),
+  postal_code: z.string().trim().max(20).optional().or(z.literal("")),
+  city: z.string().trim().max(120).optional().or(z.literal("")),
   iban: z.string().trim().max(40).optional().or(z.literal("")),
   bic: z.string().trim().max(20).optional().or(z.literal("")),
   bank_name: z.string().trim().max(120).optional().or(z.literal("")),
@@ -112,6 +115,9 @@ const fullSchema = z.object({
   birth_place: z.string().trim().max(120).optional().or(z.literal("")),
   nationality: z.string().trim().max(80).optional().or(z.literal("")),
   marital_status: z.string().trim().max(60).optional().or(z.literal("")),
+  street: z.string().trim().max(200).optional().or(z.literal("")),
+  postal_code: z.string().trim().max(20).optional().or(z.literal("")),
+  city: z.string().trim().max(120).optional().or(z.literal("")),
   iban: z.string().trim().max(40).optional().or(z.literal("")),
   bic: z.string().trim().max(20).optional().or(z.literal("")),
   bank_name: z.string().trim().max(120).optional().or(z.literal("")),
@@ -155,6 +161,9 @@ const STEPS: StepDef[] = [
       "birth_place",
       "nationality",
       "marital_status",
+      "street",
+      "postal_code",
+      "city",
       "iban",
       "bic",
       "bank_name",
@@ -184,6 +193,9 @@ const DEFAULTS: FormValues = {
   birth_place: "",
   nationality: "",
   marital_status: "",
+  street: "",
+  postal_code: "",
+  city: "",
   iban: "",
   bic: "",
   bank_name: "",
@@ -204,6 +216,9 @@ const NULLABLE_STRINGS: Field[] = [
   "birth_place",
   "nationality",
   "marital_status",
+  "street",
+  "postal_code",
+  "city",
   "iban",
   "bic",
   "bank_name",
@@ -333,6 +348,9 @@ export default function MitarbeiterWizard({
         birth_place: d.birth_place ?? "",
         nationality: d.nationality ?? "",
         marital_status: d.marital_status ?? "",
+        street: d.street ?? "",
+        postal_code: d.postal_code ?? "",
+        city: d.city ?? "",
         iban: d.iban ?? "",
         bic: d.bic ?? "",
         bank_name: d.bank_name ?? "",
@@ -1262,6 +1280,15 @@ function StepOptional({ form }: { form: FR }) {
         label="Familienstand"
         placeholder="ledig / verheiratet / …"
       />
+      <TextField
+        form={form}
+        name="street"
+        label="Straße & Hausnummer"
+        placeholder="Musterstraße 12"
+        className="md:col-span-2"
+      />
+      <TextField form={form} name="postal_code" label="PLZ" placeholder="10115" />
+      <TextField form={form} name="city" label="Stadt" placeholder="Berlin" />
       <TextField form={form} name="iban" label="IBAN" placeholder="DE00 0000 0000 0000 0000 00" />
       <TextField form={form} name="bic" label="BIC" placeholder="XXXXDEXXXXX" />
       <TextField

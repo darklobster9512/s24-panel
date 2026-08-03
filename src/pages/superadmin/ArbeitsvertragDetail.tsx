@@ -47,6 +47,9 @@ type Contract = {
     tax_id: string | null;
     social_security_number: string | null;
     health_insurance: string | null;
+    street: string | null;
+    postal_code: string | null;
+    city: string | null;
   } | null;
   template: {
     id: string;
@@ -149,6 +152,9 @@ export default function ArbeitsvertragDetail() {
       geburtsdatum: emp.birth_date,
       geburtsort: emp.birth_place,
       familienstand: emp.marital_status,
+      strasse: emp.street,
+      plz: emp.postal_code,
+      stadt: emp.city,
       beschaeftigungsart: emp.contract_type,
       startdatum: emp.start_date,
       iban: emp.iban,
@@ -393,6 +399,9 @@ export default function ArbeitsvertragDetail() {
               <DataRow label="Geburtsdatum" value={emp.birth_date} />
               <DataRow label="Geburtsort" value={emp.birth_place} />
               <DataRow label="Familienstand" value={emp.marital_status} />
+              <DataRow label="Straße & Hausnummer" value={emp.street} />
+              <DataRow label="PLZ" value={emp.postal_code} />
+              <DataRow label="Stadt" value={emp.city} />
               <DataRow label="IBAN" value={emp.iban} />
               <DataRow label="BIC" value={emp.bic} />
               <DataRow label="Bank" value={emp.bank_name} />

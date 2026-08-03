@@ -608,6 +608,7 @@ export type Database = {
           birth_date: string | null
           birth_place: string | null
           caller_api_key: string | null
+          city: string | null
           contract_type: string | null
           created_at: string
           created_by: string
@@ -625,10 +626,12 @@ export type Database = {
           password_plain: string | null
           personal_email: string | null
           personal_phone: string | null
+          postal_code: string | null
           salary: number | null
           sipgate_user_id: string | null
           social_security_number: string | null
           start_date: string | null
+          street: string | null
           tax_id: string | null
           updated_at: string
           user_id: string | null
@@ -639,6 +642,7 @@ export type Database = {
           birth_date?: string | null
           birth_place?: string | null
           caller_api_key?: string | null
+          city?: string | null
           contract_type?: string | null
           created_at?: string
           created_by: string
@@ -656,10 +660,12 @@ export type Database = {
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
+          postal_code?: string | null
           salary?: number | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
+          street?: string | null
           tax_id?: string | null
           updated_at?: string
           user_id?: string | null
@@ -670,6 +676,7 @@ export type Database = {
           birth_date?: string | null
           birth_place?: string | null
           caller_api_key?: string | null
+          city?: string | null
           contract_type?: string | null
           created_at?: string
           created_by?: string
@@ -687,10 +694,12 @@ export type Database = {
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
+          postal_code?: string | null
           salary?: number | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
+          street?: string | null
           tax_id?: string | null
           updated_at?: string
           user_id?: string | null
