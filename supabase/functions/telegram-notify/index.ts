@@ -74,6 +74,26 @@ function buildMessage(type: string, p: Record<string, unknown>) {
       buttonText: '🗓 Termin öffnen',
     };
   }
+  if (type === 'contract') {
+    const details = [p.template_title, p.contract_type].filter(Boolean).map(esc).join(' · ');
+    return {
+      text: [
+        '📝 <b>Arbeitsvertrag eingereicht</b>',
+        DIVIDER,
+        `👤 <b>${esc(name)}</b>`,
+        details ? `📄 ${details}` : '',
+        p.salary ? `💶 ${esc(p.salary)} € / Monat` : '',
+        'Der Vertrag wartet auf deine Bestätigung.',
+        DIVIDER,
+        `🕓 <i>${esc(fmtDateTimeNow())}</i>`,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      url: `${PORTAL}/superadmin/arbeitsvertraege/${esc(p.contract_id)}`,
+      buttonText: '📄 Vertrag prüfen',
+    };
+  }
+
 
   return {
     text: [
@@ -151,7 +171,7 @@ Deno.serve(async (req) => {
   }
 
   const type = payload.type ?? '';
-  if (!['application', 'interview', 'test'].includes(type)) {
+  if (!['application', 'interview', 'contract', 'test'].includes(type)) {
     return new Response(JSON.stringify({ error: 'Unbekannter Typ' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -186,7 +206,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  const column = type === 'application' ? 'notify_applications' : 'notify_interviews';
+  const column =
+    type === 'application'
+      ? 'notify_applications'
+      : type === 'contract'
+        ? 'notify_contracts'
+        : 'notify_interviews';
   let chatIds: string[] = [];
 
   if (payload.chat_id) {

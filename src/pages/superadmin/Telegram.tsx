@@ -25,6 +25,7 @@ type Recipient = {
   is_active: boolean;
   notify_applications: boolean;
   notify_interviews: boolean;
+  notify_contracts: boolean;
   created_at: string;
 };
 
@@ -225,6 +226,7 @@ export default function Telegram() {
                     <TableHead className="text-center">Aktiv</TableHead>
                     <TableHead className="text-center">Bewerbungen</TableHead>
                     <TableHead className="text-center">Gespräche</TableHead>
+                    <TableHead className="text-center">Verträge</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -268,6 +270,16 @@ export default function Telegram() {
                             checked={r.notify_interviews}
                             onCheckedChange={(v) =>
                               updateMutation.mutate({ id: r.id, patch: { notify_interviews: v } })
+                            }
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Switch
+                            checked={r.notify_contracts}
+                            onCheckedChange={(v) =>
+                              updateMutation.mutate({ id: r.id, patch: { notify_contracts: v } })
                             }
                           />
                         </div>

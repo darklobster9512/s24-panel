@@ -912,6 +912,7 @@ export type Database = {
           is_active: boolean
           label: string | null
           notify_applications: boolean
+          notify_contracts: boolean
           notify_interviews: boolean
           updated_at: string
         }
@@ -922,6 +923,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_contracts?: boolean
           notify_interviews?: boolean
           updated_at?: string
         }
@@ -932,6 +934,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_contracts?: boolean
           notify_interviews?: boolean
           updated_at?: string
         }
