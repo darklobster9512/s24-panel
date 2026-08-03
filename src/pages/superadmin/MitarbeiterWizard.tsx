@@ -994,9 +994,31 @@ function ContractAssignField({
   templates,
 }: {
   form: FR;
-  templates: { id: string; title: string; version: number; is_active: boolean }[];
+  templates: TemplateOption[];
 }) {
   const assign = !!form.watch("assign_contract");
+  const selectedId = (form.watch("contract_template_id") as string) || "";
+  const selected = templates.find((t) => t.id === selectedId);
+
+  const applyTemplate = (id: string) => {
+    form.setValue("contract_template_id", id, { shouldDirty: true });
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    const type = deriveContractType(t);
+    if (type) {
+      form.setValue("contract_type", type, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+    if (t.monthly_salary != null) {
+      form.setValue("salary", formatSalary(t.monthly_salary), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  };
+
   return (
     <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
       <FormField
@@ -1034,7 +1056,7 @@ function ContractAssignField({
               <FormLabel>Vertragsvorlage</FormLabel>
               <Select
                 value={(field.value as string) || undefined}
-                onValueChange={field.onChange}
+                onValueChange={applyTemplate}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -1054,11 +1076,20 @@ function ContractAssignField({
                   ))}
                 </SelectContent>
               </Select>
+              {selected && (
+                <p className="text-xs text-muted-foreground">
+                  Vertragsart und Gehalt wurden aus der Vorlage übernommen.
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
       )}
+    </div>
+  );
+}
+
     </div>
   );
 }
