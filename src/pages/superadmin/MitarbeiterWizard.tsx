@@ -801,9 +801,124 @@ function TextField({
   );
 }
 
+type ApplicantOption = {
+  id: string;
+  vorname: string;
+  nachname: string;
+  email: string;
+  handynummer: string | null;
+};
+
+function BewerberSelect({ form }: { form: FR }) {
+  const [open, setOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const { data: applicants = [], isLoading } = useQuery({
+    queryKey: ["applications", "picker"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("applications")
+        .select("id, vorname, nachname, email, handynummer")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data ?? []) as ApplicantOption[];
+    },
+  });
+
+  const selected = applicants.find((a) => a.id === selectedId) ?? null;
+
+  const apply = (a: ApplicantOption) => {
+    const opts = { shouldDirty: true, shouldValidate: true } as const;
+    form.setValue("first_name", a.vorname ?? "", opts);
+    form.setValue("last_name", a.nachname ?? "", opts);
+    form.setValue("personal_email", a.email ?? "", opts);
+    form.setValue("personal_phone", a.handynummer ?? "", opts);
+    setSelectedId(a.id);
+    setOpen(false);
+    toast.success(`Daten von ${a.vorname} ${a.nachname} übernommen`);
+  };
+
+  return (
+    <div className="md:col-span-2 space-y-2">
+      <label className="text-sm font-medium">Bewerber auswählen</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal"
+          >
+            {selected
+              ? `${selected.vorname} ${selected.nachname}`
+              : "Bewerber suchen …"}
+            <Sparkles className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0"
+          align="start"
+        >
+          <Command
+            filter={(value, search) =>
+              value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+            }
+          >
+            <CommandInput placeholder="Name oder E-Mail suchen …" />
+            <CommandList>
+              <CommandEmpty>
+                {isLoading ? "Lade Bewerber …" : "Keine Bewerber gefunden."}
+              </CommandEmpty>
+              <CommandGroup>
+                {selected && (
+                  <CommandItem
+                    value="auswahl-aufheben"
+                    onSelect={() => {
+                      setSelectedId(null);
+                      setOpen(false);
+                    }}
+                    className="text-muted-foreground"
+                  >
+                    Auswahl aufheben
+                  </CommandItem>
+                )}
+                {applicants.map((a) => (
+                  <CommandItem
+                    key={a.id}
+                    value={`${a.vorname} ${a.nachname} ${a.email}`}
+                    onSelect={() => apply(a)}
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate">
+                        {a.vorname} {a.nachname}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {a.email}
+                      </span>
+                    </div>
+                    {selectedId === a.id && (
+                      <Check className="ml-auto h-4 w-4 text-primary" />
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <p className="text-xs text-muted-foreground">
+        Optional – Vorname, Nachname, E-Mail und Telefonnummer werden automatisch befüllt.
+      </p>
+    </div>
+  );
+}
+
 function StepPerson({ form }: { form: FR }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
+      <BewerberSelect form={form} />
       <TextField form={form} name="first_name" label="Vorname" placeholder="Max" />
       <TextField form={form} name="last_name" label="Nachname" placeholder="Mustermann" />
       <TextField
