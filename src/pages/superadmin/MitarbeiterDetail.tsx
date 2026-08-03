@@ -118,6 +118,9 @@ export default function MitarbeiterDetail() {
               <Row label="Geburtsort" value={data.birth_place} />
               <Row label="Nationalität" value={data.nationality} />
               <Row label="Familienstand" value={data.marital_status} />
+              <Row label="Straße & Hausnummer" value={data.street} />
+              <Row label="PLZ" value={data.postal_code} />
+              <Row label="Stadt" value={data.city} />
               <Row label="IBAN" value={<span className="font-mono">{data.iban}</span>} />
               <Row label="BIC" value={<span className="font-mono">{data.bic}</span>} />
               <Row label="Bank" value={data.bank_name} />
