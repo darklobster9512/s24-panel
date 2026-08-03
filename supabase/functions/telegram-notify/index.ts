@@ -74,6 +74,26 @@ function buildMessage(type: string, p: Record<string, unknown>) {
       buttonText: '🗓 Termin öffnen',
     };
   }
+  if (type === 'contract') {
+    const details = [p.template_title, p.contract_type].filter(Boolean).map(esc).join(' · ');
+    return {
+      text: [
+        '📝 <b>Arbeitsvertrag eingereicht</b>',
+        DIVIDER,
+        `👤 <b>${esc(name)}</b>`,
+        details ? `📄 ${details}` : '',
+        p.salary ? `💶 ${esc(p.salary)} € / Monat` : '',
+        'Der Vertrag wartet auf deine Bestätigung.',
+        DIVIDER,
+        `🕓 <i>${esc(fmtDateTimeNow())}</i>`,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      url: `${PORTAL}/superadmin/arbeitsvertraege/${esc(p.contract_id)}`,
+      buttonText: '📄 Vertrag prüfen',
+    };
+  }
+
 
   return {
     text: [
