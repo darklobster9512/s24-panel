@@ -229,27 +229,38 @@ function StandardErfassen() {
         toast.error("Mitarbeiter-Profil nicht gefunden.");
         return;
       }
-      const { error } = await supabase.from("call_notes").insert({
-        client_id: clientId,
-        employee_id: emp.id,
-        sipgate_call_id: callId ?? null,
-        anrufer_name: anruferName || null,
-        anrufer_nummer: anruferNummer || null,
-        anrufer_email: anruferEmail || null,
-        anliegen: anliegen.trim(),
-        kategorie: kategorie || null,
-        prioritaet,
-        weitergeleitet_an: kategorie === "Weiterleitung" ? weitergeleitetAn || null : null,
-        rueckruf_gewuenscht: rueckruf,
-        rueckruf_zeit: rueckruf ? rueckrufZeit || null : null,
-        
-        dauer_sekunden: elapsed,
-      });
+      const { data: inserted, error } = await supabase
+        .from("call_notes")
+        .insert({
+          client_id: clientId,
+          employee_id: emp.id,
+          sipgate_call_id: callId ?? null,
+          anrufer_name: anruferName || null,
+          anrufer_nummer: anruferNummer || null,
+          anrufer_email: anruferEmail || null,
+          anliegen: anliegen.trim(),
+          kategorie: kategorie || null,
+          prioritaet,
+          weitergeleitet_an: kategorie === "Weiterleitung" ? weitergeleitetAn || null : null,
+          rueckruf_gewuenscht: rueckruf,
+          rueckruf_zeit: rueckruf ? rueckrufZeit || null : null,
+
+          dauer_sekunden: elapsed,
+        })
+        .select("id")
+        .maybeSingle();
       if (error) {
         console.error(error);
         toast.error("Speichern fehlgeschlagen: " + error.message);
         return;
       }
+
+      if (inserted?.id) {
+        supabase.functions
+          .invoke("call-note-notify", { body: { note_id: inserted.id, kind: "inbound" } })
+          .catch((e) => console.warn("call-note-notify failed", e));
+      }
+
 
       // Remember caller by phone number (per client) so next call auto-fills
       const normalizedPhone = normalizePhone(anruferNummer);

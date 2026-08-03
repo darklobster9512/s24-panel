@@ -175,19 +175,29 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         ? "Recruiting-Anruf erfolgreich"
         : "Recruiting-Anruf fehlgeschlagen");
 
-    const { error } = await supabase.from("call_notes").insert({
-      client_id: client.id,
-      employee_id: emp.id,
-      anrufer_name: iv?.name ?? null,
-      anrufer_nummer: iv?.phone ?? null,
-      anrufer_email: iv?.email ?? null,
-      anliegen: `[${outcome === "erfolgreich" ? "Erfolgreich" : "Fehlgeschlagen"}] ${text}`,
-      kategorie: "Termin",
-      prioritaet: "normal",
-      rueckruf_gewuenscht: false,
-      dauer_sekunden: elapsed,
-    });
+    const { data: inserted, error } = await supabase
+      .from("call_notes")
+      .insert({
+        client_id: client.id,
+        employee_id: emp.id,
+        anrufer_name: iv?.name ?? null,
+        anrufer_nummer: iv?.phone ?? null,
+        anrufer_email: iv?.email ?? null,
+        anliegen: `[${outcome === "erfolgreich" ? "Erfolgreich" : "Fehlgeschlagen"}] ${text}`,
+        kategorie: "Termin",
+        prioritaet: "normal",
+        rueckruf_gewuenscht: false,
+        dauer_sekunden: elapsed,
+      })
+      .select("id")
+      .maybeSingle();
     if (error) throw error;
+    if (inserted?.id) {
+      supabase.functions
+        .invoke("call-note-notify", { body: { note_id: inserted.id, kind: "outbound" } })
+        .catch((e) => console.warn("call-note-notify failed", e));
+    }
+
   }
 
   async function saveAndClose() {
