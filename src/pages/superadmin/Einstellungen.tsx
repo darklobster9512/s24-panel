@@ -663,6 +663,61 @@ export default function Einstellungen() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={welcomePreviewOpen} onOpenChange={setWelcomePreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Vorschau · Zugangsdaten Mitarbeiterkonto</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Von</div>
+                <div className="font-medium truncate">
+                  {form.resend_from_name || "—"} &lt;{form.resend_from_email || "no-reply@example.com"}&gt;
+                </div>
+              </div>
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Betreff</div>
+                <div className="font-medium truncate">
+                  {renderTpl(form.welcome_email_subject ?? "", welcomeVars)}
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-border bg-[#f5f7f5]">
+              <iframe
+                title="Zugangsdaten E-Mail Vorschau"
+                sandbox=""
+                style={{ width: "100%", height: 560, border: 0, background: "#f5f7f5" }}
+                srcDoc={renderApplicationEmailHtml({
+                  subject: renderTpl(
+                    form.welcome_email_subject ?? "Deine Zugangsdaten für dein Mitarbeiterkonto",
+                    welcomeVars,
+                  ),
+                  bodyText: form.welcome_email_body ?? "",
+                  vars: welcomeVars,
+                  company: {
+                    name: form.company_name ?? "Sekretariat24",
+                    address: form.company_address,
+                    logoText: form.logo_text ?? form.company_name ?? "Sekretariat24",
+                    accent: form.accent_color ?? "#7bed9f",
+                  },
+                  infoCard: {
+                    label: "Deine Zugangsdaten",
+                    lines: [`E-Mail: ${welcomeVars.login_email}`, `Passwort: ${welcomeVars.passwort}`],
+                  },
+                  cta: { label: "Jetzt einloggen", url: welcomeVars.portal_url },
+                  steps: [
+                    { title: "Einloggen", body: "Melde dich mit den Zugangsdaten oben im Mitarbeiter-Portal an." },
+                    { title: "Arbeitsvertrag ausfüllen", body: "Ergänze im Portal deine persönlichen Daten für den Arbeitsvertrag." },
+                    { title: "Digital unterschreiben", body: "Prüfe den Vertrag und unterschreibe ihn direkt online." },
+                  ],
+                })}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </>
   );
 }
