@@ -287,6 +287,17 @@ export default function Telegram() {
                           />
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Switch
+                            checked={r.notify_notes}
+                            onCheckedChange={(v) =>
+                              updateMutation.mutate({ id: r.id, patch: { notify_notes: v } })
+                            }
+                          />
+                        </div>
+                      </TableCell>
+
                       <TableCell>
                         <div className="flex justify-end gap-2">
                           <Button
