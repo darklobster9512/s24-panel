@@ -1,15 +1,15 @@
-## Problem
-In `src/pages/superadmin/MitarbeiterWizard.tsx` steht an derselben Stelle im Footer entweder der „Weiter“-Button (`type="button"`) oder – im letzten Schritt – der „Mitarbeiter anlegen“-Button (`type="submit"`).
+## Ziel
+In Schritt 1 („Person“) des Mitarbeiter-Wizards eine durchsuchbare Dropdown-Auswahl für Bewerber ergänzen. Nach Auswahl werden Vorname, Nachname, persönliche E-Mail und persönliche Telefonnummer automatisch übernommen (weiterhin manuell überschreibbar).
 
-Klickt man in Schritt 2 auf „Weiter“, setzt der Klick-Handler den Schritt auf 3, React rendert das Element neu, und derselbe DOM-Button trägt nun `type="submit"`. Der Browser wertet die Default-Aktion des Klicks erst nach dem Handler aus – und löst dann das Form-Submit aus. Ergebnis: Der Mitarbeiter inkl. Auth-Account wird sofort beim Wechsel zu Schritt 3 angelegt.
+## Umsetzung
+- Neue Query in `MitarbeiterWizard.tsx`, die aus `applications` die Felder `id, vorname, nachname, email, handynummer, status, ranking` lädt (sortiert nach Erstelldatum, neueste zuerst).
+- Neue Komponente `BewerberSelect` (Combobox aus `Popover` + `Command` der bestehenden UI-Bibliothek) mit Suchfeld über Name und E-Mail.
+- Anzeige pro Eintrag: „Vorname Nachname“ plus E-Mail als Zusatzzeile, optional Status-Badge.
+- Bei Auswahl: `form.setValue` für `first_name`, `last_name`, `personal_email`, `personal_phone` (mit Validierung/Dirty-Flag), Toast-Bestätigung.
+- Zusätzlicher „Auswahl aufheben“-Eintrag, der die Verknüpfung entfernt (Felder bleiben unverändert, damit nichts versehentlich gelöscht wird).
+- Platzierung: über den vier Eingabefeldern, volle Breite; Hinweistext „Optional – Felder werden automatisch befüllt“.
 
-Zusätzlich löst Enter in einem der optionalen Felder in Schritt 3 ebenfalls direkt das Anlegen aus (implicit submission).
-
-## Lösung
-1. **Getrennte Buttons statt Umschalten desselben Elements:** „Weiter“ und „Mitarbeiter anlegen“ bekommen jeweils einen stabilen `key`, damit React sie nicht als dasselbe Element wiederverwendet.
-2. **Kein `type="submit"` mehr:** Der Anlegen-Button wird `type="button"` und ruft im `onClick` explizit `form.handleSubmit(onSubmit)()` auf. Damit kann kein Klick-Default und kein Enter-Druck ungewollt absenden.
-3. **Sicherheitsnetz:** `onSubmit` bricht ab, wenn nicht der letzte Schritt aktiv ist – so wird auch bei einem versehentlichen Submit (z. B. Enter) nichts angelegt.
-4. **Form-Element:** `onSubmit={form.handleSubmit(onSubmit)}` bleibt bestehen (für Barrierefreiheit), greift aber durch die Guard nur im letzten Schritt.
-
-## Nicht betroffen
-„Als Entwurf speichern“ verhält sich unverändert; Datenbank, Edge Function und Vertragszuweisung bleiben identisch.
+## Technische Details
+- Keine Datenbankänderung nötig; `applications` enthält alle benötigten Felder.
+- Im Bearbeiten-Modus wird die Auswahl nicht vorbelegt (kein Verknüpfungsfeld in `employees`); die Combobox dient rein zum Vorbefüllen.
+- Ladezustand und leerer Zustand („Keine Bewerber gefunden“) werden abgefangen.
