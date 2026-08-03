@@ -61,6 +61,7 @@ export default function Einstellungen() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [interviewPreviewOpen, setInterviewPreviewOpen] = useState(false);
   const [confirmationPreviewOpen, setConfirmationPreviewOpen] = useState(false);
+  const [welcomePreviewOpen, setWelcomePreviewOpen] = useState(false);
 
 
   useEffect(() => {
