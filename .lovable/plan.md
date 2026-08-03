@@ -15,12 +15,10 @@ Sobald ein Mitarbeiter eine Notiz speichert (Inbound-Erfassung oder Outbound-Rec
 📞 Neue Anrufnotiz
 ────────────
 🏢 Kunde: <Unternehmensname>
-☎️ Angerufene Nummer: <to_number des Anrufs>
 👤 Anrufer: <Name>
 📱 Nummer: <Anrufernummer>
 ⏱ Dauer: <mm:ss>
 📝 Notiz: <Anliegen>  (+ Kategorie / Priorität)
-🕓 Zeitstempel
 ```
 
 **B) Outbound-Recruitment-Anruf**
@@ -29,12 +27,11 @@ Sobald ein Mitarbeiter eine Notiz speichert (Inbound-Erfassung oder Outbound-Rec
 🎯 Recruiting-Anruf
 ────────────
 🏢 Kunde: <Unternehmensname>
-📱 Angerufene Nummer: <Bewerbernummer>
 👤 Bewerber: <Name>
+📱 Angerufene Nummer: <Bewerbernummer>
 ✅/❌ Ergebnis: Erfolgreich / Fehlgeschlagen
 ⏱ Dauer: <mm:ss>
 📝 Notiz: <Text>
-🕓 Zeitstempel
 ```
 
 Unterscheidung: Eine Notiz gilt als Recruiting-Anruf, wenn der zugehörige Kunde als Recruitment-Kunde markiert ist (kein Sipgate-Anruf verknüpft). Das Ergebnis wird aus dem Präfix `[Erfolgreich]` / `[Fehlgeschlagen]` gelesen, das die Recruitment-Erfassung bereits schreibt.
