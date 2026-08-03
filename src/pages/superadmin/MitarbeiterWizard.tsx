@@ -275,10 +275,10 @@ export default function MitarbeiterWizard({
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("contract_templates")
-        .select("id,title,version,is_active")
+        .select("id,title,version,is_active,category,monthly_salary")
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as { id: string; title: string; version: number; is_active: boolean }[];
+      return (data ?? []) as TemplateOption[];
     },
   });
 
@@ -813,7 +813,7 @@ function StepAccount({
   showPw: boolean;
   setShowPw: (v: boolean) => void;
   accountLocked: boolean;
-  templates: { id: string; title: string; version: number; is_active: boolean }[];
+  templates: TemplateOption[];
 }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
