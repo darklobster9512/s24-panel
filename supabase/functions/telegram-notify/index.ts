@@ -206,7 +206,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  const column = type === 'application' ? 'notify_applications' : 'notify_interviews';
+  const column =
+    type === 'application'
+      ? 'notify_applications'
+      : type === 'contract'
+        ? 'notify_contracts'
+        : 'notify_interviews';
   let chatIds: string[] = [];
 
   if (payload.chat_id) {
