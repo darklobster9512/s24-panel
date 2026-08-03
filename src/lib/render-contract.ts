@@ -22,6 +22,14 @@ export type ContractVars = {
   firma?: string | null;
 };
 
+/** Wandelt ISO-Datumswerte (YYYY-MM-DD[...]) in TT.MM.JJJJ um. */
+function formatDate(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return v;
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
 function esc(v: unknown): string {
   if (v === null || v === undefined || v === "") return "____________";
   return String(v);
@@ -41,11 +49,11 @@ export function renderContractHtml(html: string, vars: ContractVars): string {
     vollname,
     email: vars.email,
     telefon: vars.telefon,
-    geburtsdatum: vars.geburtsdatum,
+    geburtsdatum: formatDate(vars.geburtsdatum),
     geburtsort: vars.geburtsort,
     familienstand: vars.familienstand,
     beschaeftigungsart: vars.beschaeftigungsart,
-    startdatum: vars.startdatum,
+    startdatum: formatDate(vars.startdatum),
     strasse: vars.strasse,
     plz: vars.plz,
     stadt: vars.stadt,
