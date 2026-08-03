@@ -1090,9 +1090,7 @@ function ContractAssignField({
   );
 }
 
-    </div>
-  );
-}
+
 
 function StepOptional({ form }: { form: FR }) {
   return (
