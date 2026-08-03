@@ -275,10 +275,10 @@ export default function MitarbeiterWizard({
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("contract_templates")
-        .select("id,title,version,is_active")
+        .select("id,title,version,is_active,category,monthly_salary")
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as { id: string; title: string; version: number; is_active: boolean }[];
+      return (data ?? []) as TemplateOption[];
     },
   });
 
@@ -813,7 +813,7 @@ function StepAccount({
   showPw: boolean;
   setShowPw: (v: boolean) => void;
   accountLocked: boolean;
-  templates: { id: string; title: string; version: number; is_active: boolean }[];
+  templates: TemplateOption[];
 }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
@@ -989,14 +989,58 @@ function OutboundRecruitmentField({ form }: { form: FR }) {
   );
 }
 
+type TemplateOption = {
+  id: string;
+  title: string;
+  version: number;
+  is_active: boolean;
+  category: string | null;
+  monthly_salary: number | null;
+};
+
+function deriveContractType(t: TemplateOption): "vollzeit" | "teilzeit" | null {
+  const hay = `${t.category ?? ""} ${t.title ?? ""}`.toLowerCase();
+  if (hay.includes("vollzeit")) return "vollzeit";
+  if (hay.includes("teilzeit")) return "teilzeit";
+  return null;
+}
+
+function formatSalary(v: number | string): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  return String(Math.round(n * 100) / 100);
+}
+
 function ContractAssignField({
   form,
   templates,
 }: {
   form: FR;
-  templates: { id: string; title: string; version: number; is_active: boolean }[];
+  templates: TemplateOption[];
 }) {
   const assign = !!form.watch("assign_contract");
+  const selectedId = (form.watch("contract_template_id") as string) || "";
+  const selected = templates.find((t) => t.id === selectedId);
+
+  const applyTemplate = (id: string) => {
+    form.setValue("contract_template_id", id, { shouldDirty: true });
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    const type = deriveContractType(t);
+    if (type) {
+      form.setValue("contract_type", type, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+    if (t.monthly_salary != null) {
+      form.setValue("salary", formatSalary(t.monthly_salary), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  };
+
   return (
     <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
       <FormField
@@ -1034,7 +1078,7 @@ function ContractAssignField({
               <FormLabel>Vertragsvorlage</FormLabel>
               <Select
                 value={(field.value as string) || undefined}
-                onValueChange={field.onChange}
+                onValueChange={applyTemplate}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -1054,6 +1098,11 @@ function ContractAssignField({
                   ))}
                 </SelectContent>
               </Select>
+              {selected && (
+                <p className="text-xs text-muted-foreground">
+                  Vertragsart und Gehalt wurden aus der Vorlage übernommen.
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
@@ -1062,6 +1111,8 @@ function ContractAssignField({
     </div>
   );
 }
+
+
 
 function StepOptional({ form }: { form: FR }) {
   return (

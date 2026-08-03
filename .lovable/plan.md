@@ -1,21 +1,21 @@
-## Änderung
-Die Login-E-Mail-Domain für Mitarbeiter wird von `@sekreteriat24.de` auf `@sekretariat-24.de` umgestellt.
+## Ziel
+Wenn im Mitarbeiter-Wizard (Schritt 2) „Arbeitsvertrag zuweisen“ aktiviert und eine Vertragsvorlage gewählt wird, sollen **Vertragsart** und **Gehalt (€ / Monat)** automatisch aus der Vorlage übernommen werden.
 
-## Betroffene Stellen
-1. **`src/pages/superadmin/MitarbeiterWizard.tsx`**
-   - Konstante `EMAIL_SUFFIX` von `@sekreteriat24.de` auf `@sekretariat-24.de` ändern.
-   - Anzeige-Text im Formularfeld ("@sekreteriat24.de") aktualisieren.
+## Datenlage (geprüft)
+`contract_templates` enthält bereits passende Felder:
+- Teilzeit – 20 Std./Woche → Kategorie „Teilzeit“, 1.733,00 €
+- Teilzeit – 30 Std./Woche → Kategorie „Teilzeit“, 2.600,00 €
+- Vollzeit – 40 Std./Woche → Kategorie „Vollzeit“, 3.467,00 €
 
-2. **`supabase/functions/create-employee-account/index.ts`**
-   - Zod-Validierung `endsWith("@sekreteriat24.de")` auf `@sekretariat-24.de` ändern.
-   - Edge Function anschließend neu deployen.
+## Umsetzung (`src/pages/superadmin/MitarbeiterWizard.tsx`)
+1. Vorlagen-Query um `category` und `monthly_salary` erweitern (aktuell nur `id,title,version,is_active`).
+2. Beim Auswählen einer Vorlage im Select:
+   - `contract_type` auf `vollzeit`/`teilzeit` setzen (aus `category`, klein geschrieben; Fallback: aus dem Titel ableiten).
+   - `salary` auf `monthly_salary` setzen (als Zahl ohne Nachkomma-Nullen, z. B. `1733`).
+   - Beide Felder mit Validierung neu setzen, damit die Schritt-Prüfung sofort grün ist.
+3. Werden die Felder danach manuell geändert, bleibt die manuelle Eingabe erhalten (Auto-Fill nur bei Vorlagen-Auswahl, nicht dauerhaft erzwungen).
+4. Deaktiviert man die Checkbox wieder, bleiben die übernommenen Werte stehen (sie sind ganz normal editierbar).
+5. Kleiner Hinweistext unter dem Vorlagen-Select: „Vertragsart und Gehalt wurden aus der Vorlage übernommen.“
 
-3. **`src/lib/mitarbeiter-mock.ts`** (optional, aber empfohlen)
-   - Mock-Login-E-Mail `sofia@sekreteriat24.de` auf `@sekretariat-24.de` anpassen, damit Demo-Daten konsistent bleiben.
-
-## Keine weiteren Änderungen
-- Manager-Accounts (`@sekretariat-24.de`) sind bereits korrekt.
-- Kunden-/Bewerbungs-Links und Telegram-Notifications bleiben unverändert.
-
-## Nach dem Deploy
-- Bestehende Mitarbeiter-Accounts mit `@sekreteriat24.de` behalten ihre alte Adresse; nur neue Anlagen verwenden `@sekretariat-24.de`.
+## Nicht betroffen
+Keine Datenbank-Änderungen, keine Änderungen am Vertrags-Workflow oder an der PDF-Generierung.
