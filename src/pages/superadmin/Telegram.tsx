@@ -26,6 +26,7 @@ type Recipient = {
   notify_applications: boolean;
   notify_interviews: boolean;
   notify_contracts: boolean;
+  notify_notes: boolean;
   created_at: string;
 };
 
