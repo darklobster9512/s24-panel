@@ -31,6 +31,9 @@ type Settings = {
   confirmation_email_enabled: boolean;
   confirmation_email_subject: string | null;
   confirmation_email_body: string | null;
+  welcome_email_enabled: boolean;
+  welcome_email_subject: string | null;
+  welcome_email_body: string | null;
 
   interview_slot_start: string | null;
   interview_slot_end: string | null;
