@@ -31,6 +31,9 @@ type Settings = {
   confirmation_email_enabled: boolean;
   confirmation_email_subject: string | null;
   confirmation_email_body: string | null;
+  welcome_email_enabled: boolean;
+  welcome_email_subject: string | null;
+  welcome_email_body: string | null;
 
   interview_slot_start: string | null;
   interview_slot_end: string | null;
@@ -58,6 +61,7 @@ export default function Einstellungen() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [interviewPreviewOpen, setInterviewPreviewOpen] = useState(false);
   const [confirmationPreviewOpen, setConfirmationPreviewOpen] = useState(false);
+  const [welcomePreviewOpen, setWelcomePreviewOpen] = useState(false);
 
 
   useEffect(() => {
@@ -97,6 +101,15 @@ export default function Einstellungen() {
     uhrzeit: "14:30",
     wochentag: "Mittwoch",
     booking_url: `${typeof window !== "undefined" ? window.location.origin : ""}/bewerbungsgespraech/beispiel-token`,
+  };
+
+  const welcomeVars = {
+    vorname: "Max",
+    nachname: "Mustermann",
+    voller_name: "Max Mustermann",
+    login_email: "m.mustermann@sekretariat-24.de",
+    passwort: "Bx7-tR29-qLm4",
+    portal_url: "https://app.sekretariat-24.de",
   };
 
 
@@ -442,6 +455,66 @@ export default function Einstellungen() {
             </div>
           </div>
         </Panel>
+
+        <Panel title="Mitarbeiter · Zugangsdaten-E-Mail" className="lg:col-span-2">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="lg:col-span-2 flex items-center justify-between rounded-lg bg-surface px-3 py-2.5">
+              <div>
+                <div className="text-sm font-medium">Zugangsdaten nach Konto-Erstellung senden</div>
+                <div className="text-xs text-muted-foreground">
+                  Sendet automatisch eine E-Mail an die persönliche Adresse des Mitarbeiters mit Login-E-Mail,
+                  Passwort und Link zum Portal.
+                </div>
+              </div>
+              <Switch
+                checked={form.welcome_email_enabled}
+                onCheckedChange={(v) => set("welcome_email_enabled", v)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>Betreff</Label>
+              <Input
+                value={form.welcome_email_subject ?? ""}
+                onChange={(e) => set("welcome_email_subject", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>Nachricht</Label>
+              <Textarea
+                rows={10}
+                value={form.welcome_email_body ?? ""}
+                onChange={(e) => set("welcome_email_body", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Platzhalter: <code>{"{{vorname}}"}</code>, <code>{"{{nachname}}"}</code>,{" "}
+                <code>{"{{voller_name}}"}</code>, <code>{"{{login_email}}"}</code>, <code>{"{{passwort}}"}</code>,{" "}
+                <code>{"{{portal_url}}"}</code>. Die Zugangsdaten-Card und der Login-Button werden automatisch
+                eingefügt.
+              </p>
+            </div>
+
+            <div className="lg:col-span-2 flex gap-2">
+              <Button
+                size="sm"
+                onClick={() =>
+                  save.mutate({
+                    welcome_email_enabled: form.welcome_email_enabled,
+                    welcome_email_subject: form.welcome_email_subject,
+                    welcome_email_body: form.welcome_email_body,
+                  })
+                }
+                disabled={save.isPending}
+              >
+                Speichern
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setWelcomePreviewOpen(true)}>
+                Vorschau
+              </Button>
+            </div>
+          </div>
+        </Panel>
       </div>
 
 
@@ -582,6 +655,61 @@ export default function Einstellungen() {
                     { title: "Termin notieren", body: "Tragen Sie sich den Termin am besten direkt in Ihren Kalender ein." },
                     { title: "Kurzes Kennenlerngespräch", body: "Wir sprechen ca. 20–30 Minuten über Ihre Erfahrung und offene Fragen." },
                     { title: "Rückmeldung & nächste Schritte", body: "Direkt im Anschluss klären wir gemeinsam, wie es weitergeht." },
+                  ],
+                })}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={welcomePreviewOpen} onOpenChange={setWelcomePreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Vorschau · Zugangsdaten Mitarbeiterkonto</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Von</div>
+                <div className="font-medium truncate">
+                  {form.resend_from_name || "—"} &lt;{form.resend_from_email || "no-reply@example.com"}&gt;
+                </div>
+              </div>
+              <div className="rounded-md border border-border bg-surface px-3 py-2 text-sm">
+                <div className="text-xs text-muted-foreground">Betreff</div>
+                <div className="font-medium truncate">
+                  {renderTpl(form.welcome_email_subject ?? "", welcomeVars)}
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-border bg-[#f5f7f5]">
+              <iframe
+                title="Zugangsdaten E-Mail Vorschau"
+                sandbox=""
+                style={{ width: "100%", height: 560, border: 0, background: "#f5f7f5" }}
+                srcDoc={renderApplicationEmailHtml({
+                  subject: renderTpl(
+                    form.welcome_email_subject ?? "Deine Zugangsdaten für dein Mitarbeiterkonto",
+                    welcomeVars,
+                  ),
+                  bodyText: form.welcome_email_body ?? "",
+                  vars: welcomeVars,
+                  company: {
+                    name: form.company_name ?? "Sekretariat24",
+                    address: form.company_address,
+                    logoText: form.logo_text ?? form.company_name ?? "Sekretariat24",
+                    accent: form.accent_color ?? "#7bed9f",
+                  },
+                  infoCard: {
+                    label: "Deine Zugangsdaten",
+                    lines: [`E-Mail: ${welcomeVars.login_email}`, `Passwort: ${welcomeVars.passwort}`],
+                  },
+                  cta: { label: "Jetzt einloggen", url: welcomeVars.portal_url },
+                  steps: [
+                    { title: "Einloggen", body: "Melde dich mit den Zugangsdaten oben im Mitarbeiter-Portal an." },
+                    { title: "Arbeitsvertrag ausfüllen", body: "Ergänze im Portal deine persönlichen Daten für den Arbeitsvertrag." },
+                    { title: "Digital unterschreiben", body: "Prüfe den Vertrag und unterschreibe ihn direkt online." },
                   ],
                 })}
               />

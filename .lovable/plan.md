@@ -1,22 +1,29 @@
 ## Ziel
-Der Mitarbeiter gibt im Arbeitsvertrag-Wizard zusätzlich Straße + Hausnummer, PLZ und Stadt ein. Diese Daten erscheinen auch im Superadmin-Mitarbeiter-Wizard (Schritt 3 „Persönliches“) sowie in der Mitarbeiter-Detailansicht und werden im Vertrag an den Variablen `{{ strasse }}`, `{{ plz }}`, `{{ stadt }}`, `{{ adresse }}` eingesetzt.
+Neue E-Mail-Vorlage „Zugangsdaten Mitarbeiterkonto“ im gleichen Design wie die bestehenden Mails. Sie geht automatisch an die persönliche E-Mail des Mitarbeiters, sobald das Konto über den Mitarbeiter-Wizard angelegt wurde – mit Login-E-Mail, Passwort im Klartext und einem Button zu `https://app.sekretariat-24.de`.
 
 ## Datenbank
-Migration: drei neue optionale Textspalten in `public.employees`:
-- `street` (Straße + Hausnummer)
-- `postal_code`
-- `city`
+Migration: drei Spalten in `public.app_settings`
+- `welcome_email_enabled` (Standard: an)
+- `welcome_email_subject` (Standard-Betreff, z. B. „Deine Zugangsdaten für dein Mitarbeiterkonto“)
+- `welcome_email_body` (Standardtext mit Platzhaltern)
 
-## Mitarbeiter-Arbeitsvertrag-Wizard (`src/pages/mitarbeiter/Arbeitsvertrag.tsx`)
-- Schritt „Persönliche Daten“ um drei Pflichtfelder erweitern (Straße & Hausnummer, PLZ, Stadt) — im Zod-Schema und in der Schrittvalidierung.
-- Vorbelegung aus bestehenden Mitarbeiterdaten, Speicherung beim Signieren zusammen mit den übrigen Feldern.
-- Live-Vorschau: `renderContractHtml` erhält `strasse`, `plz`, `stadt` aus den Formularwerten (Fallback auf gespeicherte Werte).
+Platzhalter im Text: `{{ vorname }}`, `{{ nachname }}`, `{{ voller_name }}`, `{{ login_email }}`, `{{ passwort }}`, `{{ portal_url }}`.
 
-## Superadmin
-- `MitarbeiterWizard.tsx`: Schritt 3 „Persönliches“ um die drei Felder erweitern (optional), inkl. Schema, Defaults, Feldliste und Laden beim Bearbeiten.
-- `MitarbeiterDetail.tsx`: Adresse als zusätzliche Zeile anzeigen.
-- `ArbeitsvertragDetail.tsx`: Adressfelder an `renderContractHtml` übergeben (damit Vorschau und PDF die Variablen befüllen) und in der Datenübersicht anzeigen.
+## Versand (Edge Function `create-employee-account`)
+- Nach erfolgreichem Anlegen des Accounts: Einstellungen laden (Resend-Key, Absender, Welcome-Template, Firmendaten).
+- Persönliche E-Mail des Mitarbeiters aus `employees` lesen; fehlt sie oder ist der Versand deaktiviert/Resend nicht konfiguriert, wird übersprungen.
+- HTML mit dem bestehenden Mail-Renderer (Mirror von `renderApplicationEmailHtml`) erzeugen:
+  - Info-Card „Deine Zugangsdaten“ mit Login-E-Mail und Passwort
+  - CTA-Button „Jetzt einloggen“ → `https://app.sekretariat-24.de` (hardcoded)
+  - Ablauf-Schritte: Einloggen · Arbeitsvertrag ausfüllen · digital unterschreiben
+- Der Mailversand darf das Anlegen nie blockieren (try/catch, Rückgabe `email_sent`).
+
+## Einstellungen-Seite
+- Neuer Abschnitt „Zugangsdaten-E-Mail (Mitarbeiter)“ analog zu den bestehenden Blöcken: Toggle, Betreff, Textfeld, Speichern-Button.
+- Vorschau-Dialog mit `renderApplicationEmailHtml` (Info-Card + CTA + Schritte), Beispielwerte für Login-E-Mail und Passwort.
+- Hinweis auf verfügbare Platzhalter.
 
 ## Technische Details
-- `renderContractHtml` und `contract-placeholders.ts` unterstützen die Tokens bereits — nur die Datenzuführung fehlt.
-- Vertragsvorlagen selbst bleiben unverändert; leere Werte werden weiterhin als `____________` gerendert.
+- Der Renderer in `src/lib/applicationEmail.ts` unterstützt `infoCard`, `cta` und `steps` bereits — keine Änderung nötig.
+- Die Edge Function erhält eine eigene Kopie des Renderers (wie in `interview-booked-notify`), da `src/` nicht mitdeployt wird.
+- Passwort im Klartext wird nur an die persönliche E-Mail versendet (bewusste Anforderung).
