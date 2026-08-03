@@ -74,6 +74,9 @@ export type Database = {
           singleton: boolean
           updated_at: string
           vat_id: string | null
+          welcome_email_body: string | null
+          welcome_email_enabled: boolean
+          welcome_email_subject: string | null
         }
         Insert: {
           accent_color?: string | null
@@ -101,6 +104,9 @@ export type Database = {
           singleton?: boolean
           updated_at?: string
           vat_id?: string | null
+          welcome_email_body?: string | null
+          welcome_email_enabled?: boolean
+          welcome_email_subject?: string | null
         }
         Update: {
           accent_color?: string | null
@@ -128,6 +134,9 @@ export type Database = {
           singleton?: boolean
           updated_at?: string
           vat_id?: string | null
+          welcome_email_body?: string | null
+          welcome_email_enabled?: boolean
+          welcome_email_subject?: string | null
         }
         Relationships: []
       }
