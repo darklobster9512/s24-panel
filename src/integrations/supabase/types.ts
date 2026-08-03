@@ -914,6 +914,7 @@ export type Database = {
           notify_applications: boolean
           notify_contracts: boolean
           notify_interviews: boolean
+          notify_notes: boolean
           updated_at: string
         }
         Insert: {
@@ -925,6 +926,7 @@ export type Database = {
           notify_applications?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
+          notify_notes?: boolean
           updated_at?: string
         }
         Update: {
@@ -936,6 +938,7 @@ export type Database = {
           notify_applications?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
+          notify_notes?: boolean
           updated_at?: string
         }
         Relationships: []
