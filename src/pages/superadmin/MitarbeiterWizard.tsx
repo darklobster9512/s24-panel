@@ -508,6 +508,8 @@ export default function MitarbeiterWizard({
   const loading = mode === "edit" && existing.isLoading;
 
   function onSubmit(values: FormValues) {
+    // Safety net: never submit unless the user is on the final step
+    if (step !== STEPS.length - 1) return;
     submitMutation.mutate(values);
   }
 
