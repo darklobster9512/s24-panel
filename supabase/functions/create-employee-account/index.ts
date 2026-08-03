@@ -4,7 +4,7 @@ import { z } from "npm:zod@3";
 
 const BodySchema = z.object({
   employee_id: z.string().uuid(),
-  login_email: z.string().email().endsWith("@sekreteriat24.de"),
+  login_email: z.string().email().endsWith("@sekretariat-24.de"),
   password: z.string().min(6).max(128),
 });
 

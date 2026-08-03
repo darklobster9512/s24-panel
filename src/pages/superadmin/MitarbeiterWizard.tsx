@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-const EMAIL_SUFFIX = "@sekreteriat24.de";
+const EMAIL_SUFFIX = "@sekretariat-24.de";
 
 const draftSchema = z.object({
   first_name: z.string().trim().max(100).optional().or(z.literal("")),
@@ -833,7 +833,7 @@ function StepAccount({
                   className="border-0 focus-visible:ring-0"
                 />
                 <span className="flex items-center whitespace-nowrap border-l border-input bg-muted px-3 text-sm text-muted-foreground">
-                  @sekreteriat24.de
+                  @sekretariat-24.de
                 </span>
               </div>
             </FormControl>

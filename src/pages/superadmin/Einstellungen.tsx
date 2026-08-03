@@ -210,7 +210,7 @@ export default function Einstellungen() {
             <div className="space-y-1.5">
               <Label>Absender-E-Mail</Label>
               <Input
-                placeholder="no-reply@sekreteriat24.de"
+                placeholder="no-reply@sekretariat-24.de"
                 value={form.resend_from_email ?? ""}
                 onChange={(e) => set("resend_from_email", e.target.value)}
               />
