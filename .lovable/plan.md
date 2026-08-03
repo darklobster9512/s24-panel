@@ -1,35 +1,16 @@
-## Ziel
+Zwei neue Vollzeit-Vertragsvorlagen anlegen: **37,5h/Woche** und **35h/Woche**.
 
-Sobald ein Mitarbeiter seinen Arbeitsvertrag unterzeichnet und einreicht (Status wechselt auf `pending_admin`), geht eine Telegram-Nachricht an die konfigurierten Empfänger.
+**Gehaltsberechnung** (Stundenlohn 20 €, wie bestehende Vorlagen):
+- 37,5h × 20 € × 52 / 12 = **3.250,00 € brutto/Monat**
+- 35h × 20 € × 52 / 12 = **3.033,33 € brutto/Monat**
 
-## Umsetzung
+**Vorgehen**
+1. Bestehende Vertragsvorlage (z. B. 20h-Teilzeit) aus `contract_templates` auslesen und als Inhaltsvorlage verwenden.
+2. Zwei neue Zeilen in `contract_templates` einfügen:
+   - Titel: **„Vollzeit 37,5h/Woche“** – Kategorie: **Vollzeit** – Gehalt: **3250.00**
+   - Titel: **„Vollzeit 35h/Woche“** – Kategorie: **Vollzeit** – Gehalt: **3033.33**
+3. Inhalt anpassen: alle Stundenangaben und Gehalts-/Stundenverweise auf 37,5h bzw. 35h umstellen, Platzhalter (`{{ monatsgehalt }}`, `{{ startdatum }}`, `{{ vollname }}`, Adresse etc.) beibehalten.
+4. Beide Vorlagen auf **aktiv** setzen, damit sie sofort im Mitarbeiter-Wizard unter „Vertragsvorlage auswählen“ zur Verfügung stehen.
+5. Im UI unter `/superadmin/vertraege` prüfen, dass beide Karten korrekt angezeigt werden.
 
-**1. Datenbank (Migration)**
-- Neue Spalte `notify_contracts boolean not null default true` in `public.telegram_recipients`.
-
-**2. Neue Edge Function `contract-signed-notify`**
-- Wird vom Mitarbeiter-Frontend direkt nach erfolgreicher Signatur mit der Vertrags-ID aufgerufen (JWT des eingeloggten Mitarbeiters).
-- Validiert per Service-Role: Vertrag existiert, gehört zum aufrufenden User (`employees.user_id = auth uid`) und hat Status `pending_admin`.
-- Lädt Name, Vertragsvorlage, Vertragsart/Gehalt und ruft intern `telegram-notify` mit `x-notify-secret` und `type: "contract"` auf.
-- Fehler beim Telegram-Versand blockieren die Signatur nicht (nur Logging).
-
-**3. `telegram-notify` erweitern**
-- Neuer Typ `contract` in der Typprüfung und in `buildMessage`:
-  ```
-  📝 Arbeitsvertrag eingereicht
-  👤 Name
-  📄 Vorlage · Vertragsart
-  🕓 Zeitstempel
-  Button → /superadmin/arbeitsvertraege/<id>
-  ```
-- Empfängerfilter nutzt für diesen Typ die Spalte `notify_contracts`.
-
-**4. Frontend `src/pages/mitarbeiter/Arbeitsvertrag.tsx`**
-- Im `onSuccess` der `signMutation` zusätzlich `supabase.functions.invoke("contract-signed-notify", { body: { contract_id } })` — fehlertolerant (kein Toast-Fehler bei Telegram-Problemen).
-
-**5. Einstellungen `src/pages/superadmin/Telegram.tsx`**
-- Dritter Toggle „Arbeitsverträge" pro Empfänger, analog zu Bewerbungen/Gespräche.
-
-## Technische Details
-- `contract-signed-notify` läuft mit Standard-JWT-Verifizierung in Code (Auth-Header wird geprüft); kein `verify_jwt = false` Eintrag nötig, Authentifizierung erfolgt via `supabase.auth.getClaims`.
-- Genutzte Secrets sind bereits vorhanden: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_NOTIFY_SECRET`.
+**Hinweis**: Die Vorlagen enthalten aktuell noch den Arbeitgeber-Namen „aigis one GmbH“ aus der Vorlage. Falls du den auf „Sekretariat24“ oder deinen aktuellen Firmennamen ändern möchtest, sag kurz Bescheid – das passiert im selben Zug.
