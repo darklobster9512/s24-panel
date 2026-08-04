@@ -263,6 +263,14 @@ function normalize(values: FormValues, isDraft: boolean) {
   delete out.contract_template_id;
   out.outbound_recruitment = !!values.outbound_recruitment;
   if (!out.outbound_recruitment) out.caller_api_key = null;
+  out.onboarding_enabled = !!values.onboarding_enabled;
+  if (!out.onboarding_enabled) {
+    out.phone_system = null;
+    out.softphone_email = null;
+    out.softphone_password = null;
+  } else if (out.phone_system === "") {
+    out.phone_system = null;
+  }
   for (const key of NULLABLE_STRINGS) {
     const v = out[key];
     if (typeof v === "string" && v.trim() === "") out[key] = null;
