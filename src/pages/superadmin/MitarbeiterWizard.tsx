@@ -365,6 +365,11 @@ export default function MitarbeiterWizard({
         sipgate_user_id: (d as { sipgate_user_id?: string | null }).sipgate_user_id ?? "",
         outbound_recruitment: !!(d as { outbound_recruitment?: boolean | null }).outbound_recruitment,
         caller_api_key: (d as { caller_api_key?: string | null }).caller_api_key ?? "",
+        onboarding_enabled: !!(d as { onboarding_enabled?: boolean | null }).onboarding_enabled,
+        phone_system:
+          ((d as { phone_system?: string | null }).phone_system as "sipgate" | "placetel") ?? "",
+        softphone_email: (d as { softphone_email?: string | null }).softphone_email ?? "",
+        softphone_password: (d as { softphone_password?: string | null }).softphone_password ?? "",
         contract_type: (d.contract_type as "vollzeit" | "teilzeit") ?? "",
         start_date: d.start_date ?? "",
         salary: d.salary != null ? String(d.salary) : "",
