@@ -12,6 +12,7 @@ import {
   Headphones,
   FileSignature,
   CalendarClock,
+  GraduationCap,
 } from "lucide-react";
 
 import {
@@ -67,6 +68,9 @@ export function MitarbeiterSidebar() {
   ];
 
   const meItems = [
+    ...(outbound?.onboardingEnabled
+      ? [{ title: "Onboarding", url: "/mitarbeiter/onboarding", icon: GraduationCap }]
+      : []),
     ...(contract && contract.status !== "completed"
       ? [
           {

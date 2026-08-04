@@ -49,6 +49,7 @@ import MitarbeiterBewerbungsgespraeche from "./pages/mitarbeiter/Bewerbungsgespr
 import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
 import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
 import MitarbeiterArbeitsvertrag from "./pages/mitarbeiter/Arbeitsvertrag";
+import MitarbeiterOnboarding from "./pages/mitarbeiter/Onboarding";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -133,6 +134,7 @@ export default function App() {
                     <Route path="statistik" element={<MitarbeiterStatistik />} />
                     <Route path="profil" element={<MitarbeiterProfil />} />
                     <Route path="arbeitsvertrag" element={<MitarbeiterArbeitsvertrag />} />
+                    <Route path="onboarding" element={<MitarbeiterOnboarding />} />
                   </Route>
                 </Route>
 
