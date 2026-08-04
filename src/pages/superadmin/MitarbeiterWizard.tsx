@@ -1176,6 +1176,92 @@ function OutboundRecruitmentField({ form }: { form: FR }) {
   );
 }
 
+function OnboardingField({ form }: { form: FR }) {
+  const active = !!form.watch("onboarding_enabled");
+  return (
+    <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <FormField
+        control={form.control}
+        name="onboarding_enabled"
+        render={({ field }) => (
+          <FormItem className="flex items-start gap-3 space-y-0">
+            <FormControl>
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+              />
+            </FormControl>
+            <div className="min-w-0">
+              <FormLabel className="cursor-pointer text-sm font-medium">
+                Onboarding aktivieren
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Der Mitarbeiter erhält den Reiter „Onboarding“ mit Download-Links und seinen
+                Softphone-Zugangsdaten.
+              </p>
+            </div>
+          </FormItem>
+        )}
+      />
+
+      {active && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="phone_system"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Telefonsystem</FormLabel>
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => field.onChange(v)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bitte wählen" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="sipgate">Sipgate (Sipgate App)</SelectItem>
+                    <SelectItem value="placetel">Placetel (Webex App)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <TextField
+            form={form}
+            name="softphone_email"
+            label="Softphone Login-E-Mail"
+            placeholder="name@example.com"
+          />
+          <div className="flex items-end gap-2">
+            <TextField
+              form={form}
+              name="softphone_password"
+              label="Softphone Passwort"
+              placeholder="Klartext"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => form.setValue("softphone_password", generatePassword(10))}
+            >
+              Generieren
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
 type TemplateOption = {
   id: string;
   title: string;
