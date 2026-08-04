@@ -67,6 +67,10 @@ const draftSchema = z.object({
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   outbound_recruitment: z.boolean().optional(),
   caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
+  onboarding_enabled: z.boolean().optional(),
+  phone_system: z.enum(["sipgate", "placetel"]).optional().or(z.literal("")),
+  softphone_email: z.string().trim().max(200).optional().or(z.literal("")),
+  softphone_password: z.string().trim().max(128).optional().or(z.literal("")),
   contract_type: z.enum(["vollzeit", "teilzeit"]).optional().or(z.literal("")),
   start_date: z.string().optional().or(z.literal("")),
   salary: z.string().optional().or(z.literal("")),
@@ -104,6 +108,10 @@ const fullSchema = z.object({
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   outbound_recruitment: z.boolean().optional(),
   caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
+  onboarding_enabled: z.boolean().optional(),
+  phone_system: z.enum(["sipgate", "placetel"]).optional().or(z.literal("")),
+  softphone_email: z.string().trim().max(200).optional().or(z.literal("")),
+  softphone_password: z.string().trim().max(128).optional().or(z.literal("")),
   contract_type: z.enum(["vollzeit", "teilzeit"], {
     errorMap: () => ({ message: "Bitte wählen" }),
   }),
@@ -146,6 +154,10 @@ const STEPS: StepDef[] = [
       "sipgate_user_id",
       "outbound_recruitment",
       "caller_api_key",
+      "onboarding_enabled",
+      "phone_system",
+      "softphone_email",
+      "softphone_password",
       "contract_type",
       "start_date",
       "salary",
@@ -184,6 +196,10 @@ const DEFAULTS: FormValues = {
   sipgate_user_id: "",
   outbound_recruitment: false,
   caller_api_key: "",
+  onboarding_enabled: false,
+  phone_system: "" as FormValues["phone_system"],
+  softphone_email: "",
+  softphone_password: "",
   contract_type: "" as FormValues["contract_type"],
   start_date: "",
   salary: "",
@@ -213,6 +229,8 @@ const NULLABLE_STRINGS: Field[] = [
   "password_plain",
   "sipgate_user_id",
   "caller_api_key",
+  "softphone_email",
+  "softphone_password",
   "birth_place",
   "nationality",
   "marital_status",
@@ -245,6 +263,14 @@ function normalize(values: FormValues, isDraft: boolean) {
   delete out.contract_template_id;
   out.outbound_recruitment = !!values.outbound_recruitment;
   if (!out.outbound_recruitment) out.caller_api_key = null;
+  out.onboarding_enabled = !!values.onboarding_enabled;
+  if (!out.onboarding_enabled) {
+    out.phone_system = null;
+    out.softphone_email = null;
+    out.softphone_password = null;
+  } else if (out.phone_system === "") {
+    out.phone_system = null;
+  }
   for (const key of NULLABLE_STRINGS) {
     const v = out[key];
     if (typeof v === "string" && v.trim() === "") out[key] = null;
@@ -339,6 +365,11 @@ export default function MitarbeiterWizard({
         sipgate_user_id: (d as { sipgate_user_id?: string | null }).sipgate_user_id ?? "",
         outbound_recruitment: !!(d as { outbound_recruitment?: boolean | null }).outbound_recruitment,
         caller_api_key: (d as { caller_api_key?: string | null }).caller_api_key ?? "",
+        onboarding_enabled: !!(d as { onboarding_enabled?: boolean | null }).onboarding_enabled,
+        phone_system:
+          ((d as { phone_system?: string | null }).phone_system as "sipgate" | "placetel") ?? "",
+        softphone_email: (d as { softphone_email?: string | null }).softphone_email ?? "",
+        softphone_password: (d as { softphone_password?: string | null }).softphone_password ?? "",
         contract_type: (d.contract_type as "vollzeit" | "teilzeit") ?? "",
         start_date: d.start_date ?? "",
         salary: d.salary != null ? String(d.salary) : "",
@@ -1096,6 +1127,8 @@ function StepAccount({
 
       <OutboundRecruitmentField form={form} />
 
+      <OnboardingField form={form} />
+
       <ContractAssignField form={form} templates={templates} />
     </div>
   );
@@ -1142,6 +1175,92 @@ function OutboundRecruitmentField({ form }: { form: FR }) {
     </div>
   );
 }
+
+function OnboardingField({ form }: { form: FR }) {
+  const active = !!form.watch("onboarding_enabled");
+  return (
+    <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <FormField
+        control={form.control}
+        name="onboarding_enabled"
+        render={({ field }) => (
+          <FormItem className="flex items-start gap-3 space-y-0">
+            <FormControl>
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={!!field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+              />
+            </FormControl>
+            <div className="min-w-0">
+              <FormLabel className="cursor-pointer text-sm font-medium">
+                Onboarding aktivieren
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Der Mitarbeiter erhält den Reiter „Onboarding“ mit Download-Links und seinen
+                Softphone-Zugangsdaten.
+              </p>
+            </div>
+          </FormItem>
+        )}
+      />
+
+      {active && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="phone_system"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Telefonsystem</FormLabel>
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => field.onChange(v)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bitte wählen" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="sipgate">Sipgate (Sipgate App)</SelectItem>
+                    <SelectItem value="placetel">Placetel (Webex App)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <TextField
+            form={form}
+            name="softphone_email"
+            label="Softphone Login-E-Mail"
+            placeholder="name@example.com"
+          />
+          <div className="flex items-end gap-2">
+            <TextField
+              form={form}
+              name="softphone_password"
+              label="Softphone Passwort"
+              placeholder="Klartext"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => form.setValue("softphone_password", generatePassword(10))}
+            >
+              Generieren
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 
 type TemplateOption = {
   id: string;
