@@ -103,6 +103,7 @@ const BodySchema = z.object({
   geburtsdatum: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD erwartet'),
   staatsangehoerigkeit: z.string().trim().min(1).max(100),
   anstellung: z.string().trim().min(1).max(50),
+  stelle: z.string().trim().max(150).optional(),
 });
 
 function sanitize(name: string) {
@@ -130,6 +131,7 @@ Deno.serve(async (req) => {
       geburtsdatum: String(form.get('geburtsdatum') ?? ''),
       staatsangehoerigkeit: String(form.get('staatsangehoerigkeit') ?? ''),
       anstellung: String(form.get('anstellung') ?? ''),
+      stelle: String(form.get('stelle') ?? ''),
     };
 
     const parsed = BodySchema.safeParse(raw);
@@ -191,6 +193,7 @@ Deno.serve(async (req) => {
       geburtsdatum: data.geburtsdatum,
       staatsangehoerigkeit: data.staatsangehoerigkeit,
       anstellung: data.anstellung,
+      stelle: data.stelle && data.stelle.length > 0 ? data.stelle : null,
       lebenslauf_path: storagePath,
       lebenslauf_filename: cleanName,
       lebenslauf_mime: file.type,

@@ -51,6 +51,7 @@ function buildMessage(type: string, p: Record<string, unknown>) {
         `📱 <code>${esc(p.handynummer)}</code>`,
         `🎂 ${esc(fmtDate(p.geburtsdatum as string))} · 🌍 ${esc(p.staatsangehoerigkeit)}`,
         `💼 ${esc(p.anstellung)}`,
+        ...(p.stelle ? [`🎯 ${esc(p.stelle as string)}`] : []),
         DIVIDER,
         `🕓 <i>${esc(fmtDateTimeNow())}</i>`,
       ].join('\n'),

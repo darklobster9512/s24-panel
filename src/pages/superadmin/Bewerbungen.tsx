@@ -37,6 +37,7 @@ type Application = {
   geburtsdatum: string;
   staatsangehoerigkeit: string;
   anstellung: string;
+  stelle: string | null;
   lebenslauf_path: string | null;
   lebenslauf_filename: string | null;
   lebenslauf_mime: string | null;
@@ -151,7 +152,7 @@ export default function Bewerbungen() {
         } else if (r.ranking !== rankingFilter) return false;
       }
       if (q) {
-        const hay = [r.vorname, r.nachname, r.email, r.handynummer, r.staatsangehoerigkeit]
+        const hay = [r.vorname, r.nachname, r.email, r.handynummer, r.staatsangehoerigkeit, r.stelle]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -494,6 +495,7 @@ export default function Bewerbungen() {
                 <Field label="Geburtsdatum" value={formatDate(selected.geburtsdatum)} />
                 <Field label="Staatsangehörigkeit" value={selected.staatsangehoerigkeit} />
                 <Field label="Anstellung" value={selected.anstellung} />
+                {selected.stelle ? <Field label="Stelle" value={selected.stelle} /> : null}
 
                 <div>
                   <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
