@@ -374,11 +374,10 @@ export default function Bewerbungen() {
           <div className="grid grid-cols-[160px_1fr_160px_1fr_140px_140px_110px_140px_120px_150px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <span>Eingegangen</span>
             <span>Name</span>
-            <span>Stelle</span>
             <span>E-Mail</span>
-
             <span>Telefon</span>
             <span>Anstellung</span>
+            <span>Stelle</span>
             <span>Geburtsdatum</span>
             <span>Staatsang.</span>
             <span>Status</span>
@@ -405,11 +404,10 @@ export default function Bewerbungen() {
                 <span className="truncate font-medium">
                   {r.vorname} {r.nachname}
                 </span>
-                <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
                 <span className="truncate text-muted-foreground">{r.email}</span>
-
                 <span className="truncate font-mono text-xs">{r.handynummer}</span>
                 <span className="truncate capitalize text-muted-foreground">{r.anstellung}</span>
+                <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
                 <span className="truncate text-muted-foreground">{r.geburtsdatum ? formatDate(r.geburtsdatum) : "—"}</span>
                 <span className="truncate text-muted-foreground">{r.staatsangehoerigkeit}</span>
                 <Badge variant={statusVariant(r.status)} className="w-fit">
