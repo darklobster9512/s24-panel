@@ -229,6 +229,8 @@ const NULLABLE_STRINGS: Field[] = [
   "password_plain",
   "sipgate_user_id",
   "caller_api_key",
+  "softphone_email",
+  "softphone_password",
   "birth_place",
   "nationality",
   "marital_status",
