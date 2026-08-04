@@ -631,14 +631,18 @@ export type Database = {
           login_local_part: string | null
           marital_status: string | null
           nationality: string | null
+          onboarding_enabled: boolean
           outbound_recruitment: boolean
           password_plain: string | null
           personal_email: string | null
           personal_phone: string | null
+          phone_system: string | null
           postal_code: string | null
           salary: number | null
           sipgate_user_id: string | null
           social_security_number: string | null
+          softphone_email: string | null
+          softphone_password: string | null
           start_date: string | null
           street: string | null
           tax_id: string | null
@@ -665,14 +669,18 @@ export type Database = {
           login_local_part?: string | null
           marital_status?: string | null
           nationality?: string | null
+          onboarding_enabled?: boolean
           outbound_recruitment?: boolean
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
+          phone_system?: string | null
           postal_code?: string | null
           salary?: number | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
+          softphone_email?: string | null
+          softphone_password?: string | null
           start_date?: string | null
           street?: string | null
           tax_id?: string | null
@@ -699,14 +707,18 @@ export type Database = {
           login_local_part?: string | null
           marital_status?: string | null
           nationality?: string | null
+          onboarding_enabled?: boolean
           outbound_recruitment?: boolean
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
+          phone_system?: string | null
           postal_code?: string | null
           salary?: number | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
+          softphone_email?: string | null
+          softphone_password?: string | null
           start_date?: string | null
           street?: string | null
           tax_id?: string | null
