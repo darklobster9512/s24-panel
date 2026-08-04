@@ -1127,6 +1127,8 @@ function StepAccount({
 
       <OutboundRecruitmentField form={form} />
 
+      <OnboardingField form={form} />
+
       <ContractAssignField form={form} templates={templates} />
     </div>
   );
