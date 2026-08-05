@@ -1,30 +1,29 @@
-# Telegram-Notizen-Benachrichtigung: Ursache und Fix
+# Telegram-Benachrichtigung für Livechat-Nachrichten
 
-## Ursache (geprüft)
-Die Edge Function `call-note-notify` sendet nur an Telegram-Empfänger, bei denen **beides** gilt: aktiv **und** „Notizen" aktiviert. In der Datenbank steht aktuell:
+## Ziel
+Sobald ein Mitarbeiter im Livechat-Widget eine Nachricht schickt, geht eine Telegram-Benachrichtigung raus mit Name des Mitarbeiters und dem Nachrichtentext. Nachrichten von Manager/Superadmin lösen keine Benachrichtigung aus.
 
-| Chat-ID | Aktiv | Notizen |
-|---|---|---|
-| -5395784143 | ja | **nein** |
-| -5326576110 (Label „Calls") | **nein** | ja |
+## Empfänger-Steuerung
+- Neue Kategorie „Livechat" in den Telegram-Empfängern (`telegram_recipients.notify_chat`), analog zu Bewerbungen/Notizen.
+- Zusätzlicher Schalter in der Tabelle auf `/superadmin/telegram`, damit pro Chat-Gruppe entschieden werden kann, ob Livechat-Meldungen ankommen.
+- Standardwert für neue und bestehende Empfänger: aus. So kommt es nicht ungewollt zu Nachrichtenfluten; der Schalter wird bewusst aktiviert.
 
-Kein einziger Empfänger erfüllt beide Bedingungen — deshalb läuft die Funktion durch, findet null Empfänger und sendet nichts. Die Logs der Funktion zeigen entsprechend keine Telegram-Fehler.
+## Ablauf
+1. Mitarbeiter sendet im Widget eine Nachricht → wird wie bisher zuerst in `chat_messages` gespeichert.
+2. Danach ruft das Frontend die neue Edge Function `chat-message-notify` mit der Message-ID auf; ein Fehler dabei blockiert das Senden nicht.
+3. Die Funktion prüft den angemeldeten Benutzer, lädt die Nachricht samt Mitarbeiter über die Konversation, bricht ab, falls die Nachricht nicht von einem Mitarbeiter stammt, und verschickt an alle aktiven Empfänger mit aktivierter Livechat-Kategorie.
 
-## Fix
-
-### 1. Sofortlösung (Daten)
-Empfänger „Calls" (-5326576110) aktivieren, damit die Notiz-Benachrichtigungen wieder an diese Gruppe gehen. Alternativ bei -5395784143 den Schalter „Notizen" einschalten — das lässt sich auch selbst unter `/superadmin/telegram` per Schalter erledigen.
-
-### 2. Absicherung gegen Wiederholung
-Auf `/superadmin/telegram` wird sichtbar gemacht, wenn eine Benachrichtigungsart keinen einzigen aktiven Empfänger hat:
-- Warnhinweis oben auf der Seite, z. B. „Notiz-Benachrichtigungen gehen aktuell an niemanden".
-- Inaktive Empfänger optisch abschwächen und ihre Kategorie-Schalter als wirkungslos kennzeichnen.
-
-### 3. Diagnose verbessern
-- In `call-note-notify` wird geloggt, wenn null Empfänger gefunden wurden, und in der Antwort `recipients: 0` zurückgegeben.
-- Im Frontend (`Erfassen.tsx`, `RecruitmentErfassen.tsx`) wird ein fehlgeschlagener Aufruf nicht mehr nur in die Konsole geschrieben, sondern als dezenter Hinweis-Toast gezeigt („Notiz gespeichert, Telegram-Benachrichtigung fehlgeschlagen"). Das Speichern der Notiz bleibt davon unberührt.
+## Nachrichtenformat
+```text
+💬 Neue Livechat-Nachricht
+━━━━━━━━━━━━━━━━━━
+🎧 Mitarbeiter: Stefannie Maier
+📝 <Nachrichtentext>
+```
+Plus Button „Livechat öffnen" zum Superadmin-Livechat, wie bei den bestehenden Benachrichtigungen.
 
 ## Technisch
-- Datenänderung über die Oberfläche bzw. ein Update auf `public.telegram_recipients`.
-- Dateien: `src/pages/superadmin/Telegram.tsx`, `supabase/functions/call-note-notify/index.ts`, `src/pages/mitarbeiter/Erfassen.tsx`, `src/pages/mitarbeiter/RecruitmentErfassen.tsx`.
-- Keine Schemaänderung nötig.
+- Migration: Spalte `notify_chat boolean not null default false` auf `public.telegram_recipients`.
+- Neue Edge Function `supabase/functions/chat-message-notify/index.ts` — Aufbau analog `call-note-notify`: JWT-Prüfung, Service-Role-Client, Empfänger-Query auf `is_active` + `notify_chat`, `sendMessage` per `TELEGRAM_BOT_TOKEN`, HTML-Escaping, Fehler-Logging inkl. „0 Empfänger".
+- Frontend: Aufruf nach erfolgreichem Insert in `src/hooks/use-chat.ts` (nur bei `sender_role === "mitarbeiter"`), damit sowohl Widget als auch künftige Mitarbeiter-Oberflächen abgedeckt sind.
+- UI: zusätzliche Spalte mit Schalter in `src/pages/superadmin/Telegram.tsx`.
