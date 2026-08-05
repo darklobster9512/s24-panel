@@ -33,6 +33,7 @@ type Row = {
     email: string;
     handynummer: string;
     anstellung: string;
+    stelle: string | null;
     ranking: string | null;
   } | null;
 };
