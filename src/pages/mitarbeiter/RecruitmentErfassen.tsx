@@ -155,18 +155,38 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
-  /** Speichert die Notiz lokal in call_notes, damit sie unter /mitarbeiter/notizen erscheint. */
-  async function persistNoteLocally() {
-    if (!client?.id) return;
+  /** Ermittelt den Kunden des Callers – notfalls frisch aus der Datenbank. */
+  async function resolveClientId(employeeId: string): Promise<string | null> {
+    if (client?.id) return client.id;
+    const { data, error } = await supabase
+      .from("assignments")
+      .select("client_id")
+      .eq("employee_id", employeeId)
+      .limit(1)
+      .maybeSingle();
+    if (error) console.error("[RecruitmentErfassen] assignment lookup failed", error);
+    return data?.client_id ?? null;
+  }
+
+  /** Speichert die Notiz lokal in call_notes. Wirft bei jedem Fehlschlag. */
+  async function persistNoteLocally(): Promise<string> {
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth.user?.id;
-    if (!uid) return;
-    const { data: emp } = await supabase
+    if (!uid) throw new Error("Nicht angemeldet – bitte neu einloggen.");
+
+    const { data: emp, error: empErr } = await supabase
       .from("employees")
       .select("id")
       .eq("user_id", uid)
       .maybeSingle();
-    if (!emp?.id) return;
+    if (empErr) {
+      console.error("[RecruitmentErfassen] employee lookup failed", empErr);
+      throw new Error("Mitarbeiter-Profil konnte nicht geladen werden.");
+    }
+    if (!emp?.id) throw new Error("Kein Mitarbeiter-Profil gefunden.");
+
+    const clientId = await resolveClientId(emp.id);
+    if (!clientId) throw new Error("Kein zugewiesener Kunde gefunden – bitte Zuweisung prüfen.");
 
     const iv = interview.data;
     const text =
@@ -178,7 +198,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     const { data: inserted, error } = await supabase
       .from("call_notes")
       .insert({
-        client_id: client.id,
+        client_id: clientId,
         employee_id: emp.id,
         anrufer_name: iv?.name ?? null,
         anrufer_nummer: iv?.phone ?? null,
@@ -191,13 +211,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       })
       .select("id")
       .maybeSingle();
-    if (error) throw error;
-    if (inserted?.id) {
-      supabase.functions
-        .invoke("call-note-notify", { body: { note_id: inserted.id, kind: "outbound" } })
-        .catch((e) => console.warn("call-note-notify failed", e));
-    }
 
+    if (error) {
+      console.error("[RecruitmentErfassen] call_notes insert failed", error);
+      throw new Error("Notiz konnte nicht gespeichert werden: " + error.message);
+    }
+    if (!inserted?.id) throw new Error("Notiz konnte nicht gespeichert werden.");
+
+    supabase.functions
+      .invoke("call-note-notify", { body: { note_id: inserted.id, kind: "outbound" } })
+      .catch((e) => console.warn("call-note-notify failed", e));
+
+    return inserted.id;
   }
 
   async function saveAndClose() {
@@ -206,26 +231,39 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
       return toast.error("Bitte eine Notiz zum Fehlschlag eintragen.");
     setSaving(true);
     try {
-      await callerApi("set_status", {
-        appointment_id: interviewId,
-        status: outcome,
-        note: note.trim(),
-      });
+      // 1. Zuerst lokal sichern – so geht der Notiztext nie verloren.
       try {
         await persistNoteLocally();
-        qc.invalidateQueries({ queryKey: ["mitarbeiter-notes"] });
-        qc.invalidateQueries({ queryKey: ["stat-data"] });
-      } catch {
-        toast.warning("Notiz wurde übertragen, konnte aber lokal nicht gespeichert werden.");
+      } catch (e) {
+        toast.error((e as Error).message);
+        return;
       }
+      qc.invalidateQueries({ queryKey: ["mitarbeiter-notes"] });
+      qc.invalidateQueries({ queryKey: ["stat-data"] });
+
+      // 2. Danach an die externe Caller-API übertragen.
+      try {
+        await callerApi("set_status", {
+          appointment_id: interviewId,
+          status: outcome,
+          note: note.trim(),
+        });
+      } catch (e) {
+        console.error("[RecruitmentErfassen] set_status failed", e);
+        toast.warning(
+          "Notiz gespeichert, aber das Ergebnis konnte nicht an die Caller-API übertragen werden: " +
+            (e as Error).message,
+        );
+        return;
+      }
+
       toast.success("Ergebnis gespeichert");
       navigate("/mitarbeiter/bewerbungsgespraeche");
-    } catch (e) {
-      toast.error((e as Error).message);
     } finally {
       setSaving(false);
     }
   }
+
 
 
   const iv = interview.data;
