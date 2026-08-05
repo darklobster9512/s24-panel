@@ -3,6 +3,8 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const UPSTREAM = 'https://laozvnaupdecerpvwzmh.supabase.co/functions/v1/caller-api';
 
+const READONLY_ACTIONS = new Set(['meta', 'list_interviews']);
+
 const ALLOWED_ACTIONS = new Set([
   'meta',
   'list_interviews',
@@ -53,29 +55,69 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { data: emp, error: empErr } = await admin
-      .from('employees')
-      .select('id, outbound_recruitment, caller_api_key')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const requestedEmployeeId =
+      typeof payload.employee_id === 'string' ? payload.employee_id : null;
 
-    if (empErr) {
-      console.error('employee lookup failed', empErr.message);
-      return json({ error: 'Mitarbeiter konnte nicht geladen werden' }, 500);
-    }
-    if (!emp) return json({ error: 'Kein Mitarbeiter-Profil gefunden' }, 403);
-    if (!emp.outbound_recruitment || !emp.caller_api_key) {
-      return json({ error: 'Outbound Recruitment ist für diesen Account nicht aktiviert' }, 403);
+    let callerKey: string | null = null;
+
+    if (requestedEmployeeId) {
+      // Superadmin-Lesezugriff auf die Termine eines bestimmten Outbound-Callers
+      const { data: isSuper, error: roleErr } = await admin.rpc('has_role', {
+        _user_id: userId,
+        _role: 'superadmin',
+      });
+      if (roleErr) {
+        console.error('role check failed', roleErr.message);
+        return json({ error: 'Rollenprüfung fehlgeschlagen' }, 500);
+      }
+      if (!isSuper) return json({ error: 'Nicht berechtigt' }, 403);
+      if (!READONLY_ACTIONS.has(action)) {
+        return json({ error: `Aktion nicht erlaubt: ${action}` }, 403);
+      }
+
+      const { data: target, error: targetErr } = await admin
+        .from('employees')
+        .select('id, outbound_recruitment, caller_api_key')
+        .eq('id', requestedEmployeeId)
+        .maybeSingle();
+
+      if (targetErr) {
+        console.error('employee lookup failed', targetErr.message);
+        return json({ error: 'Mitarbeiter konnte nicht geladen werden' }, 500);
+      }
+      if (!target) return json({ error: 'Mitarbeiter nicht gefunden' }, 404);
+      if (!target.outbound_recruitment || !target.caller_api_key) {
+        return json({ error: 'Outbound Recruitment ist für diesen Mitarbeiter nicht aktiviert' }, 403);
+      }
+      callerKey = target.caller_api_key as string;
+    } else {
+      const { data: emp, error: empErr } = await admin
+        .from('employees')
+        .select('id, outbound_recruitment, caller_api_key')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (empErr) {
+        console.error('employee lookup failed', empErr.message);
+        return json({ error: 'Mitarbeiter konnte nicht geladen werden' }, 500);
+      }
+      if (!emp) return json({ error: 'Kein Mitarbeiter-Profil gefunden' }, 403);
+      if (!emp.outbound_recruitment || !emp.caller_api_key) {
+        return json({ error: 'Outbound Recruitment ist für diesen Account nicht aktiviert' }, 403);
+      }
+      callerKey = emp.caller_api_key as string;
     }
 
     const body = { ...payload };
     delete (body as Record<string, unknown>).action;
+    delete (body as Record<string, unknown>).employee_id;
+
 
     const upstream = await fetch(UPSTREAM, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-caller-key': emp.caller_api_key as string,
+        'x-caller-key': callerKey as string,
       },
       body: JSON.stringify({ action, ...body }),
     });

@@ -156,11 +156,13 @@ export async function listInterviews(
   view: InterviewView,
   page = 0,
   search = "",
+  employeeId?: string,
 ): Promise<InterviewPage> {
   const data = await callerApi<any>("list_interviews", {
     view,
     page,
     ...(search ? { search } : {}),
+    ...(employeeId ? { employee_id: employeeId } : {}),
   });
   return {
     items: extractList(data).map(normalizeInterview),
@@ -177,10 +179,11 @@ export async function listInterviews(
 export async function listUpcomingInterviews(
   page = 0,
   search = "",
+  employeeId?: string,
 ): Promise<InterviewPage> {
   const [today, later] = await Promise.all([
-    listInterviews("default", page, search),
-    listInterviews("future", page, search),
+    listInterviews("default", page, search, employeeId),
+    listInterviews("future", page, search, employeeId),
   ]);
 
   const merged = [...today.items, ...later.items].sort((a, b) => {
@@ -196,6 +199,7 @@ export async function listUpcomingInterviews(
     pageSize: Math.max(today.pageSize, later.pageSize),
   };
 }
+
 
 /** Sucht einen Termin über alle Ansichten hinweg anhand seiner ID. */
 export async function findInterviewById(
