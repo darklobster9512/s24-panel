@@ -34,26 +34,46 @@ export function MitarbeiterChatWidget() {
     setSeenIds(incoming.map((m) => m.id));
   }, [open, incoming]);
 
+  // Lock background scroll while the fullscreen (mobile) chat is open.
+  useEffect(() => {
+    if (!open) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (!mq.matches) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   const now = useMinuteTick();
+
   const statusMeta = AGENT_STATUS_META[effectiveAgentStatus(settings, now)];
   const agentName = settings?.display_name ?? "Daniel Schreiber";
 
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[520px] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl">
-          <div className="flex items-center justify-between border-b border-border/60 bg-background/80 px-4 py-3">
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden border-border/60 bg-card md:inset-auto md:bottom-24 md:right-6 md:h-[520px] md:w-[360px] md:max-w-[calc(100vw-2rem)] md:rounded-2xl md:border md:shadow-2xl">
+          <div className="flex items-center justify-between bg-sidebar px-4 py-3 text-sidebar-foreground">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{agentName}</p>
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <p className="flex items-center gap-1.5 text-xs text-sidebar-foreground/70">
                 <span className={cn("h-2 w-2 rounded-full", statusMeta.dot)} />
                 {statusMeta.label}
               </p>
             </div>
-            <Button size="icon" variant="ghost" onClick={() => setOpen(false)} aria-label="Chat schließen">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              aria-label="Chat schließen"
+              className="text-sidebar-foreground hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
+
 
           <ChatThread
             messages={messages}
@@ -83,7 +103,11 @@ export function MitarbeiterChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Livechat öffnen"
-        className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.7)] transition hover:scale-105"
+        className={cn(
+          "fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.7)] transition hover:scale-105",
+          open && "hidden md:grid",
+        )}
+
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         {!open && unread > 0 && (
