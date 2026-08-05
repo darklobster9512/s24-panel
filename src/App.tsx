@@ -93,6 +93,8 @@ export default function App() {
                     <Route path="anrufe" element={<SuperadminAnrufe />} />
                     <Route path="notizen" element={<SuperadminNotizen />} />
                     <Route path="bewerbungen" element={<SuperadminBewerbungen />} />
+                    <Route path="outbound-gespraeche" element={<SuperadminOutboundGespraeche />} />
+
                     <Route path="telegram" element={<SuperadminTelegram />} />
                     <Route path="manager" element={<SuperadminManager />} />
 
