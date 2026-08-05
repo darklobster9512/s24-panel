@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { ChatThread } from "./ChatThread";
 import {
   AGENT_STATUS_META,
+  effectiveAgentStatus,
   useAgentSettings,
+  useMinuteTick,
   useChatMessages,
   useChatTyping,
   useMyConversation,
@@ -28,7 +30,8 @@ export function MitarbeiterChatWidget() {
     if (open && unread > 0) void markRead();
   }, [open, unread, markRead]);
 
-  const statusMeta = AGENT_STATUS_META[settings?.status ?? "offline"];
+  const now = useMinuteTick();
+  const statusMeta = AGENT_STATUS_META[effectiveAgentStatus(settings, now)];
   const agentName = settings?.display_name ?? "Daniel Schreiber";
 
   return (
@@ -40,7 +43,7 @@ export function MitarbeiterChatWidget() {
               <p className="truncate text-sm font-semibold">{agentName}</p>
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className={cn("h-2 w-2 rounded-full", statusMeta.dot)} />
-                {settings?.status_text?.trim() || statusMeta.label}
+                {statusMeta.label}
               </p>
             </div>
             <Button size="icon" variant="ghost" onClick={() => setOpen(false)} aria-label="Chat schließen">

@@ -361,30 +361,36 @@ export type Database = {
       }
       chat_agent_settings: {
         Row: {
+          auto_offline: boolean
           created_at: string
           display_name: string
           id: string
+          offline_after: string
+          online_from: string
           singleton: boolean
           status: string
-          status_text: string | null
           updated_at: string
         }
         Insert: {
+          auto_offline?: boolean
           created_at?: string
           display_name?: string
           id?: string
+          offline_after?: string
+          online_from?: string
           singleton?: boolean
           status?: string
-          status_text?: string | null
           updated_at?: string
         }
         Update: {
+          auto_offline?: boolean
           created_at?: string
           display_name?: string
           id?: string
+          offline_after?: string
+          online_from?: string
           singleton?: boolean
           status?: string
-          status_text?: string | null
           updated_at?: string
         }
         Relationships: []
