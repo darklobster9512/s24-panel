@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { renderApplicationEmailHtml, renderTemplate as renderTpl } from "@/lib/applicationEmail";
+import InterviewBlockedSlots from "@/components/superadmin/InterviewBlockedSlots";
 
 type Settings = {
   id: string;
@@ -395,6 +396,14 @@ export default function Einstellungen() {
             </div>
           </div>
         </Panel>
+
+        <InterviewBlockedSlots
+          slotStart={form.interview_slot_start ?? "09:00"}
+          slotEnd={form.interview_slot_end ?? "18:00"}
+          intervalMinutes={form.interview_slot_interval_minutes ?? 30}
+        />
+
+
 
         <Panel title="Bewerbungsgespräch · Terminbestätigung" className="lg:col-span-2">
           <div className="grid gap-4 lg:grid-cols-2">
