@@ -69,7 +69,9 @@ const opsItems = (newApplicationsCount: number, interviewsTodayCount: number): S
     icon: Calendar,
     badge: interviewsTodayCount,
   },
+  { title: "Outbound-Gespräche", url: "/superadmin/outbound-gespraeche", icon: PhoneOutgoing },
 ];
+
 
 const finItems = (pendingCount: number): SidebarItem[] => [
   { title: "Verträge", url: "/superadmin/vertraege", icon: FileSignature },
