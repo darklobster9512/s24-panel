@@ -21,7 +21,9 @@ export interface AgentSettings {
   id: string;
   display_name: string;
   status: "online" | "away" | "offline";
-  status_text: string | null;
+  online_from: string;
+  offline_after: string;
+  auto_offline: boolean;
 }
 
 export const AGENT_STATUS_META: Record<
@@ -35,6 +37,50 @@ export const AGENT_STATUS_META: Record<
 
 const db = supabase as any;
 
+const toMinutes = (t?: string | null) => {
+  if (!t) return null;
+  const [h, m] = t.split(":");
+  const hh = Number(h);
+  const mm = Number(m ?? 0);
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return hh * 60 + mm;
+};
+
+/** Formats "18:00:00" -> "18:00" for <input type="time"> */
+export const toTimeInput = (t?: string | null) => (t ? t.slice(0, 5) : "");
+
+/** Is `now` inside the configured office window? Handles windows crossing midnight. */
+export function isWithinOfficeHours(
+  settings: Pick<AgentSettings, "online_from" | "offline_after"> | null | undefined,
+  now: Date = new Date(),
+) {
+  const from = toMinutes(settings?.online_from);
+  const until = toMinutes(settings?.offline_after);
+  if (from === null || until === null || from === until) return true;
+  const cur = now.getHours() * 60 + now.getMinutes();
+  return from < until ? cur >= from && cur < until : cur >= from || cur < until;
+}
+
+/** Manual status, forced to "offline" outside the office hours window. */
+export function effectiveAgentStatus(
+  settings: AgentSettings | null | undefined,
+  now: Date = new Date(),
+): AgentSettings["status"] {
+  const status = settings?.status ?? "offline";
+  if (settings?.auto_offline && !isWithinOfficeHours(settings, now)) return "offline";
+  return status;
+}
+
+/** Re-renders every minute so the status flips at the configured time without reload. */
+export function useMinuteTick() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
 /** Live agent (manager) profile — name + status shown in the employee widget. */
 export function useAgentSettings() {
   const [settings, setSettings] = useState<AgentSettings | null>(null);
@@ -43,7 +89,7 @@ export function useAgentSettings() {
   useEffect(() => {
     let mounted = true;
     db.from("chat_agent_settings")
-      .select("id, display_name, status, status_text")
+      .select("id, display_name, status, online_from, offline_after, auto_offline")
       .limit(1)
       .maybeSingle()
       .then(({ data }: any) => {
@@ -71,7 +117,7 @@ export function useAgentSettings() {
   }, []);
 
   const updateSettings = useCallback(
-    async (patch: Partial<Pick<AgentSettings, "display_name" | "status" | "status_text">>) => {
+    async (patch: Partial<Pick<AgentSettings, "display_name" | "status" | "online_from" | "offline_after" | "auto_offline">>) => {
       if (!settings) return { error: new Error("Keine Einstellungen geladen") };
       const { error } = await db
         .from("chat_agent_settings")
