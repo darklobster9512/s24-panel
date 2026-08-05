@@ -19,6 +19,7 @@ import {
   Calendar,
   Send,
   ShieldCheck,
+  MessageCircle,
 
 
 } from "lucide-react";
@@ -86,6 +87,10 @@ const finItems = (pendingCount: number): SidebarItem[] => [
   { title: "Abrechnung", url: "/superadmin/abrechnung", icon: Receipt },
 ];
 
+const chatItems = (unread: number): SidebarItem[] => [
+  { title: "Livechat", url: "/superadmin/livechat", icon: MessageCircle, badge: unread },
+];
+
 const systemItems: SidebarItem[] = [
   { title: "Manager", url: "/superadmin/manager", icon: ShieldCheck },
   { title: "Telegram", url: "/superadmin/telegram", icon: Send },
@@ -136,6 +141,23 @@ export function SuperadminSidebar() {
       return count ?? 0;
     },
   });
+
+  const chatUnreadQuery = useQuery({
+    queryKey: ["livechat-unread-count"],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("sender_role", "mitarbeiter")
+        .eq("read", false)
+        .is("deleted_at", null);
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const chatUnread = chatUnreadQuery.data ?? 0;
 
   const pendingCount = pendingCountQuery.data ?? 0;
   const newApplicationsCount = newApplicationsQuery.data ?? 0;
@@ -210,12 +232,13 @@ export function SuperadminSidebar() {
             "Betrieb",
             opsItems(newApplicationsCount, interviewsTodayCount).filter(
               (i) => i.url === "/superadmin/bewerbungsgespraeche",
-            ),
+            ).concat(chatItems(chatUnread)),
           )
         ) : (
           <>
             {renderGroup("Allgemein", mainItems)}
             {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount))}
+            {renderGroup("Kommunikation", chatItems(chatUnread))}
             {renderGroup("Finanzen", finItems(pendingCount))}
             {renderGroup("System", systemItems)}
           </>

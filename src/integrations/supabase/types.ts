@@ -359,6 +359,124 @@ export type Database = {
           },
         ]
       }
+      chat_agent_settings: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          singleton: boolean
+          status: string
+          status_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          singleton?: boolean
+          status?: string
+          status_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          singleton?: boolean
+          status?: string
+          status_text?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          employee_active_at: string | null
+          employee_id: string
+          id: string
+          last_message_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_active_at?: string | null
+          employee_id: string
+          id?: string
+          last_message_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_active_at?: string | null
+          employee_id?: string
+          id?: string
+          last_message_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          read: boolean
+          read_at: string | null
+          sender_role: string
+          sender_user_id: string | null
+          sent_as_superadmin: boolean
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          read?: boolean
+          read_at?: string | null
+          sender_role: string
+          sender_user_id?: string | null
+          sent_as_superadmin?: boolean
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          read?: boolean
+          read_at?: string | null
+          sender_role?: string
+          sender_user_id?: string | null
+          sent_as_superadmin?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_phone_numbers: {
         Row: {
           client_id: string
@@ -1049,6 +1167,11 @@ export type Database = {
         Args: { _client_id: string }
         Returns: boolean
       }
+      is_my_conversation: {
+        Args: { _conversation_id: string }
+        Returns: boolean
+      }
+      is_my_employee_row: { Args: { _employee_id: string }; Returns: boolean }
       list_booked_interview_slots: {
         Args: never
         Returns: {

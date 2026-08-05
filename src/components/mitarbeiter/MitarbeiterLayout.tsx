@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAutoAnswerRedirect } from "@/hooks/use-auto-answer-redirect";
+import { MitarbeiterChatWidget } from "@/components/chat/MitarbeiterChatWidget";
 
 type Status = "verfuegbar" | "pause" | "nicht-bereit" | "im-gespraech";
 const STATUS_META: Record<Status, { label: string; dot: string; ring: string }> = {
@@ -114,6 +115,7 @@ export default function MitarbeiterLayout() {
             </Suspense>
           </main>
         </SidebarInset>
+        <MitarbeiterChatWidget />
       </div>
     </SidebarProvider>
   );
