@@ -1078,6 +1078,7 @@ export type Database = {
           is_active: boolean
           label: string | null
           notify_applications: boolean
+          notify_chat: boolean
           notify_contracts: boolean
           notify_interviews: boolean
           notify_notes: boolean
@@ -1090,6 +1091,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_chat?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
           notify_notes?: boolean
@@ -1102,6 +1104,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_chat?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
           notify_notes?: boolean
