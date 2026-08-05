@@ -13,26 +13,57 @@ import {
   useMyConversation,
 } from "@/hooks/use-chat";
 
+const seenKey = (conversationId: string) => `s24:chat:lastSeen:${conversationId}`;
+
+function readLastSeen(conversationId: string | null): string | null {
+  if (!conversationId) return null;
+  try {
+    return window.localStorage.getItem(seenKey(conversationId));
+  } catch {
+    return null;
+  }
+}
+
+function writeLastSeen(conversationId: string, value: string) {
+  try {
+    window.localStorage.setItem(seenKey(conversationId), value);
+  } catch {
+    /* storage blocked — badge falls back to session-only behaviour */
+  }
+}
+
 export function MitarbeiterChatWidget() {
   const [open, setOpen] = useState(false);
   const { conversationId } = useMyConversation();
   const { settings } = useAgentSettings();
   const { messages, loading, sendMessage, editMessage, deleteMessage } =
     useChatMessages(conversationId, "mitarbeiter");
-  const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [lastSeen, setLastSeen] = useState<string | null>(null);
   const { otherTyping, sendTyping } = useChatTyping(conversationId, "mitarbeiter");
+
+  // Load the persisted read marker for this conversation.
+  useEffect(() => {
+    setLastSeen(readLastSeen(conversationId));
+  }, [conversationId]);
 
   const incoming = useMemo(
     () => messages.filter((m) => m.sender_role === "manager" && !m.deleted_at),
     [messages],
   );
-  const unread = incoming.filter((m) => !seenIds.includes(m.id)).length;
+  const unread = incoming.filter((m) => !lastSeen || m.created_at > lastSeen).length;
 
-  // Locally dismiss the badge while the widget is open — no read receipt is sent.
+  // Persist the read marker while the widget is open — no read receipt is sent.
   useEffect(() => {
-    if (!open) return;
-    setSeenIds(incoming.map((m) => m.id));
-  }, [open, incoming]);
+    if (!open || !conversationId || incoming.length === 0) return;
+    const latest = incoming.reduce(
+      (acc, m) => (m.created_at > acc ? m.created_at : acc),
+      incoming[0].created_at,
+    );
+    if (lastSeen && latest <= lastSeen) return;
+    writeLastSeen(conversationId, latest);
+    setLastSeen(latest);
+  }, [open, incoming, conversationId, lastSeen]);
+
 
   // Lock background scroll while the fullscreen (mobile) chat is open.
   useEffect(() => {
