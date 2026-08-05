@@ -32,6 +32,7 @@ import SuperadminAbrechnung from "./pages/superadmin/Abrechnung";
 import SuperadminEinstellungen from "./pages/superadmin/Einstellungen";
 import SuperadminTelegram from "./pages/superadmin/Telegram";
 import SuperadminManager from "./pages/superadmin/Manager";
+import SuperadminLivechat from "./pages/superadmin/Livechat";
 import SuperadminArbeitsvertraege from "./pages/superadmin/Arbeitsvertraege";
 
 import SuperadminArbeitsvertragDetail from "./pages/superadmin/ArbeitsvertragDetail";
@@ -112,6 +113,7 @@ export default function App() {
 
                 <Route element={<RequireRole allow={["superadmin", "manager"]} />}>
                   <Route path="/superadmin" element={<SuperadminLayout />}>
+                    <Route path="livechat" element={<SuperadminLivechat />} />
                     <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
                     <Route
                       path="bewerbungsgespraeche/:id"
