@@ -21,6 +21,8 @@ interface ChatThreadProps {
   emptyHint?: string;
   disabled?: boolean;
   compact?: boolean;
+  /** false = never show "gelesen" double check, only a single check */
+  readReceipts?: boolean;
   onSend: (text: string) => Promise<void> | void;
   onEdit: (id: string, text: string) => Promise<void> | void;
   onDelete: (id: string) => Promise<void> | void;
@@ -37,6 +39,7 @@ export function ChatThread({
   emptyHint = "Noch keine Nachrichten.",
   disabled,
   compact,
+  readReceipts = true,
   onSend,
   onEdit,
   onDelete,
@@ -140,27 +143,8 @@ export function ChatThread({
                         mine ? "justify-end" : "justify-start",
                       )}
                     >
-                      <span>{formatChatTime(m.created_at)}</span>
-                      {m.edited_at && !isDeleted && <span>· bearbeitet</span>}
-                      {showInternalHints && m.sent_as_superadmin && (
-                        <span className="rounded bg-muted px-1 py-0.5 text-[10px]">
-                          gesendet von Superadmin
-                        </span>
-                      )}
-                      {mine &&
-                        !isDeleted &&
-                        (m.read ? (
-                          <span
-                            className="flex items-center gap-0.5 text-primary"
-                            title={m.read_at ? `Gelesen ${formatChatTime(m.read_at)}` : "Gelesen"}
-                          >
-                            <CheckCheck className="h-3.5 w-3.5" />
-                          </span>
-                        ) : (
-                          <Check className="h-3.5 w-3.5" />
-                        ))}
                       {mine && !isDeleted && !editing && (
-                        <span className="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+                        <span className="hidden items-center gap-0.5 group-hover:flex">
                           <button
                             type="button"
                             className="rounded p-0.5 hover:text-foreground"
@@ -182,6 +166,25 @@ export function ChatThread({
                           </button>
                         </span>
                       )}
+                      <span>{formatChatTime(m.created_at)}</span>
+                      {m.edited_at && !isDeleted && <span>· bearbeitet</span>}
+                      {showInternalHints && m.sent_as_superadmin && (
+                        <span className="rounded bg-muted px-1 py-0.5 text-[10px]">
+                          gesendet von Superadmin
+                        </span>
+                      )}
+                      {mine &&
+                        !isDeleted &&
+                        (readReceipts && m.read ? (
+                          <span
+                            className="flex items-center gap-0.5 text-primary"
+                            title={m.read_at ? `Gelesen ${formatChatTime(m.read_at)}` : "Gelesen"}
+                          >
+                            <CheckCheck className="h-3.5 w-3.5" />
+                          </span>
+                        ) : (
+                          <Check className="h-3.5 w-3.5" />
+                        ))}
                     </div>
                   </div>
                 </div>

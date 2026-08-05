@@ -17,18 +17,22 @@ export function MitarbeiterChatWidget() {
   const [open, setOpen] = useState(false);
   const { conversationId } = useMyConversation();
   const { settings } = useAgentSettings();
-  const { messages, loading, sendMessage, editMessage, deleteMessage, markRead } =
+  const { messages, loading, sendMessage, editMessage, deleteMessage } =
     useChatMessages(conversationId, "mitarbeiter");
+  const [seenIds, setSeenIds] = useState<string[]>([]);
   const { otherTyping, sendTyping } = useChatTyping(conversationId, "mitarbeiter");
 
-  const unread = useMemo(
-    () => messages.filter((m) => m.sender_role === "manager" && !m.read && !m.deleted_at).length,
+  const incoming = useMemo(
+    () => messages.filter((m) => m.sender_role === "manager" && !m.deleted_at),
     [messages],
   );
+  const unread = incoming.filter((m) => !seenIds.includes(m.id)).length;
 
+  // Locally dismiss the badge while the widget is open — no read receipt is sent.
   useEffect(() => {
-    if (open && unread > 0) void markRead();
-  }, [open, unread, markRead]);
+    if (!open) return;
+    setSeenIds(incoming.map((m) => m.id));
+  }, [open, incoming]);
 
   const now = useMinuteTick();
   const statusMeta = AGENT_STATUS_META[effectiveAgentStatus(settings, now)];
@@ -58,6 +62,7 @@ export function MitarbeiterChatWidget() {
             otherTyping={otherTyping}
             otherName={agentName}
             compact
+            readReceipts={false}
             emptyHint={`Schreib ${agentName} eine Nachricht.`}
             disabled={!conversationId}
             onSend={async (t) => {
