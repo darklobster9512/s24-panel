@@ -19,6 +19,7 @@ import SuperadminMitarbeiterDetail from "./pages/superadmin/MitarbeiterDetail";
 import SuperadminZuweisungen from "./pages/superadmin/Zuweisungen";
 import SuperadminAnrufe from "./pages/superadmin/Anrufe";
 import SuperadminNotizen from "./pages/superadmin/Notizen";
+import SuperadminOutboundGespraeche from "./pages/superadmin/OutboundGespraeche";
 import SuperadminBewerbungen from "./pages/superadmin/Bewerbungen";
 import SuperadminBewerbungsgespraeche from "./pages/superadmin/Bewerbungsgespraeche";
 import SuperadminBewerbungsgespraechDetail from "./pages/superadmin/BewerbungsgespraechDetail";
