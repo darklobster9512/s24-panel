@@ -21,7 +21,14 @@ Zweispaltig:
 
 - Liste aller Mitarbeiter (auch ohne bisherigen Chat) mit letzter Nachricht, Zeitstempel, Ungelesen-Zähler, Online-Punkt (aktiv in den letzten 2 Minuten).
 - Statusfeld unten links: Anzeigename (Standard „Daniel Schreiber") und Status Online / Abwesend / Offline plus optionaler Statustext. Wirkt sofort im Widget aller Mitarbeiter.
-- Sidebar-Eintrag „Livechat" mit Badge für ungelesene Nachrichten (sichtbar für Manager und Superadmin).
+- Sidebar-Eintrag „Livechat" in der /superadmin-Sidebar, sichtbar für Manager und Superadmin, mit Badge für ungelesene Nachrichten.
+
+## Superadmin im selben Reiter
+
+- Superadmin sieht dieselbe Ansicht und damit alle Konversationen zwischen Manager und Mitarbeitern vollständig mitlesbar.
+- Superadmin schreibt im Namen des Managers: gesendete Nachrichten erscheinen beim Mitarbeiter als „Daniel Schreiber", identisch zu Manager-Nachrichten.
+- Nur intern (Manager-/Superadmin-Ansicht) wird bei Superadmin-Nachrichten ein dezenter Hinweis „gesendet von Superadmin" angezeigt; der Mitarbeiter sieht diesen Hinweis nicht.
+- Superadmin kann außerdem den Manager-Status und Anzeigenamen ändern.
 
 ## Mitarbeiter: Chat-Widget
 
@@ -42,9 +49,9 @@ Zweispaltig:
 
 Migration:
 - `public.chat_conversations`: `employee_id` (unique, Referenz `employees`), `last_message_at`, `employee_active_at`.
-- `public.chat_messages`: `conversation_id`, `sender_role` (`manager` | `mitarbeiter`), `sender_user_id`, `content`, `edited_at`, `deleted_at`, `read`, `read_at`, Zeitstempel.
+- `public.chat_messages`: `conversation_id`, `sender_role` (`manager` | `mitarbeiter`), `sender_user_id`, `sent_as_superadmin` (bool), `content`, `edited_at`, `deleted_at`, `read`, `read_at`, Zeitstempel.
 - `public.chat_agent_settings` (Singleton): `display_name`, `status` (`online` | `away` | `offline`), `status_text`.
-- GRANTs für `authenticated` und `service_role`; RLS: Manager/Superadmin über `has_role` auf alle Konversationen; Mitarbeiter nur auf die Konversation, deren `employee_id` zu seinem `user_id` gehört (Security-Definer-Funktion `is_my_conversation`). Agent-Settings: alle Authentifizierten lesen, nur Manager/Superadmin schreiben.
+- GRANTs für `authenticated` und `service_role`; RLS: Manager/Superadmin über `has_role` auf alle Konversationen und Nachrichten; Mitarbeiter nur auf die Konversation, deren `employee_id` zu seinem `user_id` gehört (Security-Definer-Funktion `is_my_conversation`). Agent-Settings: alle Authentifizierten lesen, nur Manager/Superadmin schreiben.
 - Realtime-Publikation für `chat_messages` und `chat_conversations`, `REPLICA IDENTITY FULL`.
 - Trigger für `updated_at` / `last_message_at`.
 
@@ -54,4 +61,4 @@ Code:
 - `src/components/chat/ChatThread.tsx` – gemeinsamer Nachrichtenverlauf für beide Seiten.
 - `src/components/chat/MitarbeiterChatWidget.tsx` – eingebunden im Mitarbeiter-Layout.
 - `src/pages/superadmin/Livechat.tsx` + Route in `src/App.tsx` unter `RequireRole allow={["superadmin","manager"]}`.
-- Sidebar-Eintrag samt Unread-Badge in `src/components/superadmin/AppSidebar.tsx`.
+- Sidebar-Eintrag samt Unread-Badge in `src/components/superadmin/AppSidebar.tsx`, für Manager und Superadmin sichtbar.
