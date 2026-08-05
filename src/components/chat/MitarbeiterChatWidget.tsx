@@ -34,7 +34,20 @@ export function MitarbeiterChatWidget() {
     setSeenIds(incoming.map((m) => m.id));
   }, [open, incoming]);
 
+  // Lock background scroll while the fullscreen (mobile) chat is open.
+  useEffect(() => {
+    if (!open) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (!mq.matches) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   const now = useMinuteTick();
+
   const statusMeta = AGENT_STATUS_META[effectiveAgentStatus(settings, now)];
   const agentName = settings?.display_name ?? "Daniel Schreiber";
 
