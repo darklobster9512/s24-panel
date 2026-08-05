@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-caller-key': emp.caller_api_key as string,
+        'x-caller-key': callerKey as string,
       },
       body: JSON.stringify({ action, ...body }),
     });
