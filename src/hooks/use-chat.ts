@@ -192,14 +192,26 @@ export function useChatMessages(conversationId: string | null, viewerRole: ChatS
       const text = content.trim();
       if (!conversationId || !text) return { error: null };
       const { data: userData } = await supabase.auth.getUser();
-      const { error } = await db.from("chat_messages").insert({
-        conversation_id: conversationId,
-        sender_role: viewerRole,
-        sender_user_id: userData.user?.id ?? null,
-        sent_as_superadmin: opts?.sentAsSuperadmin ?? false,
-        content: text,
-      });
+      const { data: inserted, error } = await db
+        .from("chat_messages")
+        .insert({
+          conversation_id: conversationId,
+          sender_role: viewerRole,
+          sender_user_id: userData.user?.id ?? null,
+          sent_as_superadmin: opts?.sentAsSuperadmin ?? false,
+          content: text,
+        })
+        .select("id")
+        .maybeSingle();
+
+      // Telegram notification for employee messages — never blocks sending.
+      if (!error && inserted && viewerRole === "mitarbeiter") {
+        void supabase.functions
+          .invoke("chat-message-notify", { body: { message_id: inserted.id } })
+          .catch((e) => console.warn("chat-message-notify failed", e));
+      }
       return { error };
+
     },
     [conversationId, viewerRole],
   );
