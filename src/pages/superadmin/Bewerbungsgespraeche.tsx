@@ -365,7 +365,7 @@ export default function Bewerbungsgespraeche() {
                         navigate(`/superadmin/bewerbungsgespraeche/${r.id}`);
                       }
                     }}
-                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_150px_130px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
+                    className="grid cursor-pointer grid-cols-[170px_1fr_1fr_140px_130px_160px_150px_130px_170px_120px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/60"
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
@@ -377,6 +377,7 @@ export default function Bewerbungsgespraeche() {
                     <span className="truncate text-muted-foreground">{a?.email}</span>
                     <span className="truncate font-mono text-xs">{a?.handynummer}</span>
                     <span className="truncate capitalize text-muted-foreground">{a?.anstellung}</span>
+                    <span className="truncate text-muted-foreground">{a?.stelle || "—"}</span>
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={a?.ranking ?? "none"}
