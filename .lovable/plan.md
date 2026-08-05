@@ -2,45 +2,46 @@
 
 ## Befund
 
-- In `call_notes` liegt für Markus Peters genau **eine** Zeile: „[Erfolgreich] Recruiting-Anruf erfolgreich“ (05.08., 07:54) — das ist exakt der Fall **ohne** eingegebenen Notiztext, denn dieser Standardtext wird nur gesetzt, wenn das Feld leer ist.
+- In `call_notes` liegt für Markus Peters genau **eine** Zeile: „[Erfolgreich] Recruiting-Anruf erfolgreich“ (05.08., 07:54) — also der Fall **ohne** eingegebenen Notiztext, denn dieser Standardtext wird nur gesetzt, wenn das Feld leer ist.
 - Die zweite Notiz (mit Text) fehlt in der Datenbank vollständig.
-- In den Logs der Caller-Proxy-Funktion ist kein Fehler protokolliert, daher ist der genaue Abbruchgrund noch nicht belegt.
+- In den Datenbank-Logs gibt es **keinen einzigen Fehler** und in den Logs der Caller-Proxy-Funktion ebenfalls nicht. Der Insert wurde also gar nicht erst abgeschickt — er wurde nicht abgelehnt.
+- Die Zuweisung stimmt: Peters ist LIMEX Solutions GmbH zugewiesen, die Datenbankregel für das Speichern wäre erfüllt gewesen.
+- Die Übertragung an die externe Caller-API hat funktioniert (Notiz und Status sind dort angekommen).
 
-## Ursache im Speicherablauf
+Es liegt also am lokalen Speicherschritt in unserer App, der ausgelassen wurde, ohne dass jemand etwas davon mitbekommen hat.
 
-In `RecruitmentErfassen.tsx` läuft „Ergebnis speichern“ in dieser Reihenfolge:
+## Ursache im Code
 
-1. Ergebnis + Notiztext an die externe Caller-API senden
-2. erst danach die Notiz lokal in `call_notes` schreiben
+`persistNoteLocally` in `RecruitmentErfassen.tsx` steigt an drei Stellen **kommentarlos** aus (`return`, kein Fehler):
 
-Daraus ergeben sich zwei Lücken:
+- kein Kunde geladen (`client?.id` noch leer, z. B. weil die Kundenliste zum Klickzeitpunkt noch lädt)
+- keine Benutzersitzung auslesbar
+- kein Mitarbeiter-Datensatz gefunden
 
-- Schlägt Schritt 1 fehl (z. B. weil der Notiztext mitgeschickt wird und die externe API ihn ablehnt), wird Schritt 2 **nie ausgeführt** — die Notiz ist weg.
-- Schlägt Schritt 2 fehl, bricht die Funktion an mehreren Stellen still ab (kein Kunde, kein Mitarbeiterprofil) bzw. zeigt nur eine kleine Warnung, während „Ergebnis gespeichert“ erscheint.
-
-Genau dieses Muster passt zum Befund: der Durchlauf ohne Notiztext ging durch, der mit Notiztext nicht.
+Zusätzlich läuft der Ablauf in der falschen Reihenfolge: erst externe API, dann lokal speichern. Und selbst wenn der lokale Teil fehlschlägt, erscheint nur eine leise Warnung, während sofort auf die Gesprächsliste weitergeleitet wird — der Notiztext ist damit unwiederbringlich weg.
 
 ## Fix
 
 **1. Reihenfolge umdrehen**
-Die Notiz wird **zuerst** lokal in `call_notes` gespeichert, danach das Ergebnis an die externe Caller-API übertragen. Damit geht kein Notiztext mehr verloren, wenn die externe API zickt.
+Die Notiz wird zuerst lokal in `call_notes` gespeichert, danach das Ergebnis an die externe Caller-API übertragen.
 
 **2. Keine stillen Abbrüche mehr**
-`persistNoteLocally` wirft bei jedem Abbruchgrund einen klaren Fehler statt leise auszusteigen:
-- kein zugewiesener Kunde
-- kein Mitarbeiter-Datensatz
-- abgelehnter Insert (Datenbankregel)
+Jeder Abbruchgrund wirft einen klaren Fehler mit konkretem Text (kein Kunde geladen / kein Mitarbeiterprofil / Speichern abgelehnt) und wird zusätzlich in der Browser-Konsole protokolliert.
 
-**3. Ehrliche Rückmeldung im UI**
-- Lokales Speichern fehlgeschlagen → deutlicher Fehler-Toast mit Grund, kein Weiterleiten, damit der Caller den Text nicht verliert.
-- Externe Übertragung fehlgeschlagen, Notiz aber lokal gespeichert → Hinweis-Toast, dass die Notiz gesichert ist, das Ergebnis aber nicht übertragen wurde.
+**3. Kunde robust ermitteln**
+Statt sich auf den bereits geladenen ersten zugewiesenen Kunden zu verlassen, wird die Kundenzuweisung beim Speichern frisch aus der Datenbank gelesen, falls sie im UI noch nicht vorliegt. Der Speichern-Button bleibt deaktiviert, solange kein Kunde ermittelt werden konnte.
 
-**4. Inbound-Pfad prüfen**
-`Erfassen.tsx` zeigt Insert-Fehler bereits an; hier nur gegenprüfen, dass ebenfalls nichts stillschweigend verschluckt wird.
+**4. Nichts mehr verlieren**
+- Lokales Speichern fehlgeschlagen → deutlicher Fehler-Toast, **keine** Weiterleitung, Notiztext bleibt im Formular stehen.
+- Lokal gespeichert, externe Übertragung fehlgeschlagen → Hinweis, dass die Notiz gesichert, das Ergebnis aber nicht übertragen wurde.
+
+**5. Inbound-Pfad gegenprüfen**
+`Erfassen.tsx` meldet Insert-Fehler bereits; nur kurz verifizieren, dass dort nichts verschluckt wird.
 
 ## Technische Details
 
 - Datei: `src/pages/mitarbeiter/RecruitmentErfassen.tsx`, Funktionen `persistNoteLocally` (Z. 158–201) und `saveAndClose` (Z. 203–228).
-- Rückgabewert von `persistNoteLocally` wird die Notiz-ID, damit `call-note-notify` weiterhin nach erfolgreichem Insert ausgelöst wird.
-- Keine Datenbank-Migration nötig; die bestehende Insert-Regel (Mitarbeiter + zugewiesener Kunde) bleibt unverändert, ihre Verletzung wird künftig nur sichtbar gemacht.
-- Die bereits verlorene Notiz von Herrn Peters lässt sich nicht rekonstruieren; sie kann bei Bedarf manuell nacherfasst werden.
+- `persistNoteLocally` liefert die neue Notiz-ID zurück; `call-note-notify` wird weiterhin nach erfolgreichem Insert ausgelöst.
+- Kunden-Fallback über `assignments` → `client_id` für den eigenen Mitarbeiter-Datensatz.
+- Keine Datenbank-Migration nötig.
+- Die bereits verlorene Notiz von Herrn Peters lässt sich nicht rekonstruieren und müsste manuell nacherfasst werden.
