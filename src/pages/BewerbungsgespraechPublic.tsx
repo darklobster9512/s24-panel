@@ -132,7 +132,8 @@ export default function BewerbungsgespraechPublic() {
     setSubmitting(false);
     if (error) {
       const msg =
-        error.message?.includes("slot_taken") ? "Dieser Slot wurde gerade vergeben. Bitte wähle einen anderen."
+        error.message?.includes("slot_blocked") ? "Diese Zeit ist nicht verfügbar. Bitte wähle eine andere."
+        : error.message?.includes("slot_taken") ? "Dieser Slot wurde gerade vergeben. Bitte wähle einen anderen."
         : error.message?.includes("invalid_token") ? "Buchungslink ungültig."
         : error.message?.includes("past_date") ? "Dieser Tag liegt in der Vergangenheit."
         : "Buchung fehlgeschlagen.";
