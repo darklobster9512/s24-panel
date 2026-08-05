@@ -8,6 +8,7 @@ import {
   Users,
   Link2,
   PhoneCall,
+  PhoneOutgoing,
   StickyNote,
   FileSignature,
   Wallet,
