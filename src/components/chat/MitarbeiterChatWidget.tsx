@@ -90,7 +90,11 @@ export function MitarbeiterChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Livechat öffnen"
-        className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.7)] transition hover:scale-105"
+        className={cn(
+          "fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.7)] transition hover:scale-105",
+          open && "hidden md:grid",
+        )}
+
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         {!open && unread > 0 && (
