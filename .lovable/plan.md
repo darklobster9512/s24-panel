@@ -1,40 +1,46 @@
-# Warum fehlen Notizen unter /superadmin/notizen?
+# Fehlende Notizen bei Outbound-Callern (z. B. M. Peters)
 
-## Was gesichert ist (aus DB-Abfragen)
+## Befund
 
-- In `call_notes` liegen aktuell **nur 2 Zeilen** (01.08. und 05.08.), jeweils mit Kunde und Mitarbeiter.
-- Es fehlt also nicht die Anzeige, sondern die Notizen landen gar nicht erst in der Datenbank.
-- Die Superadmin-Ansicht selbst filtert korrekt (Superadmin darf alle Zeilen lesen); Standardfilter ist allerdings „30 Tage“.
-- Die Insert-Regel (RLS) verlangt zwei Dinge gleichzeitig: die Notiz gehört dem eingeloggten Mitarbeiter **und** der Kunde ist diesem Mitarbeiter zugewiesen.
+- In `call_notes` liegt für Markus Peters genau **eine** Zeile: „[Erfolgreich] Recruiting-Anruf erfolgreich“ (05.08., 07:54) — das ist exakt der Fall **ohne** eingegebenen Notiztext, denn dieser Standardtext wird nur gesetzt, wenn das Feld leer ist.
+- Die zweite Notiz (mit Text) fehlt in der Datenbank vollständig.
+- In den Logs der Caller-Proxy-Funktion ist kein Fehler protokolliert, daher ist der genaue Abbruchgrund noch nicht belegt.
 
-## Wahrscheinlichste Ursache (noch nicht bestätigt)
+## Ursache im Speicherablauf
 
-Im Outbound-Recruitment-Flow (`RecruitmentErfassen.tsx`) wird das Ergebnis zuerst an die externe Caller-API geschickt, danach erst lokal gespeichert. Dieser lokale Teil bricht in mehreren Fällen **stillschweigend** ab:
+In `RecruitmentErfassen.tsx` läuft „Ergebnis speichern“ in dieser Reihenfolge:
 
-- kein zugewiesener Kunde vorhanden → Funktion steigt ohne Fehler aus
-- kein Mitarbeiter-Datensatz gefunden → gleiches Verhalten
-- RLS lehnt den Insert ab → nur eine kleine Warnung, der Nutzer sieht trotzdem „Ergebnis gespeichert“
+1. Ergebnis + Notiztext an die externe Caller-API senden
+2. erst danach die Notiz lokal in `call_notes` schreiben
 
-Ergebnis: Der Caller glaubt, die Notiz sei gespeichert, in der Datenbank steht aber nichts. Genau das passt zum Befund „nur 2 Notizen insgesamt“.
+Daraus ergeben sich zwei Lücken:
 
-## Vorgehen
+- Schlägt Schritt 1 fehl (z. B. weil der Notiztext mitgeschickt wird und die externe API ihn ablehnt), wird Schritt 2 **nie ausgeführt** — die Notiz ist weg.
+- Schlägt Schritt 2 fehl, bricht die Funktion an mehreren Stellen still ab (kein Kunde, kein Mitarbeiterprofil) bzw. zeigt nur eine kleine Warnung, während „Ergebnis gespeichert“ erscheint.
 
-**Schritt 1 – Ursache bestätigen**
-Fehlerausgabe im Speicherpfad ergänzen (Konsole + sichtbarer Fehler-Toast statt stillem Abbruch) und einen echten Speichervorgang nachvollziehen. Erst danach steht fest, ob es an fehlender Kundenzuweisung, fehlendem Mitarbeiterprofil oder an der RLS-Regel liegt.
+Genau dieses Muster passt zum Befund: der Durchlauf ohne Notiztext ging durch, der mit Notiztext nicht.
 
-**Schritt 2 – Speicherpfad robust machen**
-- `persistNoteLocally` gibt jeden Abbruchgrund als klaren Fehler zurück, statt leise `return`.
-- `saveAndClose` zeigt bei fehlgeschlagenem lokalen Speichern eine deutliche Fehlermeldung inklusive Grund, nicht nur eine Warnung.
-- Gleiches Verhalten für den Inbound-Pfad prüfen (dort wird der Fehler bereits angezeigt).
+## Fix
 
-**Schritt 3 – Zuweisungslücke schließen (falls Ursache bestätigt)**
-Wenn ein Outbound-Caller keinen zugewiesenen Kunden hat, ist ein Speichern konstruktionsbedingt unmöglich. Dann entweder in `/superadmin/zuweisungen` die fehlende Zuweisung ergänzen oder die Insert-Regel für Outbound-Caller so anpassen, dass der eigene Recruitment-Kunde ausreicht.
+**1. Reihenfolge umdrehen**
+Die Notiz wird **zuerst** lokal in `call_notes` gespeichert, danach das Ergebnis an die externe Caller-API übertragen. Damit geht kein Notiztext mehr verloren, wenn die externe API zickt.
 
-**Schritt 4 – Anzeige**
-Standard-Zeitraum in `/superadmin/notizen` von „30 Tage“ auf „Alle“ stellen, damit nichts durch den Filter verdeckt wird.
+**2. Keine stillen Abbrüche mehr**
+`persistNoteLocally` wirft bei jedem Abbruchgrund einen klaren Fehler statt leise auszusteigen:
+- kein zugewiesener Kunde
+- kein Mitarbeiter-Datensatz
+- abgelehnter Insert (Datenbankregel)
+
+**3. Ehrliche Rückmeldung im UI**
+- Lokales Speichern fehlgeschlagen → deutlicher Fehler-Toast mit Grund, kein Weiterleiten, damit der Caller den Text nicht verliert.
+- Externe Übertragung fehlgeschlagen, Notiz aber lokal gespeichert → Hinweis-Toast, dass die Notiz gesichert ist, das Ergebnis aber nicht übertragen wurde.
+
+**4. Inbound-Pfad prüfen**
+`Erfassen.tsx` zeigt Insert-Fehler bereits an; hier nur gegenprüfen, dass ebenfalls nichts stillschweigend verschluckt wird.
 
 ## Technische Details
 
-- Betroffene Dateien: `src/pages/mitarbeiter/RecruitmentErfassen.tsx` (Zeilen 158–228), `src/pages/mitarbeiter/Erfassen.tsx` (Zeilen 217–294), `src/pages/superadmin/Notizen.tsx` (Standardfilter).
-- RLS-Policy `Employee inserts own notes` auf `public.call_notes`: `employee.user_id = auth.uid()` UND `is_client_assigned_to_me(client_id)`.
-- Eine Migration wird nur nötig, wenn Schritt 3 eine Policy-Anpassung erfordert.
+- Datei: `src/pages/mitarbeiter/RecruitmentErfassen.tsx`, Funktionen `persistNoteLocally` (Z. 158–201) und `saveAndClose` (Z. 203–228).
+- Rückgabewert von `persistNoteLocally` wird die Notiz-ID, damit `call-note-notify` weiterhin nach erfolgreichem Insert ausgelöst wird.
+- Keine Datenbank-Migration nötig; die bestehende Insert-Regel (Mitarbeiter + zugewiesener Kunde) bleibt unverändert, ihre Verletzung wird künftig nur sichtbar gemacht.
+- Die bereits verlorene Notiz von Herrn Peters lässt sich nicht rekonstruieren; sie kann bei Bedarf manuell nacherfasst werden.
