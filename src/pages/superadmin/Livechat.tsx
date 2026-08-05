@@ -14,13 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { ChatThread } from "@/components/chat/ChatThread";
 import {
   AGENT_STATUS_META,
   formatChatDay,
   formatChatTime,
+  effectiveAgentStatus,
+  toTimeInput,
   useAgentSettings,
   useChatMessages,
+  useMinuteTick,
   useChatTyping,
   type AgentSettings,
 } from "@/hooks/use-chat";
@@ -52,12 +56,16 @@ export default function SuperadminLivechat() {
   const [reloadKey, setReloadKey] = useState(0);
   const { settings, updateSettings } = useAgentSettings();
   const [nameDraft, setNameDraft] = useState("");
-  const [statusTextDraft, setStatusTextDraft] = useState("");
+  const [onlineFromDraft, setOnlineFromDraft] = useState("09:00");
+  const [offlineAfterDraft, setOfflineAfterDraft] = useState("18:00");
+  const [autoOfflineDraft, setAutoOfflineDraft] = useState(true);
 
   useEffect(() => {
     if (settings) {
       setNameDraft(settings.display_name ?? "");
-      setStatusTextDraft(settings.status_text ?? "");
+      setOnlineFromDraft(toTimeInput(settings.online_from) || "09:00");
+      setOfflineAfterDraft(toTimeInput(settings.offline_after) || "18:00");
+      setAutoOfflineDraft(settings.auto_offline ?? true);
     }
   }, [settings?.id]);
 
@@ -203,7 +211,9 @@ export default function SuperadminLivechat() {
   const saveProfile = async () => {
     const { error } = await updateSettings({
       display_name: nameDraft.trim() || "Daniel Schreiber",
-      status_text: statusTextDraft.trim() || null,
+      online_from: onlineFromDraft || "09:00",
+      offline_after: offlineAfterDraft || "18:00",
+      auto_offline: autoOfflineDraft,
     });
     if (error) toast.error("Speichern fehlgeschlagen");
     else toast.success("Gespeichert");
@@ -212,7 +222,10 @@ export default function SuperadminLivechat() {
   const isOnline = (iso: string | null) =>
     !!iso && Date.now() - new Date(iso).getTime() < 2 * 60 * 1000;
 
-  const statusMeta = AGENT_STATUS_META[settings?.status ?? "offline"];
+  const now = useMinuteTick();
+  const effectiveStatus = effectiveAgentStatus(settings, now);
+  const statusMeta = AGENT_STATUS_META[effectiveStatus];
+  const forcedOffline = effectiveStatus === "offline" && settings?.status !== "offline";
 
   return (
     <div className="flex h-[calc(100vh-9rem)] flex-col">
@@ -324,12 +337,44 @@ export default function SuperadminLivechat() {
                 ))}
               </SelectContent>
             </Select>
-            <Input
-              value={statusTextDraft}
-              onChange={(e) => setStatusTextDraft(e.target.value)}
-              placeholder="Statustext (optional)"
-              className="h-9"
-            />
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card px-3 py-2">
+              <span className="text-xs font-medium leading-tight">
+                Automatisch offline
+                <span className="block text-[11px] font-normal text-muted-foreground">
+                  außerhalb der Zeiten
+                </span>
+              </span>
+              <Switch checked={autoOfflineDraft} onCheckedChange={setAutoOfflineDraft} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="space-y-1">
+                <span className="text-[11px] text-muted-foreground">Online ab</span>
+                <Input
+                  type="time"
+                  value={onlineFromDraft}
+                  onChange={(e) => setOnlineFromDraft(e.target.value)}
+                  disabled={!autoOfflineDraft}
+                  className="h-9"
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-[11px] text-muted-foreground">Offline ab</span>
+                <Input
+                  type="time"
+                  value={offlineAfterDraft}
+                  onChange={(e) => setOfflineAfterDraft(e.target.value)}
+                  disabled={!autoOfflineDraft}
+                  className="h-9"
+                />
+              </label>
+            </div>
+            {autoOfflineDraft && (
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                Außerhalb {onlineFromDraft || "--:--"}–{offlineAfterDraft || "--:--"} erscheinst du als
+                offline.
+                {forcedOffline ? " Aktuell: offline (außerhalb der Zeiten)." : ""}
+              </p>
+            )}
             <Button size="sm" className="w-full" onClick={saveProfile}>
               Speichern
             </Button>
