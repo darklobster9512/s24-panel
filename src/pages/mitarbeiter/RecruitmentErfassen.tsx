@@ -136,6 +136,18 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
+  async function sendPanelLinkEmail(email: string) {
+    setBusy("panel-mail");
+    try {
+      await callerApi("send_panel_link_email", { appointmentId: interviewId });
+      toast.success(`Panel-Link an ${email} gesendet`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   /** Holt den Standardtext der API und sendet die Erinnerung direkt. */
   async function sendReminder() {
     setBusy("reminder");
@@ -421,6 +433,21 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                   )}
                   Panel-Link per SMS senden
                 </Button>
+                {iv?.email && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={busy === "panel-mail"}
+                    onClick={() => sendPanelLinkEmail(iv.email!)}
+                  >
+                    {busy === "panel-mail" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                    Panel-Link per E-Mail
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="gap-2"
