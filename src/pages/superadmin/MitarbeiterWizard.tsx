@@ -499,14 +499,36 @@ export default function MitarbeiterWizard({
         }
       }
 
+      // Existing account: apply a password change when the field was edited
+      if (accountExists && employeeId) {
+        const newPw = (values.password_plain ?? "").trim();
+        const changed =
+          !!form.formState.dirtyFields.password_plain &&
+          newPw.length >= 6 &&
+          newPw !== (existing.data?.password_plain ?? "");
+        if (changed) {
+          const { data: pwRes, error: pwErr } = await supabase.functions.invoke(
+            "update-employee-password",
+            { body: { employee_id: employeeId, password: newPw } },
+          );
+          if (pwErr) throw new Error(pwErr.message);
+          if ((pwRes as { error?: string })?.error) {
+            throw new Error(String((pwRes as { error: string }).error));
+          }
+          passwordChanged = true;
+        }
+      }
+
       // Sync arbeitsvertrag assignment
       if (employeeId) {
         await syncContractAssignment(employeeId, values);
       }
 
-      return { login_email };
+      return { login_email, passwordChanged };
     },
     onSuccess: (res) => {
+      if (res.passwordChanged) toast.success("Passwort aktualisiert");
+
       toast.success(
         mode === "edit"
           ? "Mitarbeiter aktualisiert"
