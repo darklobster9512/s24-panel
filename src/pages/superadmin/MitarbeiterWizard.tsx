@@ -456,6 +456,8 @@ export default function MitarbeiterWizard({
       const password = values.password_plain!;
 
       let employeeId = id;
+      let passwordChanged = false;
+
 
       if (mode === "edit" && id) {
         // If account already exists, we don't re-create it. Just update fields (excl. login/password immutability).
@@ -499,14 +501,36 @@ export default function MitarbeiterWizard({
         }
       }
 
+      // Existing account: apply a password change when the field was edited
+      if (accountExists && employeeId) {
+        const newPw = (values.password_plain ?? "").trim();
+        const changed =
+          !!form.formState.dirtyFields.password_plain &&
+          newPw.length >= 6 &&
+          newPw !== (existing.data?.password_plain ?? "");
+        if (changed) {
+          const { data: pwRes, error: pwErr } = await supabase.functions.invoke(
+            "update-employee-password",
+            { body: { employee_id: employeeId, password: newPw } },
+          );
+          if (pwErr) throw new Error(pwErr.message);
+          if ((pwRes as { error?: string })?.error) {
+            throw new Error(String((pwRes as { error: string }).error));
+          }
+          passwordChanged = true;
+        }
+      }
+
       // Sync arbeitsvertrag assignment
       if (employeeId) {
         await syncContractAssignment(employeeId, values);
       }
 
-      return { login_email };
+      return { login_email, passwordChanged };
     },
     onSuccess: (res) => {
+      if (res.passwordChanged) toast.success("Passwort aktualisiert");
+
       toast.success(
         mode === "edit"
           ? "Mitarbeiter aktualisiert"
@@ -1045,7 +1069,6 @@ function StepAccount({
                     type={showPw ? "text" : "password"}
                     {...field}
                     value={(field.value as string) ?? ""}
-                    disabled={accountLocked}
                     placeholder="8 Zeichen"
                     className="pr-10 font-mono"
                   />
@@ -1065,7 +1088,6 @@ function StepAccount({
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={accountLocked}
                   onClick={() => {
                     form.setValue("password_plain", generatePassword(8), {
                       shouldDirty: true,
@@ -1077,10 +1099,16 @@ function StepAccount({
                 </Button>
               </div>
             </FormControl>
+            {accountLocked && (
+              <p className="text-xs text-muted-foreground">
+                Neues Passwort eintragen und speichern, um es zu ändern.
+              </p>
+            )}
             <FormMessage />
           </FormItem>
         )}
       />
+
 
       <FormField
         control={form.control}
