@@ -456,6 +456,8 @@ export default function MitarbeiterWizard({
       const password = values.password_plain!;
 
       let employeeId = id;
+      let passwordChanged = false;
+
 
       if (mode === "edit" && id) {
         // If account already exists, we don't re-create it. Just update fields (excl. login/password immutability).
