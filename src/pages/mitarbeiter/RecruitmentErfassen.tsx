@@ -139,7 +139,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   async function sendPanelLinkEmail(email: string) {
     setBusy("panel-mail");
     try {
-      await callerApi("send_panel_link_email", { appointmentId: interviewId });
+      await callerApi("send_panel_link_email", { email });
       toast.success(`Panel-Link an ${email} gesendet`);
     } catch (e) {
       toast.error((e as Error).message);
