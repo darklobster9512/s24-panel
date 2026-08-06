@@ -1045,7 +1045,6 @@ function StepAccount({
                     type={showPw ? "text" : "password"}
                     {...field}
                     value={(field.value as string) ?? ""}
-                    disabled={accountLocked}
                     placeholder="8 Zeichen"
                     className="pr-10 font-mono"
                   />
@@ -1065,7 +1064,6 @@ function StepAccount({
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={accountLocked}
                   onClick={() => {
                     form.setValue("password_plain", generatePassword(8), {
                       shouldDirty: true,
@@ -1077,10 +1075,16 @@ function StepAccount({
                 </Button>
               </div>
             </FormControl>
+            {accountLocked && (
+              <p className="text-xs text-muted-foreground">
+                Neues Passwort eintragen und speichern, um es zu ändern.
+              </p>
+            )}
             <FormMessage />
           </FormItem>
         )}
       />
+
 
       <FormField
         control={form.control}
