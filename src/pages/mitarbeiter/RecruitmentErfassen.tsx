@@ -433,6 +433,21 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                   )}
                   Panel-Link per SMS senden
                 </Button>
+                {iv?.email && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={busy === "panel-mail"}
+                    onClick={() => sendPanelLinkEmail(iv.email!)}
+                  >
+                    {busy === "panel-mail" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                    Panel-Link per E-Mail
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="gap-2"
