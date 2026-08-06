@@ -172,9 +172,30 @@ export async function listInterviews(
   };
 }
 
+/** Lädt alle Seiten einer Ansicht (mit Sicherheitsgrenze gegen Endlosschleifen). */
+async function fetchAllPages(
+  view: InterviewView,
+  search: string,
+  employeeId?: string,
+  maxPages = 20,
+): Promise<{ items: RecruitmentInterview[]; total: number; pageSize: number }> {
+  const first = await listInterviews(view, 0, search, employeeId);
+  const items = [...first.items];
+  const pageSize = first.pageSize || 25;
+  let page = 1;
+  while (items.length < first.total && page < maxPages) {
+    const next = await listInterviews(view, page, search, employeeId);
+    if (next.items.length === 0) break;
+    items.push(...next.items);
+    page++;
+  }
+  return { items, total: first.total, pageSize };
+}
+
 /**
  * "Anstehend" = heutige/morgige Termine (view=default) + alles ab übermorgen (view=future).
- * Die externe API trennt diese beiden Bereiche, deshalb werden sie hier zusammengeführt.
+ * Beide Bereiche werden vollständig geladen, global sortiert und erst danach paginiert,
+ * damit die Reihenfolge über Seitengrenzen hinweg korrekt bleibt.
  */
 export async function listUpcomingInterviews(
   page = 0,
@@ -182,8 +203,8 @@ export async function listUpcomingInterviews(
   employeeId?: string,
 ): Promise<InterviewPage> {
   const [today, later] = await Promise.all([
-    listInterviews("default", page, search, employeeId),
-    listInterviews("future", page, search, employeeId),
+    fetchAllPages("default", search, employeeId),
+    fetchAllPages("future", search, employeeId),
   ]);
 
   const merged = [...today.items, ...later.items].sort((a, b) => {
@@ -192,13 +213,17 @@ export async function listUpcomingInterviews(
     return ka.localeCompare(kb);
   });
 
+  const pageSize = Math.max(today.pageSize, later.pageSize) || 25;
+  const start = page * pageSize;
+
   return {
-    items: merged,
-    total: today.total + later.total,
+    items: merged.slice(start, start + pageSize),
+    total: merged.length,
     page,
-    pageSize: Math.max(today.pageSize, later.pageSize),
+    pageSize,
   };
 }
+
 
 
 /** Sucht einen Termin über alle Ansichten hinweg anhand seiner ID. */
