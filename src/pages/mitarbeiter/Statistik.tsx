@@ -400,10 +400,11 @@ export default function Statistik() {
   );
 }
 
-function EmptyChart() {
+function EmptyChart({ label = "Noch keine Daten in diesem Zeitraum." }: { label?: string }) {
   return (
     <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-      Noch keine Daten in diesem Zeitraum.
+      {label}
     </div>
   );
 }
+
