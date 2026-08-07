@@ -339,7 +339,14 @@ export default function Statistik() {
         <Panel title="Ø Gesprächsdauer (Sek)">
           <div className="h-64">
             {daily.length === 0 || daily.every((d) => d.avg === 0) ? (
-              <EmptyChart />
+              <EmptyChart
+                label={
+                  entries.length > 0
+                    ? "Keine Gesprächsdauer erfasst (Timer nicht gestartet)."
+                    : undefined
+                }
+              />
+
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={daily}>
