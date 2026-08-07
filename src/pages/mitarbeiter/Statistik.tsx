@@ -39,27 +39,9 @@ function fmtDauer(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function fmtGesamt(sec: number) {
-  if (!sec || sec < 0) return "0m";
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
+const dayKey = localDayKey;
+const weekKey = localWeekKey;
 
-function dayKey(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-function weekKey(d: Date) {
-  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = tmp.getUTCDay() || 7;
-  tmp.setUTCDate(tmp.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-  const w = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${tmp.getUTCFullYear()}-W${w.toString().padStart(2, "0")}`;
-}
-function labelForDay(d: Date) {
-  return d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
-}
 
 export default function Statistik() {
   const [tf, setTf] = useState<TF>("Woche");
