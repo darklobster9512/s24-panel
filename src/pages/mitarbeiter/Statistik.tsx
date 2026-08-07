@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import { PageHeader, Panel, StatCard } from "@/components/mitarbeiter/MitarbeiterLayout";
@@ -201,18 +201,18 @@ export default function Statistik() {
 
   const daily = useMemo(() => {
     const { days, bucket } = tfConfig(tf);
-    const buckets: { key: string; label: string; calls: number; avg: number; _sum: number; _n: number }[] = [];
+    const buckets: { key: string; label: string; calls: number; avg: number | null; _sum: number; _n: number }[] = [];
     const now = new Date();
     if (bucket === "day") {
       for (let i = days - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 86400000);
-        buckets.push({ key: dayKey(d), label: labelForDay(d), calls: 0, avg: 0, _sum: 0, _n: 0 });
+        buckets.push({ key: dayKey(d), label: labelForDay(d), calls: 0, avg: null, _sum: 0, _n: 0 });
       }
     } else {
       const weeks = Math.ceil(days / 7);
       for (let i = weeks - 1; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 7 * 86400000);
-        buckets.push({ key: weekKey(d), label: `KW ${weekKey(d).slice(-2)}`, calls: 0, avg: 0, _sum: 0, _n: 0 });
+        buckets.push({ key: weekKey(d), label: `KW ${weekKey(d).slice(-2)}`, calls: 0, avg: null, _sum: 0, _n: 0 });
       }
     }
     for (const e of entries) {
@@ -226,7 +226,7 @@ export default function Statistik() {
         b._n++;
       }
     }
-    buckets.forEach((b) => (b.avg = b._n ? Math.round(b._sum / b._n) : 0));
+    buckets.forEach((b) => (b.avg = b._n ? Math.round(b._sum / b._n) : null));
     return buckets;
   }, [entries, tf]);
 
@@ -338,7 +338,7 @@ export default function Statistik() {
 
         <Panel title="Ø Gesprächsdauer (Sek)">
           <div className="h-64">
-            {daily.length === 0 || daily.every((d) => d.avg === 0) ? (
+            {daily.length === 0 || daily.every((d) => d.avg === null) ? (
               <EmptyChart
                 label={
                   entries.length > 0
@@ -349,15 +349,37 @@ export default function Statistik() {
 
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={daily}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                <AreaChart data={daily} margin={{ top: 12, right: 12, left: 4, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="durationArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.42} />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.65} vertical={false} />
+                  <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    domain={[0, (max: number) => Math.max(60, Math.ceil(max * 1.15))]}
+                    tickFormatter={(value: number) => fmtDauer(value)}
+                    width={48}
                   />
-                  <Line type="monotone" dataKey="avg" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
-                </LineChart>
+                  <Tooltip
+                    formatter={(value: number) => [fmtDauer(value), "Ø Dauer"]}
+                    contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="avg"
+                    stroke="var(--primary)"
+                    strokeWidth={4}
+                    fill="url(#durationArea)"
+                    connectNulls
+                    activeDot={{ r: 6, fill: "var(--primary)", stroke: "var(--card)", strokeWidth: 2 }}
+                    dot={{ r: 4, fill: "var(--primary)", stroke: "var(--card)", strokeWidth: 2 }}
+                  />
+                </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
