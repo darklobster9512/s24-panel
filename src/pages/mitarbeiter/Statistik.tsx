@@ -90,15 +90,12 @@ export default function Statistik() {
       const prevFrom = new Date(now.getTime() - 2 * days * 86400000);
 
       const [callsRes, notesRes, clientsRes] = await Promise.all([
-        // Inbound-Quelle: nur laden, wenn der Mitarbeiter kein Outbound-Caller ist
-        isOutbound
-          ? Promise.resolve({ data: [] as any[] })
-          : supabase
-              .from("sipgate_calls")
-              .select("id,started_at,answered_at,ended_at,status,client_id")
-              .eq("handled_by_employee_id", employeeId)
-              .gte("started_at", prevFrom.toISOString())
-              .order("started_at", { ascending: true }),
+        supabase
+          .from("sipgate_calls")
+          .select("id,started_at,answered_at,ended_at,status,client_id")
+          .eq("handled_by_employee_id", employeeId)
+          .gte("started_at", prevFrom.toISOString())
+          .order("started_at", { ascending: true }),
         supabase
           .from("call_notes")
           .select("id,created_at,kategorie,client_id,dauer_sekunden")
@@ -110,29 +107,28 @@ export default function Statistik() {
 
       const cutoff = from.getTime();
       const allNotes = notesRes.data ?? [];
+      const allCalls = (callsRes as any).data ?? [];
       const cm: Record<string, string> = {};
       (clientsRes.data ?? []).forEach((c: any) => {
         cm[c.id] = c.company_name ?? "—";
       });
 
-      // Normalisieren: Outbound => call_notes (Timer), Inbound => sipgate_calls
-      const allEntries: CallEntry[] = isOutbound
+      // Quelle: Notizen (Timer) für Outbound-Caller – und als Fallback immer dann,
+      // wenn es keine Inbound-Anrufe gibt, aber erfasste Gespräche vorliegen.
+      const useNotes = isOutbound || allCalls.length === 0;
+
+      const allEntries: CallEntry[] = useNotes
         ? allNotes.map((n: any) => ({
             at: new Date(n.created_at).getTime(),
             durationSec: n.dauer_sekunden ?? 0,
             client_id: n.client_id ?? null,
           }))
-        : (callsRes.data ?? []).map((c: any) => ({
+        : allCalls.map((c: any) => ({
             at: new Date(c.started_at).getTime(),
-            durationSec:
-              c.answered_at && c.ended_at
-                ? Math.max(
-                    0,
-                    (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000,
-                  )
-                : 0,
+            durationSec: durationBetween(c.answered_at, c.ended_at),
             client_id: c.client_id ?? null,
           }));
+
 
       return {
         entries: allEntries.filter((e) => e.at >= cutoff),
