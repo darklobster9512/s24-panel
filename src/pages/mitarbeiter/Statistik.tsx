@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { PhoneCall, Clock, StickyNote, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  localDayKey,
+  localWeekKey,
+  labelForDay,
+  fmtGesamt,
+  durationBetween,
+} from "@/lib/mitarbeiter-stats";
 
 const TIMEFRAMES = ["Woche", "Monat", "Quartal"] as const;
 type TF = (typeof TIMEFRAMES)[number];
@@ -39,27 +46,9 @@ function fmtDauer(sec: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function fmtGesamt(sec: number) {
-  if (!sec || sec < 0) return "0m";
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
+const dayKey = localDayKey;
+const weekKey = localWeekKey;
 
-function dayKey(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-function weekKey(d: Date) {
-  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = tmp.getUTCDay() || 7;
-  tmp.setUTCDate(tmp.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-  const w = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${tmp.getUTCFullYear()}-W${w.toString().padStart(2, "0")}`;
-}
-function labelForDay(d: Date) {
-  return d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
-}
 
 export default function Statistik() {
   const [tf, setTf] = useState<TF>("Woche");
@@ -101,15 +90,12 @@ export default function Statistik() {
       const prevFrom = new Date(now.getTime() - 2 * days * 86400000);
 
       const [callsRes, notesRes, clientsRes] = await Promise.all([
-        // Inbound-Quelle: nur laden, wenn der Mitarbeiter kein Outbound-Caller ist
-        isOutbound
-          ? Promise.resolve({ data: [] as any[] })
-          : supabase
-              .from("sipgate_calls")
-              .select("id,started_at,answered_at,ended_at,status,client_id")
-              .eq("handled_by_employee_id", employeeId)
-              .gte("started_at", prevFrom.toISOString())
-              .order("started_at", { ascending: true }),
+        supabase
+          .from("sipgate_calls")
+          .select("id,started_at,answered_at,ended_at,status,client_id")
+          .eq("handled_by_employee_id", employeeId)
+          .gte("started_at", prevFrom.toISOString())
+          .order("started_at", { ascending: true }),
         supabase
           .from("call_notes")
           .select("id,created_at,kategorie,client_id,dauer_sekunden")
@@ -121,29 +107,28 @@ export default function Statistik() {
 
       const cutoff = from.getTime();
       const allNotes = notesRes.data ?? [];
+      const allCalls = (callsRes as any).data ?? [];
       const cm: Record<string, string> = {};
       (clientsRes.data ?? []).forEach((c: any) => {
         cm[c.id] = c.company_name ?? "—";
       });
 
-      // Normalisieren: Outbound => call_notes (Timer), Inbound => sipgate_calls
-      const allEntries: CallEntry[] = isOutbound
+      // Quelle: Notizen (Timer) für Outbound-Caller – und als Fallback immer dann,
+      // wenn es keine Inbound-Anrufe gibt, aber erfasste Gespräche vorliegen.
+      const useNotes = isOutbound || allCalls.length === 0;
+
+      const allEntries: CallEntry[] = useNotes
         ? allNotes.map((n: any) => ({
             at: new Date(n.created_at).getTime(),
             durationSec: n.dauer_sekunden ?? 0,
             client_id: n.client_id ?? null,
           }))
-        : (callsRes.data ?? []).map((c: any) => ({
+        : allCalls.map((c: any) => ({
             at: new Date(c.started_at).getTime(),
-            durationSec:
-              c.answered_at && c.ended_at
-                ? Math.max(
-                    0,
-                    (new Date(c.ended_at).getTime() - new Date(c.answered_at).getTime()) / 1000,
-                  )
-                : 0,
+            durationSec: durationBetween(c.answered_at, c.ended_at),
             client_id: c.client_id ?? null,
           }));
+
 
       return {
         entries: allEntries.filter((e) => e.at >= cutoff),
@@ -354,7 +339,14 @@ export default function Statistik() {
         <Panel title="Ø Gesprächsdauer (Sek)">
           <div className="h-64">
             {daily.length === 0 || daily.every((d) => d.avg === 0) ? (
-              <EmptyChart />
+              <EmptyChart
+                label={
+                  entries.length > 0
+                    ? "Keine Gesprächsdauer erfasst (Timer nicht gestartet)."
+                    : undefined
+                }
+              />
+
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={daily}>
@@ -415,10 +407,11 @@ export default function Statistik() {
   );
 }
 
-function EmptyChart() {
+function EmptyChart({ label = "Noch keine Daten in diesem Zeitraum." }: { label?: string }) {
   return (
     <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-      Noch keine Daten in diesem Zeitraum.
+      {label}
     </div>
   );
 }
+
