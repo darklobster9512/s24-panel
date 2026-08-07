@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { PhoneCall, Clock, StickyNote, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  localDayKey,
+  localWeekKey,
+  labelForDay,
+  fmtGesamt,
+  durationBetween,
+} from "@/lib/mitarbeiter-stats";
 
 const TIMEFRAMES = ["Woche", "Monat", "Quartal"] as const;
 type TF = (typeof TIMEFRAMES)[number];
