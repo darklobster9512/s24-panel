@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarClock, Search, Trash2, Plus, Loader2 } from "lucide-react";
+import { CalendarClock, Search, Trash2, Plus, Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,6 +48,50 @@ type ApplicationHit = {
   stelle: string | null;
   anstellung: string | null;
 };
+
+type EmployeeRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  personal_email: string | null;
+  onboarding_enabled: boolean;
+};
+
+type ContractRow = { employee_id: string; status: string };
+
+type StatusInfo = {
+  hasAccount: boolean;
+  contract: "none" | "pending" | "completed";
+  onboarding: boolean;
+};
+
+function norm(v?: string | null) {
+  return (v ?? "").trim().toLowerCase();
+}
+
+function StatusCell({
+  state,
+  title,
+}: {
+  state: "ok" | "pending" | "no";
+  title: string;
+}) {
+  const cls =
+    state === "ok"
+      ? "text-emerald-500"
+      : state === "pending"
+        ? "text-amber-500"
+        : "text-destructive";
+  return (
+    <span className="flex justify-center" title={title}>
+      {state === "no" ? (
+        <X className={`h-4 w-4 ${cls}`} />
+      ) : (
+        <Check className={`h-4 w-4 ${cls}`} />
+      )}
+    </span>
+  );
+}
 
 const STATUS_OPTIONS = [
   { value: "offen", label: "Offen" },
