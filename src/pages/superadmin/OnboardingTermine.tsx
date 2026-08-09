@@ -455,6 +455,9 @@ export default function OnboardingTermine() {
             {filtered.map((r, i) => {
               const showHeader =
                 i === 0 || filtered[i - 1].appointment_date !== r.appointment_date;
+              const st =
+                statusByRow.get(r.id) ??
+                ({ hasAccount: false, contract: "none", onboarding: false } as StatusInfo);
               return (
                 <div key={r.id}>
                   {showHeader && (
