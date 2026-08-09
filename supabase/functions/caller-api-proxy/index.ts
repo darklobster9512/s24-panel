@@ -9,9 +9,9 @@ const ALLOWED_ACTIONS = new Set([
   'meta',
   'list_interviews',
   'set_status',
+  'set_mailbox',
   'send_panel_link',
   'send_panel_link_email',
-  'send_reminder',
   'resend_success_email',
 ]);
 

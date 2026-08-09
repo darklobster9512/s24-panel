@@ -8,7 +8,7 @@ import {
   Save,
   FileText,
   Link2,
-  BellRing,
+  Voicemail,
   Loader2,
   Check,
   X,
@@ -40,7 +40,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [start, setStart] = useState<number | null>(null);
   const [, setTick] = useState(0);
   const [note, setNote] = useState("");
-  const [outcome, setOutcome] = useState<"erfolgreich" | "fehlgeschlagen" | "">("");
+  const [outcome, setOutcome] = useState<"erfolgreich" | "fehlgeschlagen" | "mailbox" | "">("");
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
