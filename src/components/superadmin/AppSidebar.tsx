@@ -58,7 +58,11 @@ const mainItems: SidebarItem[] = [
   { title: "Zuweisungen", url: "/superadmin/zuweisungen", icon: Link2 },
 ];
 
-const opsItems = (newApplicationsCount: number, interviewsTodayCount: number): SidebarItem[] => [
+const opsItems = (
+  newApplicationsCount: number,
+  interviewsTodayCount: number,
+  onboardingTodayCount: number,
+): SidebarItem[] => [
   { title: "Anrufe", url: "/superadmin/anrufe", icon: PhoneCall },
   { title: "Notizen", url: "/superadmin/notizen", icon: StickyNote },
   {
@@ -73,8 +77,15 @@ const opsItems = (newApplicationsCount: number, interviewsTodayCount: number): S
     icon: Calendar,
     badge: interviewsTodayCount,
   },
+  {
+    title: "Onboarding-Termine",
+    url: "/superadmin/onboarding-termine",
+    icon: CalendarClock,
+    badge: onboardingTodayCount,
+  },
   { title: "Outbound-Gespräche", url: "/superadmin/outbound-gespraeche", icon: PhoneOutgoing },
 ];
+
 
 
 const finItems = (pendingCount: number): SidebarItem[] => [
