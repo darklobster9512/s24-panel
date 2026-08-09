@@ -473,10 +473,9 @@ export default function OnboardingTermine() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1.2fr_140px_150px_1.2fr_60px_60px_90px_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
-              <span>E-Mail</span>
               <span>Telefon</span>
               <span>Stelle</span>
               <span>Notiz</span>
@@ -500,7 +499,15 @@ export default function OnboardingTermine() {
                       {dayLabel(r.appointment_date)}
                     </div>
                   )}
-                  <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openEdit(r)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") openEdit(r);
+                    }}
+                    className="grid cursor-pointer grid-cols-[170px_1.2fr_140px_150px_1.2fr_60px_60px_90px_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/50"
+                  >
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
                       <span className="text-xs text-muted-foreground">
@@ -515,7 +522,7 @@ export default function OnboardingTermine() {
                         Start: {r.start_date ? formatDate(r.start_date) : "—"}
                       </div>
                     </div>
-                    <span className="truncate text-muted-foreground">{r.email || "—"}</span>
+                    
                     <span className="truncate font-mono text-xs">{r.telefon || "—"}</span>
                     <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
                     <span className="truncate text-muted-foreground" title={r.notes ?? ""}>
