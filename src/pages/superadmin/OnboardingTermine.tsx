@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarClock, Search, Trash2, Plus, Loader2 } from "lucide-react";
+import { CalendarClock, Search, Trash2, Plus, Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,6 +48,50 @@ type ApplicationHit = {
   stelle: string | null;
   anstellung: string | null;
 };
+
+type EmployeeRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  personal_email: string | null;
+  onboarding_enabled: boolean;
+};
+
+type ContractRow = { employee_id: string; status: string };
+
+type StatusInfo = {
+  hasAccount: boolean;
+  contract: "none" | "pending" | "completed";
+  onboarding: boolean;
+};
+
+function norm(v?: string | null) {
+  return (v ?? "").trim().toLowerCase();
+}
+
+function StatusCell({
+  state,
+  title,
+}: {
+  state: "ok" | "pending" | "no";
+  title: string;
+}) {
+  const cls =
+    state === "ok"
+      ? "text-emerald-500"
+      : state === "pending"
+        ? "text-amber-500"
+        : "text-destructive";
+  return (
+    <span className="flex justify-center" title={title}>
+      {state === "no" ? (
+        <X className={`h-4 w-4 ${cls}`} />
+      ) : (
+        <Check className={`h-4 w-4 ${cls}`} />
+      )}
+    </span>
+  );
+}
 
 const STATUS_OPTIONS = [
   { value: "offen", label: "Offen" },
@@ -86,6 +130,8 @@ export default function OnboardingTermine() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("upcoming");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [contracts, setContracts] = useState<ContractRow[]>([]);
 
   // Dialog state
   const [open, setOpen] = useState(false);
@@ -114,8 +160,56 @@ export default function OnboardingTermine() {
       toast.error("Termine konnten nicht geladen werden");
     }
     setRows((data as Row[]) ?? []);
+
+    const [empRes, conRes] = await Promise.all([
+      (supabase as any)
+        .from("employees")
+        .select("id, first_name, last_name, personal_email, onboarding_enabled"),
+      (supabase as any).from("employee_contracts").select("employee_id, status"),
+    ]);
+    setEmployees((empRes.data as EmployeeRow[]) ?? []);
+    setContracts((conRes.data as ContractRow[]) ?? []);
     setLoading(false);
   }
+
+  const statusByRow = useMemo(() => {
+    const map = new Map<string, StatusInfo>();
+    const contractsByEmp = new Map<string, string[]>();
+    for (const c of contracts) {
+      const list = contractsByEmp.get(c.employee_id) ?? [];
+      list.push(c.status);
+      contractsByEmp.set(c.employee_id, list);
+    }
+    for (const r of rows) {
+      const emp =
+        employees.find(
+          (e) =>
+            norm(e.first_name) === norm(r.vorname) &&
+            norm(e.last_name) === norm(r.nachname) &&
+            norm(r.vorname) !== "" &&
+            norm(r.nachname) !== "",
+        ) ??
+        employees.find(
+          (e) => norm(e.personal_email) !== "" && norm(e.personal_email) === norm(r.email),
+        );
+      if (!emp) {
+        map.set(r.id, { hasAccount: false, contract: "none", onboarding: false });
+        continue;
+      }
+      const list = contractsByEmp.get(emp.id) ?? [];
+      const contract: StatusInfo["contract"] = list.includes("completed")
+        ? "completed"
+        : list.length > 0
+          ? "pending"
+          : "none";
+      map.set(r.id, {
+        hasAccount: true,
+        contract,
+        onboarding: !!emp.onboarding_enabled,
+      });
+    }
+    return map;
+  }, [rows, employees, contracts]);
 
   useEffect(() => {
     load();
@@ -345,19 +439,25 @@ export default function OnboardingTermine() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
               <span>E-Mail</span>
               <span>Telefon</span>
               <span>Stelle</span>
               <span>Notiz</span>
+              <span className="text-center">Konto</span>
+              <span className="text-center">AV</span>
+              <span className="text-center">Onboarding</span>
               <span>Status</span>
               <span className="text-right">Aktion</span>
             </div>
             {filtered.map((r, i) => {
               const showHeader =
                 i === 0 || filtered[i - 1].appointment_date !== r.appointment_date;
+              const st =
+                statusByRow.get(r.id) ??
+                ({ hasAccount: false, contract: "none", onboarding: false } as StatusInfo);
               return (
                 <div key={r.id}>
                   {showHeader && (
@@ -366,7 +466,7 @@ export default function OnboardingTermine() {
                       {dayLabel(r.appointment_date)}
                     </div>
                   )}
-                  <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm">
+                  <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm">
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
                       <span className="text-xs text-muted-foreground">
@@ -387,6 +487,30 @@ export default function OnboardingTermine() {
                     <span className="truncate text-muted-foreground" title={r.notes ?? ""}>
                       {r.notes || "—"}
                     </span>
+                    <StatusCell
+                      state={st.hasAccount ? "ok" : "no"}
+                      title={st.hasAccount ? "Mitarbeiterkonto vorhanden" : "Kein Mitarbeiterkonto"}
+                    />
+                    <StatusCell
+                      state={
+                        st.contract === "completed"
+                          ? "ok"
+                          : st.contract === "pending"
+                            ? "pending"
+                            : "no"
+                      }
+                      title={
+                        st.contract === "completed"
+                          ? "Arbeitsvertrag abgeschlossen"
+                          : st.contract === "pending"
+                            ? "Warte auf Daten / Bestätigung"
+                            : "Kein Arbeitsvertrag"
+                      }
+                    />
+                    <StatusCell
+                      state={st.onboarding ? "ok" : "no"}
+                      title={st.onboarding ? "Onboarding aktiviert" : "Onboarding nicht aktiviert"}
+                    />
                     <div>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
