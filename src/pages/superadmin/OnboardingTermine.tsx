@@ -523,6 +523,21 @@ export default function OnboardingTermine() {
                 onChange={(e) => setNotes(e.target.value)}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ob-start">Startdatum</Label>
+              <Input
+                id="ob-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {startAsap && !startDate
+                  ? "Im Bewerbungsgespräch wurde „schnellstmöglich“ angegeben — bitte Datum wählen."
+                  : "Wird aus dem Bewerbungsgespräch übernommen, kann manuell geändert werden."}
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
