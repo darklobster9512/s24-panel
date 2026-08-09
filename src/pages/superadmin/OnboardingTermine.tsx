@@ -168,7 +168,7 @@ export default function OnboardingTermine() {
     };
   }, [appSearch, open]);
 
-  // Startdatum aus dem Bewerbungsgespräch vorbefüllen
+  // Startdatum & Notiz aus dem Bewerbungsgespräch vorbefüllen
   useEffect(() => {
     if (!selected) {
       setStartAsap(false);
@@ -178,12 +178,13 @@ export default function OnboardingTermine() {
     (async () => {
       const { data, error } = await (supabase as any)
         .from("interview_appointments")
-        .select("start_date, start_asap")
+        .select("start_date, start_asap, notes")
         .eq("application_id", selected.id)
         .maybeSingle();
       if (cancelled || error || !data) return;
       setStartAsap(!!data.start_asap);
       if (data.start_date) setStartDate(data.start_date);
+      if (data.notes) setNotes((prev) => (prev.trim() ? prev : data.notes));
     })();
     return () => {
       cancelled = true;
