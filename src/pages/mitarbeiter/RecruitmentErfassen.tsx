@@ -470,12 +470,17 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                   <X className="h-4 w-4" /> Fehlgeschlagen
                 </Button>
                 <Button
-                  variant={outcome === "mailbox" ? "secondary" : "outline"}
-                  className="flex-1 gap-2"
+                  variant="outline"
+                  className={`flex-1 gap-2 ${
+                    outcome === "mailbox"
+                      ? "bg-amber-400 text-amber-950 border-amber-400 hover:bg-amber-400/90 hover:text-amber-950"
+                      : ""
+                  }`}
                   onClick={() => setOutcome("mailbox")}
                 >
                   <Voicemail className="h-4 w-4" /> Mailbox
                 </Button>
+
               </div>
 
             </div>
