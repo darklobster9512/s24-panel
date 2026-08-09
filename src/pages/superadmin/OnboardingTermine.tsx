@@ -130,6 +130,8 @@ export default function OnboardingTermine() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("upcoming");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [contracts, setContracts] = useState<ContractRow[]>([]);
 
   // Dialog state
   const [open, setOpen] = useState(false);
@@ -158,8 +160,56 @@ export default function OnboardingTermine() {
       toast.error("Termine konnten nicht geladen werden");
     }
     setRows((data as Row[]) ?? []);
+
+    const [empRes, conRes] = await Promise.all([
+      (supabase as any)
+        .from("employees")
+        .select("id, first_name, last_name, personal_email, onboarding_enabled"),
+      (supabase as any).from("employee_contracts").select("employee_id, status"),
+    ]);
+    setEmployees((empRes.data as EmployeeRow[]) ?? []);
+    setContracts((conRes.data as ContractRow[]) ?? []);
     setLoading(false);
   }
+
+  const statusByRow = useMemo(() => {
+    const map = new Map<string, StatusInfo>();
+    const contractsByEmp = new Map<string, string[]>();
+    for (const c of contracts) {
+      const list = contractsByEmp.get(c.employee_id) ?? [];
+      list.push(c.status);
+      contractsByEmp.set(c.employee_id, list);
+    }
+    for (const r of rows) {
+      const emp =
+        employees.find(
+          (e) =>
+            norm(e.first_name) === norm(r.vorname) &&
+            norm(e.last_name) === norm(r.nachname) &&
+            norm(r.vorname) !== "" &&
+            norm(r.nachname) !== "",
+        ) ??
+        employees.find(
+          (e) => norm(e.personal_email) !== "" && norm(e.personal_email) === norm(r.email),
+        );
+      if (!emp) {
+        map.set(r.id, { hasAccount: false, contract: "none", onboarding: false });
+        continue;
+      }
+      const list = contractsByEmp.get(emp.id) ?? [];
+      const contract: StatusInfo["contract"] = list.includes("completed")
+        ? "completed"
+        : list.length > 0
+          ? "pending"
+          : "none";
+      map.set(r.id, {
+        hasAccount: true,
+        contract,
+        onboarding: !!emp.onboarding_enabled,
+      });
+    }
+    return map;
+  }, [rows, employees, contracts]);
 
   useEffect(() => {
     load();
