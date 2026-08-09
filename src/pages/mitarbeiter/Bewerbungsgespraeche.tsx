@@ -307,19 +307,6 @@ export default function MitarbeiterBewerbungsgespraeche() {
                         )}
                       </Button>
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        title="Erinnerung senden"
-                        disabled={busyId === r.id + "send_reminder"}
-                        onClick={() => runAction(r, "send_reminder")}
-                      >
-                        {busyId === r.id + "send_reminder" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <BellRing className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
                         size="sm"
                         className="gap-1.5"
                         onClick={() =>
