@@ -183,11 +183,15 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     if (!clientId) throw new Error("Kein zugewiesener Kunde gefunden – bitte Zuweisung prüfen.");
 
     const iv = interview.data;
+    const outcomeLabel =
+      outcome === "erfolgreich" ? "Erfolgreich" : outcome === "mailbox" ? "Mailbox" : "Fehlgeschlagen";
     const text =
       note.trim() ||
       (outcome === "erfolgreich"
         ? "Recruiting-Anruf erfolgreich"
-        : "Recruiting-Anruf fehlgeschlagen");
+        : outcome === "mailbox"
+          ? "Mailbox erreicht"
+          : "Recruiting-Anruf fehlgeschlagen");
 
     const { data: inserted, error } = await supabase
       .from("call_notes")
@@ -197,7 +201,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         anrufer_name: iv?.name ?? null,
         anrufer_nummer: iv?.phone ?? null,
         anrufer_email: iv?.email ?? null,
-        anliegen: `[${outcome === "erfolgreich" ? "Erfolgreich" : "Fehlgeschlagen"}] ${text}`,
+        anliegen: `[${outcomeLabel}] ${text}`,
         kategorie: "Termin",
         prioritaet: "normal",
         rueckruf_gewuenscht: false,
@@ -430,19 +434,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                     Panel-Link per E-Mail
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={sendReminder}
-                  disabled={busy === "reminder"}
-                >
-                  {busy === "reminder" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <BellRing className="h-4 w-4" />
-                  )}{" "}
-                  Erinnerung senden
-                </Button>
               </div>
 
               <div>
@@ -471,7 +462,15 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                 >
                   <X className="h-4 w-4" /> Fehlgeschlagen
                 </Button>
+                <Button
+                  variant={outcome === "mailbox" ? "secondary" : "outline"}
+                  className="flex-1 gap-2"
+                  onClick={() => setOutcome("mailbox")}
+                >
+                  <Voicemail className="h-4 w-4" /> Mailbox
+                </Button>
               </div>
+
             </div>
           </Panel>
 
