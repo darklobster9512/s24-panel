@@ -466,7 +466,7 @@ export default function OnboardingTermine() {
                       {dayLabel(r.appointment_date)}
                     </div>
                   )}
-                  <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm">
+                  <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm">
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
                       <span className="text-xs text-muted-foreground">
@@ -487,6 +487,30 @@ export default function OnboardingTermine() {
                     <span className="truncate text-muted-foreground" title={r.notes ?? ""}>
                       {r.notes || "—"}
                     </span>
+                    <StatusCell
+                      state={st.hasAccount ? "ok" : "no"}
+                      title={st.hasAccount ? "Mitarbeiterkonto vorhanden" : "Kein Mitarbeiterkonto"}
+                    />
+                    <StatusCell
+                      state={
+                        st.contract === "completed"
+                          ? "ok"
+                          : st.contract === "pending"
+                            ? "pending"
+                            : "no"
+                      }
+                      title={
+                        st.contract === "completed"
+                          ? "Arbeitsvertrag abgeschlossen"
+                          : st.contract === "pending"
+                            ? "Warte auf Daten / Bestätigung"
+                            : "Kein Arbeitsvertrag"
+                      }
+                    />
+                    <StatusCell
+                      state={st.onboarding ? "ok" : "no"}
+                      title={st.onboarding ? "Onboarding aktiviert" : "Onboarding nicht aktiviert"}
+                    />
                     <div>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
