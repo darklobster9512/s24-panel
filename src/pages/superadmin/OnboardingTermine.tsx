@@ -372,9 +372,14 @@ export default function OnboardingTermine() {
                         {r.appointment_time.slice(0, 5)} Uhr
                       </span>
                     </div>
-                    <span className="truncate font-medium">
-                      {r.vorname} {r.nachname}
-                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {r.vorname} {r.nachname}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        Start: {r.start_date ? formatDate(r.start_date) : "—"}
+                      </div>
+                    </div>
                     <span className="truncate text-muted-foreground">{r.email || "—"}</span>
                     <span className="truncate font-mono text-xs">{r.telefon || "—"}</span>
                     <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
