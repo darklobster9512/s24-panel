@@ -17,6 +17,8 @@ import {
   Headphones,
   UserPlus,
   Calendar,
+  CalendarClock,
+
   Send,
   ShieldCheck,
   MessageCircle,
@@ -56,7 +58,11 @@ const mainItems: SidebarItem[] = [
   { title: "Zuweisungen", url: "/superadmin/zuweisungen", icon: Link2 },
 ];
 
-const opsItems = (newApplicationsCount: number, interviewsTodayCount: number): SidebarItem[] => [
+const opsItems = (
+  newApplicationsCount: number,
+  interviewsTodayCount: number,
+  onboardingTodayCount: number,
+): SidebarItem[] => [
   { title: "Anrufe", url: "/superadmin/anrufe", icon: PhoneCall },
   { title: "Notizen", url: "/superadmin/notizen", icon: StickyNote },
   {
@@ -71,8 +77,15 @@ const opsItems = (newApplicationsCount: number, interviewsTodayCount: number): S
     icon: Calendar,
     badge: interviewsTodayCount,
   },
+  {
+    title: "Onboarding-Termine",
+    url: "/superadmin/onboarding-termine",
+    icon: CalendarClock,
+    badge: onboardingTodayCount,
+  },
   { title: "Outbound-Gespräche", url: "/superadmin/outbound-gespraeche", icon: PhoneOutgoing },
 ];
+
 
 
 const finItems = (pendingCount: number): SidebarItem[] => [
@@ -157,11 +170,27 @@ export function SuperadminSidebar() {
     refetchInterval: 30_000,
   });
 
+  const onboardingTodayQuery = useQuery({
+    queryKey: ["onboarding-today-count"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { count, error } = await (supabase as any)
+        .from("onboarding_appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("appointment_date", today);
+      if (error) return 0;
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+
   const chatUnread = chatUnreadQuery.data ?? 0;
 
   const pendingCount = pendingCountQuery.data ?? 0;
   const newApplicationsCount = newApplicationsQuery.data ?? 0;
   const interviewsTodayCount = interviewsTodayQuery.data ?? 0;
+  const onboardingTodayCount = onboardingTodayQuery.data ?? 0;
+
 
   const isActive = (path: string, end?: boolean) =>
     end ? pathname === path : pathname === path || pathname.startsWith(path + "/");
@@ -230,14 +259,14 @@ export function SuperadminSidebar() {
         {isManager ? (
           renderGroup(
             "Betrieb",
-            opsItems(newApplicationsCount, interviewsTodayCount).filter(
+            opsItems(newApplicationsCount, interviewsTodayCount, onboardingTodayCount).filter(
               (i) => i.url === "/superadmin/bewerbungsgespraeche",
             ).concat(chatItems(chatUnread)),
           )
         ) : (
           <>
             {renderGroup("Allgemein", mainItems)}
-            {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount))}
+            {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount, onboardingTodayCount))}
             {renderGroup("Kommunikation", chatItems(chatUnread))}
             {renderGroup("Finanzen", finItems(pendingCount))}
             {renderGroup("System", systemItems)}
