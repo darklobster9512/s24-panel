@@ -244,6 +244,7 @@ export default function OnboardingTermine() {
       appointment_date: date,
       appointment_time: time,
       notes: notes.trim() || null,
+      start_date: startDate || null,
       created_by: userRes?.user?.id ?? null,
     });
     setSaving(false);
