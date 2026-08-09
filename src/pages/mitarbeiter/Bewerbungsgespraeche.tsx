@@ -147,25 +147,12 @@ export default function MitarbeiterBewerbungsgespraeche() {
 
   async function runAction(
     row: RecruitmentInterview,
-    action: "send_panel_link" | "send_reminder",
+    action: "send_panel_link",
   ) {
     setBusyId(row.id + action);
     try {
-      if (action === "send_reminder") {
-        // Die API liefert den Standardtext per preview und versendet ihn dann als `text`
-        const preview = await callerApi<any>("send_reminder", {
-          appointment_id: row.id,
-          preview: true,
-        });
-        await callerApi("send_reminder", {
-          appointment_id: row.id,
-          text: preview?.message ?? "",
-        });
-        toast.success("Erinnerung gesendet");
-      } else {
-        await callerApi("send_panel_link", { appointment_id: row.id });
-        toast.success("Panel-Link gesendet");
-      }
+      await callerApi("send_panel_link", { appointment_id: row.id });
+      toast.success("Panel-Link gesendet");
       qc.invalidateQueries({ queryKey: ["caller-interviews"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -173,6 +160,7 @@ export default function MitarbeiterBewerbungsgespraeche() {
       setBusyId(null);
     }
   }
+
 
 
   const lastUpdated = query.dataUpdatedAt || null;
