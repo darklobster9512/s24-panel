@@ -552,7 +552,7 @@ export default function OnboardingTermine() {
                       state={st.onboarding ? "ok" : "no"}
                       title={st.onboarding ? "Onboarding aktiviert" : "Onboarding nicht aktiviert"}
                     />
-                    <div>
+                    <div onClick={(e) => e.stopPropagation()}>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
                           <SelectValue asChild>
@@ -569,7 +569,15 @@ export default function OnboardingTermine() {
                       </Select>
                     </div>
                     <div className="flex justify-end">
-                      <Button size="icon" variant="ghost" title="Löschen" onClick={() => remove(r)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Löschen"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(r);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -590,7 +598,9 @@ export default function OnboardingTermine() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Onboarding-Termin anlegen</DialogTitle>
+            <DialogTitle>
+              {editingId ? "Onboarding-Termin bearbeiten" : "Onboarding-Termin anlegen"}
+            </DialogTitle>
             <DialogDescription>
               Bewerbung suchen, Termin festlegen und Arbeitstage/Stunden notieren.
             </DialogDescription>
