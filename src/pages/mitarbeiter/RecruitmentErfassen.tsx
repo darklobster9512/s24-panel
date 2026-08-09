@@ -148,24 +148,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
-  /** Holt den Standardtext der API und sendet die Erinnerung direkt. */
-  async function sendReminder() {
-    setBusy("reminder");
-    try {
-      const preview = await callerApi<any>("send_reminder", {
-        appointment_id: interviewId,
-        preview: true,
-      });
-      const text = String(preview?.message ?? "").trim();
-      if (!text) throw new Error("Kein Erinnerungstext von der API erhalten.");
-      await callerApi("send_reminder", { appointment_id: interviewId, text });
-      toast.success("Erinnerung gesendet");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
 
   /** Ermittelt den Kunden des Callers – notfalls frisch aus der Datenbank. */
   async function resolveClientId(employeeId: string): Promise<string | null> {
