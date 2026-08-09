@@ -35,6 +35,7 @@ type Row = {
   appointment_date: string;
   appointment_time: string;
   notes: string | null;
+  start_date: string | null;
   status: string;
 };
 
