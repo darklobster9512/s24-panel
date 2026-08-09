@@ -259,14 +259,14 @@ export function SuperadminSidebar() {
         {isManager ? (
           renderGroup(
             "Betrieb",
-            opsItems(newApplicationsCount, interviewsTodayCount).filter(
+            opsItems(newApplicationsCount, interviewsTodayCount, onboardingTodayCount).filter(
               (i) => i.url === "/superadmin/bewerbungsgespraeche",
             ).concat(chatItems(chatUnread)),
           )
         ) : (
           <>
             {renderGroup("Allgemein", mainItems)}
-            {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount))}
+            {renderGroup("Betrieb", opsItems(newApplicationsCount, interviewsTodayCount, onboardingTodayCount))}
             {renderGroup("Kommunikation", chatItems(chatUnread))}
             {renderGroup("Finanzen", finItems(pendingCount))}
             {renderGroup("System", systemItems)}
