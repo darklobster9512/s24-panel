@@ -225,6 +225,8 @@ export default function OnboardingTermine() {
     setDate("");
     setTime("");
     setNotes("");
+    setStartDate("");
+    setStartAsap(false);
   }
 
   async function save() {
