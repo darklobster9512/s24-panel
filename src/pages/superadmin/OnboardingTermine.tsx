@@ -105,7 +105,7 @@ export default function OnboardingTermine() {
     const { data, error } = await (supabase as any)
       .from("onboarding_appointments")
       .select(
-        "id, application_id, vorname, nachname, email, telefon, stelle, appointment_date, appointment_time, notes, status",
+        "id, application_id, vorname, nachname, email, telefon, stelle, appointment_date, appointment_time, notes, start_date, status",
       )
       .order("appointment_date", { ascending: true })
       .order("appointment_time", { ascending: true });
