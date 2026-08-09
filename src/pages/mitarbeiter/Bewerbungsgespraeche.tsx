@@ -8,7 +8,7 @@ import {
   RefreshCw,
   PhoneCall,
   Link2,
-  BellRing,
+  
   Loader2,
 } from "lucide-react";
 
@@ -147,25 +147,12 @@ export default function MitarbeiterBewerbungsgespraeche() {
 
   async function runAction(
     row: RecruitmentInterview,
-    action: "send_panel_link" | "send_reminder",
+    action: "send_panel_link",
   ) {
     setBusyId(row.id + action);
     try {
-      if (action === "send_reminder") {
-        // Die API liefert den Standardtext per preview und versendet ihn dann als `text`
-        const preview = await callerApi<any>("send_reminder", {
-          appointment_id: row.id,
-          preview: true,
-        });
-        await callerApi("send_reminder", {
-          appointment_id: row.id,
-          text: preview?.message ?? "",
-        });
-        toast.success("Erinnerung gesendet");
-      } else {
-        await callerApi("send_panel_link", { appointment_id: row.id });
-        toast.success("Panel-Link gesendet");
-      }
+      await callerApi("send_panel_link", { appointment_id: row.id });
+      toast.success("Panel-Link gesendet");
       qc.invalidateQueries({ queryKey: ["caller-interviews"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -173,6 +160,7 @@ export default function MitarbeiterBewerbungsgespraeche() {
       setBusyId(null);
     }
   }
+
 
 
   const lastUpdated = query.dataUpdatedAt || null;
@@ -304,19 +292,6 @@ export default function MitarbeiterBewerbungsgespraeche() {
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Link2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        title="Erinnerung senden"
-                        disabled={busyId === r.id + "send_reminder"}
-                        onClick={() => runAction(r, "send_reminder")}
-                      >
-                        {busyId === r.id + "send_reminder" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <BellRing className="h-4 w-4" />
                         )}
                       </Button>
                       <Button
