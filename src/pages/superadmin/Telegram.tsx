@@ -28,6 +28,8 @@ type Recipient = {
   notify_contracts: boolean;
   notify_notes: boolean;
   notify_chat: boolean;
+  notify_onboarding: boolean;
+
 
   created_at: string;
 };
