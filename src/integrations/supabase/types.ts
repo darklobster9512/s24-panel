@@ -964,6 +964,68 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_appointments: {
+        Row: {
+          application_id: string | null
+          appointment_date: string
+          appointment_time: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          nachname: string | null
+          notes: string | null
+          reminder_sent_at: string | null
+          status: string
+          stelle: string | null
+          telefon: string | null
+          updated_at: string
+          vorname: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          appointment_date: string
+          appointment_time: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nachname?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          status?: string
+          stelle?: string | null
+          telefon?: string | null
+          updated_at?: string
+          vorname?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nachname?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          status?: string
+          stelle?: string | null
+          telefon?: string | null
+          updated_at?: string
+          vorname?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_appointments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null
@@ -1082,6 +1144,7 @@ export type Database = {
           notify_contracts: boolean
           notify_interviews: boolean
           notify_notes: boolean
+          notify_onboarding: boolean
           updated_at: string
         }
         Insert: {
@@ -1095,6 +1158,7 @@ export type Database = {
           notify_contracts?: boolean
           notify_interviews?: boolean
           notify_notes?: boolean
+          notify_onboarding?: boolean
           updated_at?: string
         }
         Update: {
@@ -1108,6 +1172,7 @@ export type Database = {
           notify_contracts?: boolean
           notify_interviews?: boolean
           notify_notes?: boolean
+          notify_onboarding?: boolean
           updated_at?: string
         }
         Relationships: []
