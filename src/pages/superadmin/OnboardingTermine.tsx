@@ -35,6 +35,7 @@ type Row = {
   appointment_date: string;
   appointment_time: string;
   notes: string | null;
+  start_date: string | null;
   status: string;
 };
 
@@ -95,6 +96,8 @@ export default function OnboardingTermine() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [startAsap, setStartAsap] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function load() {
@@ -102,7 +105,7 @@ export default function OnboardingTermine() {
     const { data, error } = await (supabase as any)
       .from("onboarding_appointments")
       .select(
-        "id, application_id, vorname, nachname, email, telefon, stelle, appointment_date, appointment_time, notes, status",
+        "id, application_id, vorname, nachname, email, telefon, stelle, appointment_date, appointment_time, notes, start_date, status",
       )
       .order("appointment_date", { ascending: true })
       .order("appointment_time", { ascending: true });
@@ -165,6 +168,30 @@ export default function OnboardingTermine() {
     };
   }, [appSearch, open]);
 
+  // Startdatum aus dem Bewerbungsgespräch vorbefüllen
+  useEffect(() => {
+    if (!selected) {
+      setStartAsap(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("interview_appointments")
+        .select("start_date, start_asap")
+        .eq("application_id", selected.id)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      setStartAsap(!!data.start_asap);
+      if (data.start_date) setStartDate(data.start_date);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
+
+
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const today = new Date().toISOString().slice(0, 10);
@@ -198,6 +225,8 @@ export default function OnboardingTermine() {
     setDate("");
     setTime("");
     setNotes("");
+    setStartDate("");
+    setStartAsap(false);
   }
 
   async function save() {
@@ -215,6 +244,7 @@ export default function OnboardingTermine() {
       appointment_date: date,
       appointment_time: time,
       notes: notes.trim() || null,
+      start_date: startDate || null,
       created_by: userRes?.user?.id ?? null,
     });
     setSaving(false);
@@ -342,9 +372,14 @@ export default function OnboardingTermine() {
                         {r.appointment_time.slice(0, 5)} Uhr
                       </span>
                     </div>
-                    <span className="truncate font-medium">
-                      {r.vorname} {r.nachname}
-                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {r.vorname} {r.nachname}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        Start: {r.start_date ? formatDate(r.start_date) : "—"}
+                      </div>
+                    </div>
                     <span className="truncate text-muted-foreground">{r.email || "—"}</span>
                     <span className="truncate font-mono text-xs">{r.telefon || "—"}</span>
                     <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
@@ -487,6 +522,21 @@ export default function OnboardingTermine() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ob-start">Startdatum</Label>
+              <Input
+                id="ob-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {startAsap && !startDate
+                  ? "Im Bewerbungsgespräch wurde „schnellstmöglich“ angegeben — bitte Datum wählen."
+                  : "Wird aus dem Bewerbungsgespräch übernommen, kann manuell geändert werden."}
+              </p>
             </div>
           </div>
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.onboarding_appointments ADD COLUMN IF NOT EXISTS start_date date;

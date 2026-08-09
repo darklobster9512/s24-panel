@@ -976,6 +976,7 @@ export type Database = {
           nachname: string | null
           notes: string | null
           reminder_sent_at: string | null
+          start_date: string | null
           status: string
           stelle: string | null
           telefon: string | null
@@ -993,6 +994,7 @@ export type Database = {
           nachname?: string | null
           notes?: string | null
           reminder_sent_at?: string | null
+          start_date?: string | null
           status?: string
           stelle?: string | null
           telefon?: string | null
@@ -1010,6 +1012,7 @@ export type Database = {
           nachname?: string | null
           notes?: string | null
           reminder_sent_at?: string | null
+          start_date?: string | null
           status?: string
           stelle?: string | null
           telefon?: string | null
