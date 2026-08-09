@@ -8,6 +8,7 @@ export type CallerAction =
   | "set_mailbox"
   | "send_panel_link"
   | "send_panel_link_email"
+  | "send_reminder"
   | "resend_success_email";
 
 export class CallerApiError extends Error {
