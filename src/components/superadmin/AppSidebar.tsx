@@ -17,6 +17,8 @@ import {
   Headphones,
   UserPlus,
   Calendar,
+  CalendarClock,
+
   Send,
   ShieldCheck,
   MessageCircle,
