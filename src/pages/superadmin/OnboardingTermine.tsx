@@ -96,6 +96,8 @@ export default function OnboardingTermine() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [startAsap, setStartAsap] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function load() {
