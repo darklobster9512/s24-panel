@@ -241,13 +241,20 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
       // 2. Danach an die externe Caller-API übertragen.
       try {
-        await callerApi("set_status", {
-          appointment_id: interviewId,
-          status: outcome,
-          note: note.trim(),
-        });
+        if (outcome === "mailbox") {
+          await callerApi("set_mailbox", {
+            appointment_id: interviewId,
+            note: note.trim(),
+          });
+        } else {
+          await callerApi("set_status", {
+            appointment_id: interviewId,
+            status: outcome,
+            note: note.trim(),
+          });
+        }
       } catch (e) {
-        console.error("[RecruitmentErfassen] set_status failed", e);
+        console.error("[RecruitmentErfassen] caller-api update failed", e);
         toast.warning(
           "Notiz gespeichert, aber das Ergebnis konnte nicht an die Caller-API übertragen werden: " +
             (e as Error).message,
