@@ -145,6 +145,7 @@ export default function OnboardingTermine() {
   const [startDate, setStartDate] = useState("");
   const [startAsap, setStartAsap] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -264,6 +265,7 @@ export default function OnboardingTermine() {
 
   // Startdatum & Notiz aus dem Bewerbungsgespräch vorbefüllen
   useEffect(() => {
+    if (editingId) return;
     if (!selected) {
       setStartAsap(false);
       return;
@@ -283,7 +285,7 @@ export default function OnboardingTermine() {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selected, editingId]);
 
 
 
@@ -322,15 +324,36 @@ export default function OnboardingTermine() {
     setNotes("");
     setStartDate("");
     setStartAsap(false);
+    setEditingId(null);
+  }
+
+  function openEdit(r: Row) {
+    setEditingId(r.id);
+    setSelected({
+      id: r.application_id ?? "",
+      vorname: r.vorname ?? "",
+      nachname: r.nachname ?? "",
+      email: r.email ?? "",
+      handynummer: r.telefon,
+      stelle: r.stelle,
+      anstellung: null,
+    });
+    setDate(r.appointment_date);
+    setTime(r.appointment_time.slice(0, 5));
+    setNotes(r.notes ?? "");
+    setStartDate(r.start_date ?? "");
+    setStartAsap(false);
+    setAppSearch("");
+    setHits([]);
+    setOpen(true);
   }
 
   async function save() {
     if (!selected) return toast.error("Bitte eine Bewerbung auswählen.");
     if (!date || !time) return toast.error("Bitte Datum und Uhrzeit angeben.");
     setSaving(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const { error } = await (supabase as any).from("onboarding_appointments").insert({
-      application_id: selected.id,
+    const payload = {
+      application_id: selected.id || null,
       vorname: selected.vorname,
       nachname: selected.nachname,
       email: selected.email,
@@ -340,14 +363,25 @@ export default function OnboardingTermine() {
       appointment_time: time,
       notes: notes.trim() || null,
       start_date: startDate || null,
-      created_by: userRes?.user?.id ?? null,
-    });
+    };
+    let error;
+    if (editingId) {
+      ({ error } = await (supabase as any)
+        .from("onboarding_appointments")
+        .update(payload)
+        .eq("id", editingId));
+    } else {
+      const { data: userRes } = await supabase.auth.getUser();
+      ({ error } = await (supabase as any)
+        .from("onboarding_appointments")
+        .insert({ ...payload, created_by: userRes?.user?.id ?? null }));
+    }
     setSaving(false);
     if (error) {
       toast.error("Speichern fehlgeschlagen: " + error.message);
       return;
     }
-    toast.success("Onboarding-Termin gespeichert");
+    toast.success(editingId ? "Onboarding-Termin aktualisiert" : "Onboarding-Termin gespeichert");
     setOpen(false);
     resetDialog();
     load();
@@ -439,10 +473,9 @@ export default function OnboardingTermine() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1.2fr_140px_150px_1.2fr_60px_60px_90px_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
-              <span>E-Mail</span>
               <span>Telefon</span>
               <span>Stelle</span>
               <span>Notiz</span>
@@ -466,7 +499,15 @@ export default function OnboardingTermine() {
                       {dayLabel(r.appointment_date)}
                     </div>
                   )}
-                  <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openEdit(r)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") openEdit(r);
+                    }}
+                    className="grid cursor-pointer grid-cols-[170px_1.2fr_140px_150px_1.2fr_60px_60px_90px_150px_60px] items-center gap-4 rounded-lg px-2 py-3 text-sm transition-colors hover:bg-accent/50"
+                  >
                     <div className="flex flex-col">
                       <span className="font-medium">{formatDate(r.appointment_date)}</span>
                       <span className="text-xs text-muted-foreground">
@@ -481,7 +522,7 @@ export default function OnboardingTermine() {
                         Start: {r.start_date ? formatDate(r.start_date) : "—"}
                       </div>
                     </div>
-                    <span className="truncate text-muted-foreground">{r.email || "—"}</span>
+                    
                     <span className="truncate font-mono text-xs">{r.telefon || "—"}</span>
                     <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
                     <span className="truncate text-muted-foreground" title={r.notes ?? ""}>
@@ -511,7 +552,7 @@ export default function OnboardingTermine() {
                       state={st.onboarding ? "ok" : "no"}
                       title={st.onboarding ? "Onboarding aktiviert" : "Onboarding nicht aktiviert"}
                     />
-                    <div>
+                    <div onClick={(e) => e.stopPropagation()}>
                       <Select value={r.status} onValueChange={(v) => setStatus(r.id, v)}>
                         <SelectTrigger className="h-8">
                           <SelectValue asChild>
@@ -528,7 +569,15 @@ export default function OnboardingTermine() {
                       </Select>
                     </div>
                     <div className="flex justify-end">
-                      <Button size="icon" variant="ghost" title="Löschen" onClick={() => remove(r)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Löschen"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(r);
+                        }}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -549,7 +598,9 @@ export default function OnboardingTermine() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Onboarding-Termin anlegen</DialogTitle>
+            <DialogTitle>
+              {editingId ? "Onboarding-Termin bearbeiten" : "Onboarding-Termin anlegen"}
+            </DialogTitle>
             <DialogDescription>
               Bewerbung suchen, Termin festlegen und Arbeitstage/Stunden notieren.
             </DialogDescription>
