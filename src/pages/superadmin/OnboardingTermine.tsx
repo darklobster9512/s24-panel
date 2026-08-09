@@ -439,13 +439,16 @@ export default function OnboardingTermine() {
           </div>
         ) : (
           <div className="divide-y divide-border/60">
-            <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="grid grid-cols-[170px_1fr_1fr_140px_150px_1fr_60px_60px_90px_150px_60px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <span>Termin</span>
               <span>Bewerber</span>
               <span>E-Mail</span>
               <span>Telefon</span>
               <span>Stelle</span>
               <span>Notiz</span>
+              <span className="text-center">Konto</span>
+              <span className="text-center">AV</span>
+              <span className="text-center">Onboarding</span>
               <span>Status</span>
               <span className="text-right">Aktion</span>
             </div>
