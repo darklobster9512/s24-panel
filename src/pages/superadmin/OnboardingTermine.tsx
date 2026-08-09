@@ -168,6 +168,30 @@ export default function OnboardingTermine() {
     };
   }, [appSearch, open]);
 
+  // Startdatum aus dem Bewerbungsgespräch vorbefüllen
+  useEffect(() => {
+    if (!selected) {
+      setStartAsap(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("interview_appointments")
+        .select("start_date, start_asap")
+        .eq("application_id", selected.id)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      setStartAsap(!!data.start_asap);
+      if (data.start_date) setStartDate(data.start_date);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
+
+
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const today = new Date().toISOString().slice(0, 10);
