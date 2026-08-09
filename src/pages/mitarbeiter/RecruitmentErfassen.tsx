@@ -8,7 +8,7 @@ import {
   Save,
   FileText,
   Link2,
-  BellRing,
+  Voicemail,
   Loader2,
   Check,
   X,
@@ -40,7 +40,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
   const [start, setStart] = useState<number | null>(null);
   const [, setTick] = useState(0);
   const [note, setNote] = useState("");
-  const [outcome, setOutcome] = useState<"erfolgreich" | "fehlgeschlagen" | "">("");
+  const [outcome, setOutcome] = useState<"erfolgreich" | "fehlgeschlagen" | "mailbox" | "">("");
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
@@ -148,24 +148,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     }
   }
 
-  /** Holt den Standardtext der API und sendet die Erinnerung direkt. */
-  async function sendReminder() {
-    setBusy("reminder");
-    try {
-      const preview = await callerApi<any>("send_reminder", {
-        appointment_id: interviewId,
-        preview: true,
-      });
-      const text = String(preview?.message ?? "").trim();
-      if (!text) throw new Error("Kein Erinnerungstext von der API erhalten.");
-      await callerApi("send_reminder", { appointment_id: interviewId, text });
-      toast.success("Erinnerung gesendet");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
 
   /** Ermittelt den Kunden des Callers – notfalls frisch aus der Datenbank. */
   async function resolveClientId(employeeId: string): Promise<string | null> {
@@ -201,11 +183,15 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
     if (!clientId) throw new Error("Kein zugewiesener Kunde gefunden – bitte Zuweisung prüfen.");
 
     const iv = interview.data;
+    const outcomeLabel =
+      outcome === "erfolgreich" ? "Erfolgreich" : outcome === "mailbox" ? "Mailbox" : "Fehlgeschlagen";
     const text =
       note.trim() ||
       (outcome === "erfolgreich"
         ? "Recruiting-Anruf erfolgreich"
-        : "Recruiting-Anruf fehlgeschlagen");
+        : outcome === "mailbox"
+          ? "Mailbox erreicht"
+          : "Recruiting-Anruf fehlgeschlagen");
 
     const { data: inserted, error } = await supabase
       .from("call_notes")
@@ -215,7 +201,7 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
         anrufer_name: iv?.name ?? null,
         anrufer_nummer: iv?.phone ?? null,
         anrufer_email: iv?.email ?? null,
-        anliegen: `[${outcome === "erfolgreich" ? "Erfolgreich" : "Fehlgeschlagen"}] ${text}`,
+        anliegen: `[${outcomeLabel}] ${text}`,
         kategorie: "Termin",
         prioritaet: "normal",
         rueckruf_gewuenscht: false,
@@ -255,13 +241,20 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
 
       // 2. Danach an die externe Caller-API übertragen.
       try {
-        await callerApi("set_status", {
-          appointment_id: interviewId,
-          status: outcome,
-          note: note.trim(),
-        });
+        if (outcome === "mailbox") {
+          await callerApi("set_mailbox", {
+            appointment_id: interviewId,
+            note: note.trim(),
+          });
+        } else {
+          await callerApi("set_status", {
+            appointment_id: interviewId,
+            status: outcome,
+            note: note.trim(),
+          });
+        }
       } catch (e) {
-        console.error("[RecruitmentErfassen] set_status failed", e);
+        console.error("[RecruitmentErfassen] caller-api update failed", e);
         toast.warning(
           "Notiz gespeichert, aber das Ergebnis konnte nicht an die Caller-API übertragen werden: " +
             (e as Error).message,
@@ -448,19 +441,6 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                     Panel-Link per E-Mail
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={sendReminder}
-                  disabled={busy === "reminder"}
-                >
-                  {busy === "reminder" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <BellRing className="h-4 w-4" />
-                  )}{" "}
-                  Erinnerung senden
-                </Button>
               </div>
 
               <div>
@@ -489,7 +469,15 @@ export default function RecruitmentErfassen({ interviewId }: { interviewId: stri
                 >
                   <X className="h-4 w-4" /> Fehlgeschlagen
                 </Button>
+                <Button
+                  variant={outcome === "mailbox" ? "secondary" : "outline"}
+                  className="flex-1 gap-2"
+                  onClick={() => setOutcome("mailbox")}
+                >
+                  <Voicemail className="h-4 w-4" /> Mailbox
+                </Button>
               </div>
+
             </div>
           </Panel>
 

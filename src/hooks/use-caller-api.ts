@@ -5,6 +5,7 @@ export type CallerAction =
   | "meta"
   | "list_interviews"
   | "set_status"
+  | "set_mailbox"
   | "send_panel_link"
   | "send_panel_link_email"
   | "send_reminder"
