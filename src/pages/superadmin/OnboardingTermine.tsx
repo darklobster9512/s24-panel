@@ -145,6 +145,7 @@ export default function OnboardingTermine() {
   const [startDate, setStartDate] = useState("");
   const [startAsap, setStartAsap] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -264,6 +265,7 @@ export default function OnboardingTermine() {
 
   // Startdatum & Notiz aus dem Bewerbungsgespräch vorbefüllen
   useEffect(() => {
+    if (editingId) return;
     if (!selected) {
       setStartAsap(false);
       return;
@@ -283,7 +285,7 @@ export default function OnboardingTermine() {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selected, editingId]);
 
 
 
@@ -322,15 +324,36 @@ export default function OnboardingTermine() {
     setNotes("");
     setStartDate("");
     setStartAsap(false);
+    setEditingId(null);
+  }
+
+  function openEdit(r: Row) {
+    setEditingId(r.id);
+    setSelected({
+      id: r.application_id ?? "",
+      vorname: r.vorname ?? "",
+      nachname: r.nachname ?? "",
+      email: r.email ?? "",
+      handynummer: r.telefon,
+      stelle: r.stelle,
+      anstellung: null,
+    });
+    setDate(r.appointment_date);
+    setTime(r.appointment_time.slice(0, 5));
+    setNotes(r.notes ?? "");
+    setStartDate(r.start_date ?? "");
+    setStartAsap(false);
+    setAppSearch("");
+    setHits([]);
+    setOpen(true);
   }
 
   async function save() {
     if (!selected) return toast.error("Bitte eine Bewerbung auswählen.");
     if (!date || !time) return toast.error("Bitte Datum und Uhrzeit angeben.");
     setSaving(true);
-    const { data: userRes } = await supabase.auth.getUser();
-    const { error } = await (supabase as any).from("onboarding_appointments").insert({
-      application_id: selected.id,
+    const payload = {
+      application_id: selected.id || null,
       vorname: selected.vorname,
       nachname: selected.nachname,
       email: selected.email,
@@ -340,14 +363,25 @@ export default function OnboardingTermine() {
       appointment_time: time,
       notes: notes.trim() || null,
       start_date: startDate || null,
-      created_by: userRes?.user?.id ?? null,
-    });
+    };
+    let error;
+    if (editingId) {
+      ({ error } = await (supabase as any)
+        .from("onboarding_appointments")
+        .update(payload)
+        .eq("id", editingId));
+    } else {
+      const { data: userRes } = await supabase.auth.getUser();
+      ({ error } = await (supabase as any)
+        .from("onboarding_appointments")
+        .insert({ ...payload, created_by: userRes?.user?.id ?? null }));
+    }
     setSaving(false);
     if (error) {
       toast.error("Speichern fehlgeschlagen: " + error.message);
       return;
     }
-    toast.success("Onboarding-Termin gespeichert");
+    toast.success(editingId ? "Onboarding-Termin aktualisiert" : "Onboarding-Termin gespeichert");
     setOpen(false);
     resetDialog();
     load();
