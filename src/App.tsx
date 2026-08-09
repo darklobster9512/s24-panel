@@ -109,7 +109,9 @@ export default function App() {
                     <Route path="arbeitsvertraege/:id" element={<SuperadminArbeitsvertragDetail />} />
                     <Route path="auszahlungen" element={<SuperadminAuszahlungen />} />
                     <Route path="abrechnung" element={<SuperadminAbrechnung />} />
+                    <Route path="onboarding-termine" element={<SuperadminOnboardingTermine />} />
                     <Route path="einstellungen" element={<SuperadminEinstellungen />} />
+
                   </Route>
                 </Route>
 
