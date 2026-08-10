@@ -104,6 +104,12 @@ const BodySchema = z.object({
   staatsangehoerigkeit: z.string().trim().min(1).max(100),
   anstellung: z.string().trim().min(1).max(50),
   stelle: z.string().trim().max(150).optional(),
+  startklar_ab: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD erwartet')
+    .optional()
+    .or(z.literal('')),
 });
 
 function sanitize(name: string) {
