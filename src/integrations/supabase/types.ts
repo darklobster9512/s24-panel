@@ -155,6 +155,7 @@ export type Database = {
           nachname: string
           ranking: string | null
           staatsangehoerigkeit: string
+          startklar_ab: string | null
           status: string
           stelle: string | null
           updated_at: string
@@ -174,6 +175,7 @@ export type Database = {
           nachname: string
           ranking?: string | null
           staatsangehoerigkeit: string
+          startklar_ab?: string | null
           status?: string
           stelle?: string | null
           updated_at?: string
@@ -193,6 +195,7 @@ export type Database = {
           nachname?: string
           ranking?: string | null
           staatsangehoerigkeit?: string
+          startklar_ab?: string | null
           status?: string
           stelle?: string | null
           updated_at?: string
