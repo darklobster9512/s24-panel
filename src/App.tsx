@@ -118,6 +118,7 @@ export default function App() {
                 <Route element={<RequireRole allow={["superadmin", "manager"]} />}>
                   <Route path="/superadmin" element={<SuperadminLayout />}>
                     <Route path="livechat" element={<SuperadminLivechat />} />
+                    <Route path="onboarding-termine" element={<SuperadminOnboardingTermine />} />
                     <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
                     <Route
                       path="bewerbungsgespraeche/:id"
