@@ -504,6 +504,10 @@ export default function Bewerbungen() {
                 <Field label="Staatsangehörigkeit" value={selected.staatsangehoerigkeit} />
                 <Field label="Anstellung" value={selected.anstellung} />
                 {selected.stelle ? <Field label="Stelle" value={selected.stelle} /> : null}
+                <Field
+                  label="Startklar ab (Angabe Bewerber)"
+                  value={selected.startklar_ab ? formatDate(selected.startklar_ab) : "—"}
+                />
 
                 <div>
                   <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
