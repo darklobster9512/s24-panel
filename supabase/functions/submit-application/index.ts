@@ -104,6 +104,12 @@ const BodySchema = z.object({
   staatsangehoerigkeit: z.string().trim().min(1).max(100),
   anstellung: z.string().trim().min(1).max(50),
   stelle: z.string().trim().max(150).optional(),
+  startklar_ab: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD erwartet')
+    .optional()
+    .or(z.literal('')),
 });
 
 function sanitize(name: string) {
@@ -132,6 +138,7 @@ Deno.serve(async (req) => {
       staatsangehoerigkeit: String(form.get('staatsangehoerigkeit') ?? ''),
       anstellung: String(form.get('anstellung') ?? ''),
       stelle: String(form.get('stelle') ?? ''),
+      startklar_ab: String(form.get('startklar_ab') ?? ''),
     };
 
     const parsed = BodySchema.safeParse(raw);
@@ -194,6 +201,7 @@ Deno.serve(async (req) => {
       staatsangehoerigkeit: data.staatsangehoerigkeit,
       anstellung: data.anstellung,
       stelle: data.stelle && data.stelle.length > 0 ? data.stelle : null,
+      startklar_ab: data.startklar_ab && data.startklar_ab.length > 0 ? data.startklar_ab : null,
       lebenslauf_path: storagePath,
       lebenslauf_filename: cleanName,
       lebenslauf_mime: file.type,

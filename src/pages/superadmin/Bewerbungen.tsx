@@ -38,6 +38,7 @@ type Application = {
   staatsangehoerigkeit: string;
   anstellung: string;
   stelle: string | null;
+  startklar_ab: string | null;
   lebenslauf_path: string | null;
   lebenslauf_filename: string | null;
   lebenslauf_mime: string | null;
@@ -371,19 +372,21 @@ export default function Bewerbungen() {
         </div>
 
         <div className="divide-y divide-border/60">
-          <div className="grid grid-cols-[160px_1fr_160px_1fr_140px_140px_110px_140px_120px_150px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-[160px_1fr_160px_1fr_140px_140px_120px_110px_140px_120px_150px_100px] gap-4 pb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <span>Eingegangen</span>
             <span>Name</span>
             <span>E-Mail</span>
             <span>Telefon</span>
             <span>Anstellung</span>
             <span>Stelle</span>
+            <span>Startklar</span>
             <span>Geburtsdatum</span>
             <span>Staatsang.</span>
             <span>Status</span>
             <span>Ranking</span>
             <span>Lebenslauf</span>
           </div>
+
 
           {loading ? (
             <div className="py-10 text-center text-sm text-muted-foreground">Lade Bewerbungen…</div>
@@ -395,7 +398,7 @@ export default function Bewerbungen() {
             paged.map((r) => (
               <div
                 key={r.id}
-                className="grid grid-cols-[160px_1fr_160px_1fr_140px_140px_110px_140px_120px_150px_100px] items-center gap-4 py-3 text-sm cursor-pointer hover:bg-accent/40 rounded-md px-2 -mx-2 transition-colors"
+                className="grid grid-cols-[160px_1fr_160px_1fr_140px_140px_120px_110px_140px_120px_150px_100px] items-center gap-4 py-3 text-sm cursor-pointer hover:bg-accent/40 rounded-md px-2 -mx-2 transition-colors"
                 onClick={() => setSelected(r)}
               >
                 <span className="font-mono text-xs text-muted-foreground">
@@ -408,6 +411,9 @@ export default function Bewerbungen() {
                 <span className="truncate font-mono text-xs">{r.handynummer}</span>
                 <span className="truncate capitalize text-muted-foreground">{r.anstellung}</span>
                 <span className="truncate text-muted-foreground">{r.stelle || "—"}</span>
+                <span className="truncate text-muted-foreground">
+                  {r.startklar_ab ? formatDate(r.startklar_ab) : "—"}
+                </span>
                 <span className="truncate text-muted-foreground">{r.geburtsdatum ? formatDate(r.geburtsdatum) : "—"}</span>
                 <span className="truncate text-muted-foreground">{r.staatsangehoerigkeit}</span>
                 <Badge variant={statusVariant(r.status)} className="w-fit">
@@ -498,6 +504,10 @@ export default function Bewerbungen() {
                 <Field label="Staatsangehörigkeit" value={selected.staatsangehoerigkeit} />
                 <Field label="Anstellung" value={selected.anstellung} />
                 {selected.stelle ? <Field label="Stelle" value={selected.stelle} /> : null}
+                <Field
+                  label="Startklar ab (Angabe Bewerber)"
+                  value={selected.startklar_ab ? formatDate(selected.startklar_ab) : "—"}
+                />
 
                 <div>
                   <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
