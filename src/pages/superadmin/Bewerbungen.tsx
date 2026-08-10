@@ -38,6 +38,7 @@ type Application = {
   staatsangehoerigkeit: string;
   anstellung: string;
   stelle: string | null;
+  startklar_ab: string | null;
   lebenslauf_path: string | null;
   lebenslauf_filename: string | null;
   lebenslauf_mime: string | null;
