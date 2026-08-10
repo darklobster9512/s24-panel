@@ -260,7 +260,9 @@ export function SuperadminSidebar() {
           renderGroup(
             "Betrieb",
             opsItems(newApplicationsCount, interviewsTodayCount, onboardingTodayCount).filter(
-              (i) => i.url === "/superadmin/bewerbungsgespraeche",
+              (i) =>
+                i.url === "/superadmin/bewerbungsgespraeche" ||
+                i.url === "/superadmin/onboarding-termine",
             ).concat(chatItems(chatUnread)),
           )
         ) : (

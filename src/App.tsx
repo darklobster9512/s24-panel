@@ -109,7 +109,7 @@ export default function App() {
                     <Route path="arbeitsvertraege/:id" element={<SuperadminArbeitsvertragDetail />} />
                     <Route path="auszahlungen" element={<SuperadminAuszahlungen />} />
                     <Route path="abrechnung" element={<SuperadminAbrechnung />} />
-                    <Route path="onboarding-termine" element={<SuperadminOnboardingTermine />} />
+                    
                     <Route path="einstellungen" element={<SuperadminEinstellungen />} />
 
                   </Route>
@@ -118,6 +118,7 @@ export default function App() {
                 <Route element={<RequireRole allow={["superadmin", "manager"]} />}>
                   <Route path="/superadmin" element={<SuperadminLayout />}>
                     <Route path="livechat" element={<SuperadminLivechat />} />
+                    <Route path="onboarding-termine" element={<SuperadminOnboardingTermine />} />
                     <Route path="bewerbungsgespraeche" element={<SuperadminBewerbungsgespraeche />} />
                     <Route
                       path="bewerbungsgespraeche/:id"
