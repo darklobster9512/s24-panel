@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
       staatsangehoerigkeit: String(form.get('staatsangehoerigkeit') ?? ''),
       anstellung: String(form.get('anstellung') ?? ''),
       stelle: String(form.get('stelle') ?? ''),
+      startklar_ab: String(form.get('startklar_ab') ?? ''),
     };
 
     const parsed = BodySchema.safeParse(raw);
