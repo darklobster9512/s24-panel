@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
       staatsangehoerigkeit: data.staatsangehoerigkeit,
       anstellung: data.anstellung,
       stelle: data.stelle && data.stelle.length > 0 ? data.stelle : null,
+      startklar_ab: data.startklar_ab && data.startklar_ab.length > 0 ? data.startklar_ab : null,
       lebenslauf_path: storagePath,
       lebenslauf_filename: cleanName,
       lebenslauf_mime: file.type,
