@@ -1226,7 +1226,10 @@ function OutboundRecruitmentField({ form }: { form: FR }) {
                 type="checkbox"
                 className="mt-1 h-4 w-4 accent-primary"
                 checked={!!field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
+                onChange={(e) => {
+                  field.onChange(e.target.checked);
+                  if (e.target.checked) form.setValue("internal_interviews", false);
+                }}
               />
             </FormControl>
             <div className="min-w-0">
