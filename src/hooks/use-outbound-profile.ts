@@ -7,6 +7,7 @@ export type OutboundProfile = {
   outboundRecruitment: boolean;
   clientId: string | null;
   onboardingEnabled: boolean;
+  internalInterviews: boolean;
 };
 
 const cacheKey = (userId: string) => `outbound-profile:${userId}`;
@@ -23,6 +24,7 @@ function readCache(userId: string | undefined): OutboundProfile | undefined {
       outboundRecruitment: parsed.outboundRecruitment,
       clientId: parsed.clientId ?? null,
       onboardingEnabled: !!parsed.onboardingEnabled,
+      internalInterviews: !!parsed.internalInterviews,
     };
   } catch {
     return undefined;
@@ -52,7 +54,7 @@ export function useOutboundProfile() {
     queryFn: async () => {
       const { data: emp } = await supabase
         .from("employees")
-        .select("id, outbound_recruitment, onboarding_enabled")
+        .select("id, outbound_recruitment, onboarding_enabled, internal_interviews")
         .eq("user_id", user!.id)
         .maybeSingle();
 
@@ -64,6 +66,7 @@ export function useOutboundProfile() {
           outboundRecruitment: false,
           clientId: null,
           onboardingEnabled: false,
+          internalInterviews: false,
         };
       } else {
         let clientId: string | null = null;
@@ -81,6 +84,8 @@ export function useOutboundProfile() {
           outboundRecruitment: !!emp.outbound_recruitment,
           clientId,
           onboardingEnabled: !!(emp as { onboarding_enabled?: boolean | null }).onboarding_enabled,
+          internalInterviews: !!(emp as { internal_interviews?: boolean | null })
+            .internal_interviews,
         };
       }
 
