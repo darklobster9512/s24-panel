@@ -102,7 +102,17 @@ export default function Bewerbungen() {
   const [selected, setSelected] = useState<Application | null>(null);
   const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [cvLoading, setCvLoading] = useState(false);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
+  const [docxError, setDocxError] = useState(false);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
+
+  const isDocx =
+    !!selected &&
+    (selected.lebenslauf_mime ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      !!selected.lebenslauf_filename?.toLowerCase().endsWith(".docx") ||
+      !!selected.lebenslauf_path?.toLowerCase().endsWith(".docx"));
 
   // Lebenslauf signed URL automatisch laden, wenn eine Bewerbung ausgewählt wird
   useEffect(() => {
@@ -128,6 +138,40 @@ export default function Bewerbungen() {
       cancelled = true;
     };
   }, [selected]);
+
+  // DOCX clientseitig zu HTML konvertieren
+  useEffect(() => {
+    setDocxHtml(null);
+    setDocxError(false);
+    if (!cvUrl || !isDocx) {
+      setDocxLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDocxLoading(true);
+    (async () => {
+      try {
+        const [{ default: mammoth }, { default: DOMPurify }] = await Promise.all([
+          import("mammoth/mammoth.browser"),
+          import("dompurify"),
+        ]);
+        const res = await fetch(cvUrl);
+        if (!res.ok) throw new Error("download failed");
+        const arrayBuffer = await res.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        if (cancelled) return;
+        setDocxHtml(DOMPurify.sanitize(result.value));
+      } catch {
+        if (!cancelled) setDocxError(true);
+      } finally {
+        if (!cancelled) setDocxLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cvUrl, isDocx]);
+
 
   useEffect(() => {
     let cancelled = false;
