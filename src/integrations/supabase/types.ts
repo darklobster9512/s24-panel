@@ -755,6 +755,7 @@ export type Database = {
           health_insurance: string | null
           iban: string | null
           id: string
+          internal_interviews: boolean
           is_draft: boolean
           last_name: string | null
           login_email: string | null
@@ -793,6 +794,7 @@ export type Database = {
           health_insurance?: string | null
           iban?: string | null
           id?: string
+          internal_interviews?: boolean
           is_draft?: boolean
           last_name?: string | null
           login_email?: string | null
@@ -831,6 +833,7 @@ export type Database = {
           health_insurance?: string | null
           iban?: string | null
           id?: string
+          internal_interviews?: boolean
           is_draft?: boolean
           last_name?: string | null
           login_email?: string | null
@@ -1236,6 +1239,7 @@ export type Database = {
           weekdays: number[]
         }[]
       }
+      has_internal_interviews: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
