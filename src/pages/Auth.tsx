@@ -8,6 +8,8 @@ import {
   Sparkles,
   ShieldCheck,
   Loader2,
+  Globe,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   supabase,
@@ -87,6 +89,7 @@ function BrandingPanel() {
       <div className="relative mt-10 space-y-6">
         <WaveAnimation />
         <FeatureRow />
+        <HomepageCard />
       </div>
     </div>
   );
@@ -131,6 +134,30 @@ function FeatureRow() {
         </div>
       ))}
     </div>
+  );
+}
+
+function HomepageCard() {
+  return (
+    <a
+      href="https://web.sekretariat24.app"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur transition-colors hover:border-primary/50 hover:bg-white/10"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+        <Globe className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-on-ink">
+          Unsere Startseite
+        </span>
+        <span className="block truncate text-xs text-white/60">
+          web.sekretariat24.app – mehr über Sekretariat24 erfahren
+        </span>
+      </span>
+      <ArrowUpRight className="h-4 w-4 shrink-0 text-white/50 transition-colors group-hover:text-primary" />
+    </a>
   );
 }
 
@@ -227,10 +254,10 @@ function LoginForm() {
       <p className="text-center text-xs text-muted-foreground">
         Probleme beim Anmelden?{" "}
         <a
-          href="mailto:info@sekretariat-24.de"
+          href="mailto:info@sekretariat24.app"
           className="font-medium text-primary hover:underline"
         >
-          info@sekretariat-24.de
+          info@sekretariat24.app
         </a>
       </p>
     </form>
