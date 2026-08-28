@@ -63,7 +63,13 @@ export function MitarbeiterSidebar() {
   const workItems = [
     ...workItemsBase,
     // Erst rendern, wenn der Modus bekannt ist (Cache oder Response) -> kein Umspringen
-    ...(outboundPending ? [] : [outbound?.outboundRecruitment ? interviewItem : liveItem]),
+    ...(outboundPending
+      ? []
+      : [
+          outbound?.outboundRecruitment || outbound?.internalInterviews
+            ? interviewItem
+            : liveItem,
+        ]),
     erfassenItem,
   ];
 

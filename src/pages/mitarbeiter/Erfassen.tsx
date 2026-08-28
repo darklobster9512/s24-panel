@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { fmtDauer } from "@/lib/mitarbeiter-mock";
 import RecruitmentErfassen from "./RecruitmentErfassen";
+import InterneErfassen from "./InterneErfassen";
 
 const KATEGORIEN = ["Rückruf", "Termin", "Info", "Beschwerde", "Weiterleitung"] as const;
 
@@ -37,6 +38,8 @@ function normalizePhone(v?: string | null): string {
 export default function Erfassen() {
   const [searchParams] = useSearchParams();
   const interviewId = searchParams.get("interview");
+  const terminId = searchParams.get("termin");
+  if (terminId) return <InterneErfassen terminId={terminId} />;
   if (interviewId) return <RecruitmentErfassen interviewId={interviewId} />;
   return <StandardErfassen />;
 }

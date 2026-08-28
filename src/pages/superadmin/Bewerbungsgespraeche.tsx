@@ -55,7 +55,7 @@ const STATUS_OPTIONS = [
   { value: "neu", label: "Offen" },
   { value: "erfolgreich", label: "Erfolgreich" },
   { value: "fehlgeschlagen", label: "Fehlgeschlagen" },
-  { value: "abgesagt", label: "Abgesagt" },
+  { value: "mailbox", label: "Mailbox" },
 ];
 
 const RANKING_OPTIONS = [
@@ -74,7 +74,7 @@ const RANKING_CLASSES: Record<string, string> = {
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "erfolgreich") return "default";
-  if (s === "fehlgeschlagen" || s === "abgesagt") return "destructive";
+  if (s === "fehlgeschlagen") return "destructive";
   return "secondary";
 }
 

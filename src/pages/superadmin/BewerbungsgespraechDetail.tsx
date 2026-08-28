@@ -65,7 +65,7 @@ const STATUS_OPTIONS = [
   { value: "neu", label: "Offen" },
   { value: "erfolgreich", label: "Erfolgreich" },
   { value: "fehlgeschlagen", label: "Fehlgeschlagen" },
-  { value: "abgesagt", label: "Abgesagt" },
+  { value: "mailbox", label: "Mailbox" },
 ];
 
 const RANKING_LABELS: Record<string, string> = {
@@ -86,7 +86,7 @@ const APP_STATUS_LABELS: Record<string, string> = {
 
 function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "erfolgreich") return "default";
-  if (s === "fehlgeschlagen" || s === "abgesagt") return "destructive";
+  if (s === "fehlgeschlagen") return "destructive";
   return "secondary";
 }
 
@@ -174,6 +174,7 @@ export default function BewerbungsgespraechDetail() {
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [cvUrl, setCvUrl] = useState<string | null>(null);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
   const [startInput, setStartInput] = useState("");
   const [startAsap, setStartAsap] = useState(false);
   const [savingStart, setSavingStart] = useState(false);
@@ -209,6 +210,24 @@ export default function BewerbungsgespraechDetail() {
           .from("applications")
           .createSignedUrl(path, 60 * 60);
         if (!cancelled) setCvUrl(signed?.signedUrl ?? null);
+
+        const isDocx =
+          path.toLowerCase().endsWith(".docx") ||
+          !!d?.applications?.lebenslauf_filename?.toLowerCase().endsWith(".docx");
+        if (!cancelled && isDocx && signed?.signedUrl) {
+          try {
+            const [{ default: mammoth }, { default: DOMPurify }] = await Promise.all([
+              import("mammoth/mammoth.browser"),
+              import("dompurify"),
+            ]);
+            const res = await fetch(signed.signedUrl);
+            const arrayBuffer = await res.arrayBuffer();
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            if (!cancelled) setDocxHtml(DOMPurify.sanitize(result.value));
+          } catch (e) {
+            console.warn("[BewerbungsgespraechDetail] DOCX-Vorschau fehlgeschlagen", e);
+          }
+        }
       }
     }
     if (id) load();
@@ -533,6 +552,11 @@ export default function BewerbungsgespraechDetail() {
               <div className="flex h-full min-h-[400px] items-center justify-center text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
+            ) : docxHtml ? (
+              <div
+                className="prose prose-sm h-full max-w-none overflow-auto bg-background p-6"
+                dangerouslySetInnerHTML={{ __html: docxHtml }}
+              />
             ) : mime?.startsWith("image/") ? (
               <div className="flex h-full min-h-[400px] items-center justify-center overflow-auto p-4">
                 <img

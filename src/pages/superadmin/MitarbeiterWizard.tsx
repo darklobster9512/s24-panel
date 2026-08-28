@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { ensureAigisAssignment } from "@/lib/internal-recruitment";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -67,6 +68,7 @@ const draftSchema = z.object({
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   outbound_recruitment: z.boolean().optional(),
   caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
+  internal_interviews: z.boolean().optional(),
   onboarding_enabled: z.boolean().optional(),
   phone_system: z.enum(["sipgate", "placetel"]).optional().or(z.literal("")),
   softphone_email: z.string().trim().max(200).optional().or(z.literal("")),
@@ -108,6 +110,7 @@ const fullSchema = z.object({
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   outbound_recruitment: z.boolean().optional(),
   caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
+  internal_interviews: z.boolean().optional(),
   onboarding_enabled: z.boolean().optional(),
   phone_system: z.enum(["sipgate", "placetel"]).optional().or(z.literal("")),
   softphone_email: z.string().trim().max(200).optional().or(z.literal("")),
@@ -154,6 +157,7 @@ const STEPS: StepDef[] = [
       "sipgate_user_id",
       "outbound_recruitment",
       "caller_api_key",
+      "internal_interviews",
       "onboarding_enabled",
       "phone_system",
       "softphone_email",
@@ -196,6 +200,7 @@ const DEFAULTS: FormValues = {
   sipgate_user_id: "",
   outbound_recruitment: false,
   caller_api_key: "",
+  internal_interviews: false,
   onboarding_enabled: false,
   phone_system: "" as FormValues["phone_system"],
   softphone_email: "",
@@ -263,6 +268,7 @@ function normalize(values: FormValues, isDraft: boolean) {
   delete out.contract_template_id;
   out.outbound_recruitment = !!values.outbound_recruitment;
   if (!out.outbound_recruitment) out.caller_api_key = null;
+  out.internal_interviews = !!values.internal_interviews;
   out.onboarding_enabled = !!values.onboarding_enabled;
   if (!out.onboarding_enabled) {
     out.phone_system = null;
@@ -365,6 +371,7 @@ export default function MitarbeiterWizard({
         sipgate_user_id: (d as { sipgate_user_id?: string | null }).sipgate_user_id ?? "",
         outbound_recruitment: !!(d as { outbound_recruitment?: boolean | null }).outbound_recruitment,
         caller_api_key: (d as { caller_api_key?: string | null }).caller_api_key ?? "",
+        internal_interviews: !!(d as { internal_interviews?: boolean | null }).internal_interviews,
         onboarding_enabled: !!(d as { onboarding_enabled?: boolean | null }).onboarding_enabled,
         phone_system:
           ((d as { phone_system?: string | null }).phone_system as "sipgate" | "placetel") ?? "",
@@ -524,6 +531,9 @@ export default function MitarbeiterWizard({
       // Sync arbeitsvertrag assignment
       if (employeeId) {
         await syncContractAssignment(employeeId, values);
+        if (values.internal_interviews) {
+          await ensureAigisAssignment(employeeId, user.id);
+        }
       }
 
       return { login_email, passwordChanged };
@@ -1155,9 +1165,49 @@ function StepAccount({
 
       <OutboundRecruitmentField form={form} />
 
+      <InternalInterviewsField form={form} />
+
       <OnboardingField form={form} />
 
       <ContractAssignField form={form} templates={templates} />
+    </div>
+  );
+}
+
+function InternalInterviewsField({ form }: { form: FR }) {
+  return (
+    <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <FormField
+        control={form.control}
+        name="internal_interviews"
+        render={({ field }) => (
+          <FormItem className="flex items-start gap-3 space-y-0">
+            <FormControl>
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={!!field.value}
+                onChange={(e) => {
+                  field.onChange(e.target.checked);
+                  if (e.target.checked) {
+                    form.setValue("outbound_recruitment", false);
+                    form.setValue("caller_api_key", "");
+                  }
+                }}
+              />
+            </FormControl>
+            <div className="min-w-0">
+              <FormLabel className="cursor-pointer text-sm font-medium">
+                Interne Bewerbungsgespräche
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Der Mitarbeiter sieht unsere eigenen Bewerbungsgespräche und führt diese im Panel
+                durch. Er wird automatisch dem aigis-one-Branding zugewiesen.
+              </p>
+            </div>
+          </FormItem>
+        )}
+      />
     </div>
   );
 }
@@ -1176,7 +1226,10 @@ function OutboundRecruitmentField({ form }: { form: FR }) {
                 type="checkbox"
                 className="mt-1 h-4 w-4 accent-primary"
                 checked={!!field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
+                onChange={(e) => {
+                  field.onChange(e.target.checked);
+                  if (e.target.checked) form.setValue("internal_interviews", false);
+                }}
               />
             </FormControl>
             <div className="min-w-0">
