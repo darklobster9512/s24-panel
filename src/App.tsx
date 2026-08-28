@@ -48,7 +48,7 @@ import MitarbeiterKundeDetail from "./pages/mitarbeiter/KundeDetail";
 import MitarbeiterLive from "./pages/mitarbeiter/LiveAnrufe";
 import MitarbeiterErfassen from "./pages/mitarbeiter/Erfassen";
 import MitarbeiterNotizen from "./pages/mitarbeiter/Notizen";
-import MitarbeiterBewerbungsgespraeche from "./pages/mitarbeiter/Bewerbungsgespraeche";
+import BewerbungsgespraecheRoute from "./pages/mitarbeiter/Bewerbungsgespraeche";
 
 import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
 import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
@@ -139,7 +139,7 @@ export default function App() {
                     <Route path="live" element={<MitarbeiterLive />} />
                     <Route path="erfassen" element={<MitarbeiterErfassen />} />
                     <Route path="notizen" element={<MitarbeiterNotizen />} />
-                    <Route path="bewerbungsgespraeche" element={<MitarbeiterBewerbungsgespraeche />} />
+                    <Route path="bewerbungsgespraeche" element={<BewerbungsgespraecheRoute />} />
                     
                     <Route path="statistik" element={<MitarbeiterStatistik />} />
                     <Route path="profil" element={<MitarbeiterProfil />} />
