@@ -77,7 +77,7 @@ export default function InterneBewerbungsgespraeche() {
         .select(
           "id, appointment_date, appointment_time, status, applications(vorname, nachname, email, handynummer, anstellung, stelle, ranking)",
         );
-      if (since) q = q.gte("booked_at", since);
+      if (since) q = q.gte("appointment_date", since.slice(0, 10));
       q =
         view === "upcoming"
           ? q
