@@ -55,7 +55,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const EMAIL_SUFFIX = "@sekretariat-24.de";
+const EMAIL_SUFFIX = "@sekretariat24.app";
 
 const draftSchema = z.object({
   first_name: z.string().trim().max(100).optional().or(z.literal("")),
@@ -1042,7 +1042,7 @@ function StepAccount({
                   className="border-0 focus-visible:ring-0"
                 />
                 <span className="flex items-center whitespace-nowrap border-l border-input bg-muted px-3 text-sm text-muted-foreground">
-                  @sekretariat-24.de
+                  @sekretariat24.app
                 </span>
               </div>
             </FormControl>

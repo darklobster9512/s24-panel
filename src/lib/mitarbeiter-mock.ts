@@ -48,7 +48,7 @@ export interface MockNote {
 export const CURRENT_EMPLOYEE = {
   id: "emp-1",
   name: "Sofia Weber",
-  loginEmail: "sofia@sekretariat-24.de",
+  loginEmail: "sofia@sekretariat24.app",
   contractType: "Vollzeit",
   startDate: "2025-03-01",
 };

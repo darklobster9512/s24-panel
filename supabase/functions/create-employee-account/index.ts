@@ -100,7 +100,7 @@ async function sendWelcomeEmail(
 
 const BodySchema = z.object({
   employee_id: z.string().uuid(),
-  login_email: z.string().email().endsWith("@sekretariat-24.de"),
+  login_email: z.string().email().endsWith("@sekretariat24.app"),
   password: z.string().min(6).max(128),
 });
 
