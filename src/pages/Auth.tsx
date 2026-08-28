@@ -8,6 +8,8 @@ import {
   Sparkles,
   ShieldCheck,
   Loader2,
+  Globe,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   supabase,
