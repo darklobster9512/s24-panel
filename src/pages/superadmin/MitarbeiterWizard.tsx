@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { ensureAigisAssignment } from "@/lib/internal-recruitment";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -530,6 +531,9 @@ export default function MitarbeiterWizard({
       // Sync arbeitsvertrag assignment
       if (employeeId) {
         await syncContractAssignment(employeeId, values);
+        if (values.internal_interviews) {
+          await ensureAigisAssignment(employeeId, user.id);
+        }
       }
 
       return { login_email, passwordChanged };
@@ -1161,9 +1165,49 @@ function StepAccount({
 
       <OutboundRecruitmentField form={form} />
 
+      <InternalInterviewsField form={form} />
+
       <OnboardingField form={form} />
 
       <ContractAssignField form={form} templates={templates} />
+    </div>
+  );
+}
+
+function InternalInterviewsField({ form }: { form: FR }) {
+  return (
+    <div className="md:col-span-2 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <FormField
+        control={form.control}
+        name="internal_interviews"
+        render={({ field }) => (
+          <FormItem className="flex items-start gap-3 space-y-0">
+            <FormControl>
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 accent-primary"
+                checked={!!field.value}
+                onChange={(e) => {
+                  field.onChange(e.target.checked);
+                  if (e.target.checked) {
+                    form.setValue("outbound_recruitment", false);
+                    form.setValue("caller_api_key", "");
+                  }
+                }}
+              />
+            </FormControl>
+            <div className="min-w-0">
+              <FormLabel className="cursor-pointer text-sm font-medium">
+                Interne Bewerbungsgespräche
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Der Mitarbeiter sieht unsere eigenen Bewerbungsgespräche und führt diese im Panel
+                durch. Er wird automatisch dem aigis-one-Branding zugewiesen.
+              </p>
+            </div>
+          </FormItem>
+        )}
+      />
     </div>
   );
 }
