@@ -100,8 +100,34 @@ export default function Bewerbungen() {
   const [rankingFilter, setRankingFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Application | null>(null);
-  const [preview, setPreview] = useState<{ url: string; name: string; mime: string | null } | null>(null);
+  const [cvUrl, setCvUrl] = useState<string | null>(null);
+  const [cvLoading, setCvLoading] = useState(false);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
+
+  // Lebenslauf signed URL automatisch laden, wenn eine Bewerbung ausgewählt wird
+  useEffect(() => {
+    if (!selected || !selected.lebenslauf_path) {
+      setCvUrl(null);
+      return;
+    }
+    let cancelled = false;
+    setCvLoading(true);
+    (async () => {
+      const { data, error } = await supabase.storage
+        .from("applications")
+        .createSignedUrl(selected.lebenslauf_path!, 60 * 10);
+      if (cancelled) return;
+      if (error || !data?.signedUrl) {
+        setCvUrl(null);
+      } else {
+        setCvUrl(data.signedUrl);
+      }
+      setCvLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
 
   useEffect(() => {
     let cancelled = false;
