@@ -242,24 +242,6 @@ export default function Bewerbungen() {
   }
 
 
-  async function openLebenslauf(row: Application) {
-    if (!row.lebenslauf_path) {
-      toast.error("Keine Datei vorhanden");
-      return;
-    }
-    const { data, error } = await supabase.storage
-      .from("applications")
-      .createSignedUrl(row.lebenslauf_path, 60 * 10);
-    if (error || !data?.signedUrl) {
-      toast.error("Datei konnte nicht geladen werden");
-      return;
-    }
-    setPreview({
-      url: data.signedUrl,
-      name: row.lebenslauf_filename || `${row.vorname}_${row.nachname}_Lebenslauf`,
-      mime: row.lebenslauf_mime,
-    });
-  }
 
   async function deleteRow(row: Application) {
     if (!confirm(`Bewerbung von ${row.vorname} ${row.nachname} wirklich löschen?`)) return;
