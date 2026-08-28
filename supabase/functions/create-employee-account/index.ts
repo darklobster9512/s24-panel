@@ -3,7 +3,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
 import { renderApplicationEmailHtml, renderTemplate } from "./email.ts";
 
-const PORTAL_URL = "https://app.sekretariat-24.de";
+const PORTAL_URL = "https://sekretariat24.app";
 
 const WELCOME_STEPS = [
   { title: "Einloggen", body: "Melde dich mit den Zugangsdaten oben im Mitarbeiter-Portal an." },

@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const TELEGRAM_API = 'https://api.telegram.org';
-const PORTAL = 'https://app.sekretariat-24.de';
+const PORTAL = 'https://sekretariat24.app';
 
 function esc(v: unknown) {
   return String(v ?? '')
