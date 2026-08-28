@@ -564,7 +564,33 @@ export default function Bewerbungen() {
                       <FileText className="h-10 w-10 opacity-40" />
                       <div>Datei konnte nicht geladen werden.</div>
                     </div>
+                  ) : isDocx ? (
+                    docxLoading ? (
+                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Word-Dokument wird geladen…
+                      </div>
+                    ) : docxHtml && !docxError ? (
+                      <div className="h-full overflow-y-auto p-6">
+                        <div
+                          className="prose prose-sm dark:prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: docxHtml }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted-foreground">
+                        <FileText className="h-10 w-10" />
+                        <div>Word-Vorschau nicht möglich.</div>
+                        <Button asChild variant="outline">
+                          <a href={cvUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            In neuem Tab öffnen
+                          </a>
+                        </Button>
+                      </div>
+                    )
                   ) : selected.lebenslauf_mime?.startsWith("image/") ? (
+
                     <div className="flex h-full items-center justify-center overflow-auto p-4">
                       <img
                         src={cvUrl}
