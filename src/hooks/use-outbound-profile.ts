@@ -8,6 +8,7 @@ export type OutboundProfile = {
   clientId: string | null;
   onboardingEnabled: boolean;
   internalInterviews: boolean;
+  internalInterviewsSince: string | null;
 };
 
 const cacheKey = (userId: string) => `outbound-profile:${userId}`;
@@ -25,6 +26,7 @@ function readCache(userId: string | undefined): OutboundProfile | undefined {
       clientId: parsed.clientId ?? null,
       onboardingEnabled: !!parsed.onboardingEnabled,
       internalInterviews: !!parsed.internalInterviews,
+      internalInterviewsSince: parsed.internalInterviewsSince ?? null,
     };
   } catch {
     return undefined;
