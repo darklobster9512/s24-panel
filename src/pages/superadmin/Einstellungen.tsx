@@ -110,7 +110,7 @@ export default function Einstellungen() {
     voller_name: "Max Mustermann",
     login_email: "m.mustermann@sekretariat-24.de",
     passwort: "Bx7-tR29-qLm4",
-    portal_url: "https://app.sekretariat-24.de",
+    portal_url: "https://sekretariat24.app",
   };
 
 

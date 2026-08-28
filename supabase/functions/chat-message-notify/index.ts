@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const TELEGRAM_API = 'https://api.telegram.org';
-const PORTAL = 'https://app.sekretariat-24.de';
+const PORTAL = 'https://sekretariat24.app';
 const DIVIDER = '━━━━━━━━━━━━━━━━━━';
 
 function esc(v: unknown) {

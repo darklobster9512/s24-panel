@@ -302,7 +302,7 @@ export default function Bewerbungen() {
       setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, booking_token: token } : r)));
       if (selected?.id === row.id) setSelected({ ...selected, booking_token: token });
     }
-    const url = `https://app.sekretariat-24.de/bewerbungsgespraech/${token}`;
+    const url = `https://sekretariat24.app/bewerbungsgespraech/${token}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Termin-Link kopiert");
