@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const bookingUrl = `https://app.sekretariat-24.de/bewerbungsgespraech/${token}`;
+    const bookingUrl = `https://sekretariat24.app/bewerbungsgespraech/${token}`;
 
     const vars: Record<string, string> = {
       vorname: app.vorname,

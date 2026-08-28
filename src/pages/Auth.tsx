@@ -87,6 +87,7 @@ function BrandingPanel() {
       <div className="relative mt-10 space-y-6">
         <WaveAnimation />
         <FeatureRow />
+        <HomepageCard />
       </div>
     </div>
   );
@@ -227,10 +228,10 @@ function LoginForm() {
       <p className="text-center text-xs text-muted-foreground">
         Probleme beim Anmelden?{" "}
         <a
-          href="mailto:info@sekretariat-24.de"
+          href="mailto:info@sekretariat24.app"
           className="font-medium text-primary hover:underline"
         >
-          info@sekretariat-24.de
+          info@sekretariat24.app
         </a>
       </p>
     </form>
