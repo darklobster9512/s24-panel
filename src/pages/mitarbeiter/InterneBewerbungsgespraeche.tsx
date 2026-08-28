@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { INTERVIEW_STATUS_OPTIONS, RANKING_OPTIONS } from "@/lib/internal-recruitment";
+import { useOutboundProfile } from "@/hooks/use-outbound-profile";
 
 type Row = {
   id: string;
@@ -62,9 +63,11 @@ export default function InterneBewerbungsgespraeche() {
   const navigate = useNavigate();
   const [view, setView] = useState<"upcoming" | "past">("upcoming");
   const [search, setSearch] = useState("");
+  const { data: profile } = useOutboundProfile();
+  const since = profile?.internalInterviewsSince ?? null;
 
   const query = useQuery({
-    queryKey: ["intern-interviews", view],
+    queryKey: ["intern-interviews", view, since],
     staleTime: 30_000,
     refetchOnWindowFocus: true,
     queryFn: async () => {
@@ -74,6 +77,7 @@ export default function InterneBewerbungsgespraeche() {
         .select(
           "id, appointment_date, appointment_time, status, applications(vorname, nachname, email, handynummer, anstellung, stelle, ranking)",
         );
+      if (since) q = q.gte("booked_at", since);
       q =
         view === "upcoming"
           ? q
