@@ -443,7 +443,7 @@ export default function Bewerbungen() {
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
-                    openLebenslauf(r);
+                    setSelected(r);
                   }}
                   disabled={!r.lebenslauf_path}
                   className="h-7"
