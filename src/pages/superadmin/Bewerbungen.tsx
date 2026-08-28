@@ -486,148 +486,173 @@ export default function Bewerbungen() {
       </Panel>
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-5xl overflow-hidden p-0">
           {selected && (
-            <>
-              <SheetHeader>
-                <SheetTitle>
-                  {selected.vorname} {selected.nachname}
-                </SheetTitle>
-                <SheetDescription>
-                  Eingegangen am {formatDateTime(selected.created_at)}
-                </SheetDescription>
-              </SheetHeader>
-
-              <div className="mt-6 space-y-4 text-sm">
-                <Field label="E-Mail" value={selected.email} />
-                <Field label="Handynummer" value={selected.handynummer} />
-                <Field label="Geburtsdatum" value={formatDate(selected.geburtsdatum)} />
-                <Field label="Staatsangehörigkeit" value={selected.staatsangehoerigkeit} />
-                <Field label="Anstellung" value={selected.anstellung} />
-                {selected.stelle ? <Field label="Stelle" value={selected.stelle} /> : null}
-                <Field
-                  label="Startklar ab (Angabe Bewerber)"
-                  value={selected.startklar_ab ? formatDate(selected.startklar_ab) : "—"}
-                />
-
-                <div>
-                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Status
-                  </div>
-                  <Select
-                    value={selected.status}
-                    onValueChange={(v) => updateStatus(selected.id, v)}
-                  >
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <div className="flex h-full flex-col sm:flex-row">
+              {/* Lebenslauf-Vorschau (links) */}
+              <div className="flex min-h-0 flex-1 flex-col border-b border-border/60 bg-muted/30 sm:border-b-0 sm:border-r">
+                <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Lebenslauf
+                  </span>
+                  {cvUrl && (
+                    <Button asChild size="sm" variant="ghost" className="h-7">
+                      <a href={cvUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                        Extern
+                      </a>
+                    </Button>
+                  )}
                 </div>
-
-                <div>
-                  <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Ranking
-                  </div>
-                  <Select
-                    value={selected.ranking ?? "none"}
-                    onValueChange={(v) => updateRanking(selected.id, v)}
-                  >
-                    <SelectTrigger
-                      className={`h-9 ${selected.ranking ? RANKING_CLASSES[selected.ranking] ?? "" : ""}`}
-                    >
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">—</SelectItem>
-                      {RANKING_OPTIONS.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-
-                <div className="pt-2 flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => sendInvite(selected)}
-                    disabled={inviteLoading === selected.id}
-                  >
-                    <Mail className="mr-2 h-4 w-4" />
-                    {inviteLoading === selected.id
-                      ? "Sende…"
-                      : selected.status === "bewerbungsgespraech" || selected.status === "termin_gebucht"
-                        ? "Termin-Link erneut senden"
-                        : "Genehmigen & Termin-Link senden"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => copyBookingLink(selected)}
-                    disabled={!selected.booking_token}
-                  >
-                    <Copy className="mr-2 h-4 w-4" />
-                    Termin-Link kopieren
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => openLebenslauf(selected)}
-                    disabled={!selected.lebenslauf_path}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Lebenslauf öffnen
-                  </Button>
-                  <Button variant="destructive" onClick={() => deleteRow(selected)}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Löschen
-                  </Button>
+                <div className="min-h-0 flex-1">
+                  {cvLoading ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Lade Lebenslauf…
+                    </div>
+                  ) : !selected.lebenslauf_path ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+                      <FileText className="h-10 w-10 opacity-40" />
+                      Kein Lebenslauf hochgeladen.
+                    </div>
+                  ) : !cvUrl ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted-foreground">
+                      <FileText className="h-10 w-10 opacity-40" />
+                      <div>Datei konnte nicht geladen werden.</div>
+                    </div>
+                  ) : selected.lebenslauf_mime?.startsWith("image/") ? (
+                    <div className="flex h-full items-center justify-center overflow-auto p-4">
+                      <img
+                        src={cvUrl}
+                        alt={selected.lebenslauf_filename || "Lebenslauf"}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  ) : selected.lebenslauf_mime &&
+                    !selected.lebenslauf_mime.includes("pdf") ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted-foreground">
+                      <FileText className="h-10 w-10" />
+                      <div>Vorschau für diesen Dateityp nicht möglich.</div>
+                      <Button asChild variant="outline">
+                        <a href={cvUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          In neuem Tab öffnen
+                        </a>
+                      </Button>
+                    </div>
+                  ) : (
+                    <iframe
+                      src={cvUrl}
+                      title={selected.lebenslauf_filename || "Lebenslauf"}
+                      className="h-full w-full border-0"
+                    />
+                  )}
                 </div>
               </div>
-            </>
+
+              {/* Info-Felder & Aktionen (rechts) */}
+              <div className="flex w-full flex-col overflow-y-auto sm:w-[420px] sm:flex-shrink-0">
+                <div className="p-6 pb-4">
+                  <SheetHeader className="text-left">
+                    <SheetTitle>
+                      {selected.vorname} {selected.nachname}
+                    </SheetTitle>
+                    <SheetDescription>
+                      Eingegangen am {formatDateTime(selected.created_at)}
+                    </SheetDescription>
+                  </SheetHeader>
+                </div>
+
+                <div className="space-y-4 px-6 pb-6 text-sm">
+                  <Field label="E-Mail" value={selected.email} />
+                  <Field label="Handynummer" value={selected.handynummer} />
+                  <Field label="Geburtsdatum" value={formatDate(selected.geburtsdatum)} />
+                  <Field label="Staatsangehörigkeit" value={selected.staatsangehoerigkeit} />
+                  <Field label="Anstellung" value={selected.anstellung} />
+                  {selected.stelle ? <Field label="Stelle" value={selected.stelle} /> : null}
+                  <Field
+                    label="Startklar ab (Angabe Bewerber)"
+                    value={selected.startklar_ab ? formatDate(selected.startklar_ab) : "—"}
+                  />
+
+                  <div>
+                    <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Status
+                    </div>
+                    <Select
+                      value={selected.status}
+                      onValueChange={(v) => updateStatus(selected.id, v)}
+                    >
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Ranking
+                    </div>
+                    <Select
+                      value={selected.ranking ?? "none"}
+                      onValueChange={(v) => updateRanking(selected.id, v)}
+                    >
+                      <SelectTrigger
+                        className={`h-9 ${selected.ranking ? RANKING_CLASSES[selected.ranking] ?? "" : ""}`}
+                      >
+                        <SelectValue placeholder="—" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">—</SelectItem>
+                        {RANKING_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="pt-2 flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => sendInvite(selected)}
+                      disabled={inviteLoading === selected.id}
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      {inviteLoading === selected.id
+                        ? "Sende…"
+                        : selected.status === "bewerbungsgespraech" || selected.status === "termin_gebucht"
+                          ? "Termin-Link erneut senden"
+                          : "Genehmigen & Termin-Link senden"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => copyBookingLink(selected)}
+                      disabled={!selected.booking_token}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Termin-Link kopieren
+                    </Button>
+                    {cvUrl && (
+                      <Button asChild variant="outline">
+                        <a href={cvUrl} target="_blank" rel="noopener noreferrer">
+                          <Download className="mr-2 h-4 w-4" />
+                          Lebenslauf öffnen
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="destructive" onClick={() => deleteRow(selected)}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Löschen
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </SheetContent>
       </Sheet>
-
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-5xl w-[95vw] h-[85vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle className="truncate">{preview?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 bg-muted/30">
-            {preview && (
-              preview.mime && !preview.mime.includes("pdf") && !preview.mime.startsWith("image/") ? (
-                <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-sm text-muted-foreground">
-                  <FileText className="h-10 w-10" />
-                  <div>Vorschau für diesen Dateityp nicht möglich.</div>
-                  <Button asChild variant="outline">
-                    <a href={preview.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      In neuem Tab öffnen
-                    </a>
-                  </Button>
-                </div>
-              ) : preview.mime?.startsWith("image/") ? (
-                <div className="flex h-full items-center justify-center overflow-auto p-4">
-                  <img src={preview.url} alt={preview.name} className="max-h-full max-w-full object-contain" />
-                </div>
-              ) : (
-                <iframe src={preview.url} title={preview.name} className="h-full w-full border-0" />
-              )
-            )}
-          </div>
-          <DialogFooter className="px-6 py-3 border-t">
-            {preview && (
-              <Button asChild variant="outline">
-                <a href={preview.url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  In neuem Tab öffnen
-                </a>
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
