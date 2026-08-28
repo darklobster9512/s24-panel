@@ -48,7 +48,7 @@ import MitarbeiterKundeDetail from "./pages/mitarbeiter/KundeDetail";
 import MitarbeiterLive from "./pages/mitarbeiter/LiveAnrufe";
 import MitarbeiterErfassen from "./pages/mitarbeiter/Erfassen";
 import MitarbeiterNotizen from "./pages/mitarbeiter/Notizen";
-import BewerbungsgespraecheRoute from "./pages/mitarbeiter/Bewerbungsgespraeche";
+import BewerbungsgespraecheRoute from "./pages/mitarbeiter/BewerbungsgespraecheRoute";
 
 import MitarbeiterStatistik from "./pages/mitarbeiter/Statistik";
 import MitarbeiterProfil from "./pages/mitarbeiter/Profil";
