@@ -6,7 +6,7 @@ In `supabase/functions/send-interview-invite/index.ts` (Zeile 214) steht der Buc
 
 ```text
 Aktuell:  https://app.sekretariat-24.de/bewerbungsgespraech/{token}
-Neu:      https://app.sekretariat24.app/bewerbungsgespraech/{token}
+Neu:      https://sekretariat24.app/bewerbungsgespraech/{token}
 ```
 
 Die Edge Function wird anschließend neu deployed, damit zukünftige E-Mails den korrekten Link enthalten.
