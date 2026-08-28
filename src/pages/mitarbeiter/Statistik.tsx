@@ -336,7 +336,7 @@ export default function Statistik() {
           </div>
         </Panel>
 
-        <Panel title="Ø Gesprächsdauer (Sek)">
+        <Panel title="Ø Gesprächsdauer (Min)">
           <div className="h-64">
             {daily.length === 0 || daily.every((d) => d.avg === null) ? (
               <EmptyChart
