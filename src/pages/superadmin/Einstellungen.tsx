@@ -108,7 +108,7 @@ export default function Einstellungen() {
     vorname: "Max",
     nachname: "Mustermann",
     voller_name: "Max Mustermann",
-    login_email: "m.mustermann@sekretariat-24.de",
+    login_email: "m.mustermann@sekretariat24.app",
     passwort: "Bx7-tR29-qLm4",
     portal_url: "https://sekretariat24.app",
   };
@@ -224,7 +224,7 @@ export default function Einstellungen() {
             <div className="space-y-1.5">
               <Label>Absender-E-Mail</Label>
               <Input
-                placeholder="no-reply@sekretariat-24.de"
+                placeholder="no-reply@sekretariat24.app"
                 value={form.resend_from_email ?? ""}
                 onChange={(e) => set("resend_from_email", e.target.value)}
               />
