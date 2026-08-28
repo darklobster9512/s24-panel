@@ -17,14 +17,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Search, FileText, Download, Trash2, ExternalLink, Mail, Copy } from "lucide-react";
+import { Search, FileText, Download, Trash2, ExternalLink, Mail, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
