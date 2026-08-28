@@ -756,6 +756,7 @@ export type Database = {
           iban: string | null
           id: string
           internal_interviews: boolean
+          internal_interviews_since: string | null
           is_draft: boolean
           last_name: string | null
           login_email: string | null
@@ -795,6 +796,7 @@ export type Database = {
           iban?: string | null
           id?: string
           internal_interviews?: boolean
+          internal_interviews_since?: string | null
           is_draft?: boolean
           last_name?: string | null
           login_email?: string | null
@@ -834,6 +836,7 @@ export type Database = {
           iban?: string | null
           id?: string
           internal_interviews?: boolean
+          internal_interviews_since?: string | null
           is_draft?: boolean
           last_name?: string | null
           login_email?: string | null
@@ -1247,6 +1250,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      internal_interviews_since: { Args: never; Returns: string }
       is_client_assigned_to_me: {
         Args: { _client_id: string }
         Returns: boolean
