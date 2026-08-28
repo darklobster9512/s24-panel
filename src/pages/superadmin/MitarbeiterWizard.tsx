@@ -67,6 +67,7 @@ const draftSchema = z.object({
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   outbound_recruitment: z.boolean().optional(),
   caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
+  internal_interviews: z.boolean().optional(),
   onboarding_enabled: z.boolean().optional(),
   phone_system: z.enum(["sipgate", "placetel"]).optional().or(z.literal("")),
   softphone_email: z.string().trim().max(200).optional().or(z.literal("")),
@@ -108,6 +109,7 @@ const fullSchema = z.object({
   sipgate_user_id: z.string().trim().max(64).optional().or(z.literal("")),
   outbound_recruitment: z.boolean().optional(),
   caller_api_key: z.string().trim().max(200).optional().or(z.literal("")),
+  internal_interviews: z.boolean().optional(),
   onboarding_enabled: z.boolean().optional(),
   phone_system: z.enum(["sipgate", "placetel"]).optional().or(z.literal("")),
   softphone_email: z.string().trim().max(200).optional().or(z.literal("")),
@@ -154,6 +156,7 @@ const STEPS: StepDef[] = [
       "sipgate_user_id",
       "outbound_recruitment",
       "caller_api_key",
+      "internal_interviews",
       "onboarding_enabled",
       "phone_system",
       "softphone_email",
@@ -196,6 +199,7 @@ const DEFAULTS: FormValues = {
   sipgate_user_id: "",
   outbound_recruitment: false,
   caller_api_key: "",
+  internal_interviews: false,
   onboarding_enabled: false,
   phone_system: "" as FormValues["phone_system"],
   softphone_email: "",
@@ -263,6 +267,7 @@ function normalize(values: FormValues, isDraft: boolean) {
   delete out.contract_template_id;
   out.outbound_recruitment = !!values.outbound_recruitment;
   if (!out.outbound_recruitment) out.caller_api_key = null;
+  out.internal_interviews = !!values.internal_interviews;
   out.onboarding_enabled = !!values.onboarding_enabled;
   if (!out.onboarding_enabled) {
     out.phone_system = null;
@@ -365,6 +370,7 @@ export default function MitarbeiterWizard({
         sipgate_user_id: (d as { sipgate_user_id?: string | null }).sipgate_user_id ?? "",
         outbound_recruitment: !!(d as { outbound_recruitment?: boolean | null }).outbound_recruitment,
         caller_api_key: (d as { caller_api_key?: string | null }).caller_api_key ?? "",
+        internal_interviews: !!(d as { internal_interviews?: boolean | null }).internal_interviews,
         onboarding_enabled: !!(d as { onboarding_enabled?: boolean | null }).onboarding_enabled,
         phone_system:
           ((d as { phone_system?: string | null }).phone_system as "sipgate" | "placetel") ?? "",
