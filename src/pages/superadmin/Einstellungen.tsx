@@ -342,7 +342,7 @@ export default function Einstellungen() {
             </div>
 
             <div className="space-y-1.5 lg:col-span-2">
-              <Label>SMS-Text</Label>
+              <Label>SMS-Text Einladung</Label>
               <Textarea
                 rows={4}
                 value={form.sms_interview_text ?? ""}
@@ -355,6 +355,34 @@ export default function Einstellungen() {
               </p>
             </div>
 
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>SMS-Text Terminbestätigung</Label>
+              <Textarea
+                rows={3}
+                value={form.sms_confirmation_text ?? ""}
+                onChange={(e) => set("sms_confirmation_text", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird direkt nach der Terminbuchung gesendet. Platzhalter:{" "}
+                <code>{"{vorname}"}</code>, <code>{"{nachname}"}</code>,{" "}
+                <code>{"{unternehmen}"}</code>, <code>{"{datum}"}</code>, <code>{"{uhrzeit}"}</code>.
+              </p>
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>SMS-Text Erinnerung (1 Std. vorher)</Label>
+              <Textarea
+                rows={3}
+                value={form.sms_reminder_text ?? ""}
+                onChange={(e) => set("sms_reminder_text", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird automatisch eine Stunde vor dem Bewerbungsgespräch gesendet. Platzhalter:{" "}
+                <code>{"{vorname}"}</code>, <code>{"{nachname}"}</code>,{" "}
+                <code>{"{unternehmen}"}</code>, <code>{"{datum}"}</code>, <code>{"{uhrzeit}"}</code>.
+              </p>
+            </div>
+
             <div className="lg:col-span-2">
               <Button
                 size="sm"
@@ -364,6 +392,8 @@ export default function Einstellungen() {
                     seven_api_key: form.seven_api_key,
                     sms_sender_name: form.sms_sender_name,
                     sms_interview_text: form.sms_interview_text,
+                    sms_confirmation_text: form.sms_confirmation_text,
+                    sms_reminder_text: form.sms_reminder_text,
                   })
                 }
                 disabled={save.isPending}
@@ -371,6 +401,7 @@ export default function Einstellungen() {
                 Speichern
               </Button>
             </div>
+
           </div>
         </Panel>
 
