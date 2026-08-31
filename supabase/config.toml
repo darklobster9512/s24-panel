@@ -18,3 +18,7 @@ verify_jwt = false
 [functions.onboarding-reminder]
 verify_jwt = false
 
+[functions.interview-sms-reminder]
+verify_jwt = false
+
+
