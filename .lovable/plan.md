@@ -27,7 +27,14 @@ Datenbank (eine Migration):
 - Neue Spalten in `app_settings`: `sms_enabled`, `seven_api_key`, `sms_sender_name`, `sms_interview_text`.
 
 Edge Function:
-- `send-interview-invite` wird erweitert: nach erfolgreichem Mailversand Shortlink anlegen (6-stelliger Code, Kollisionsprüfung), SMS an `applications.handynummer` über `https://gateway.seven.io/api/sms` (Header `X-Api-Key`, Body `to`/`text`/`from`) senden, Nummer auf E.164 normalisieren (`0…` → `+49…`), Ergebnis in `sms_logs` schreiben und im Response als `sms: { ok, error }` zurückgeben. Der API-Key kommt aus `app_settings`, damit er wie gewünscht in den Einstellungen gepflegt wird.
+- `send-interview-invite` wird erweitert: nach erfolgreichem Mailversand Shortlink anlegen (6-stelliger Code, Kollisionsprüfung), SMS an `applications.handynummer` über `https://gateway.seven.io/api/sms` (Header `X-Api-Key`, Body `to`/`text`/`from`) senden, Ergebnis in `sms_logs` schreiben und im Response als `sms: { ok, error }` zurückgeben. Der API-Key kommt aus `app_settings`, damit er wie gewünscht in den Einstellungen gepflegt wird.
+
+Rufnummern-Formatierung (immer vor dem Versand):
+- Alle Leerzeichen, Bindestriche, Schrägstriche, Punkte und Klammern entfernen; führendes `+` merken.
+- `00…` → `+…`; `0…` (deutsche Schreibweise) → `+49` + Rest ohne führende 0; Nummer ohne Präfix, die mit `49` beginnt → `+49…`; bereits mit `+` beginnende Nummern bleiben.
+- Ergebnis muss `^\+[1-9]\d{7,14}$` (E.164) erfüllen; sonst wird keine SMS versendet, sondern ein Log-Eintrag mit Status `invalid_number` geschrieben und im Toast als Hinweis gemeldet (die E-Mail bleibt gültig).
+- An seven.io wird die Nummer ohne `+` im internationalen Format übergeben (z. B. `4915112345678`), wie es die API erwartet; die normalisierte Nummer wird zusätzlich in `sms_logs` gespeichert.
+
 
 Frontend:
 - Neue Route `/r/:code` mit einer schlanken Redirect-Seite, die `short_links` abfragt und per `window.location.href` weiterleitet.
