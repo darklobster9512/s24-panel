@@ -73,8 +73,10 @@ export type Database = {
           resend_from_name: string | null
           seven_api_key: string | null
           singleton: boolean
+          sms_confirmation_text: string | null
           sms_enabled: boolean
           sms_interview_text: string | null
+          sms_reminder_text: string | null
           sms_sender_name: string | null
           updated_at: string
           vat_id: string | null
@@ -107,8 +109,10 @@ export type Database = {
           resend_from_name?: string | null
           seven_api_key?: string | null
           singleton?: boolean
+          sms_confirmation_text?: string | null
           sms_enabled?: boolean
           sms_interview_text?: string | null
+          sms_reminder_text?: string | null
           sms_sender_name?: string | null
           updated_at?: string
           vat_id?: string | null
@@ -141,8 +145,10 @@ export type Database = {
           resend_from_name?: string | null
           seven_api_key?: string | null
           singleton?: boolean
+          sms_confirmation_text?: string | null
           sms_enabled?: boolean
           sms_interview_text?: string | null
+          sms_reminder_text?: string | null
           sms_sender_name?: string | null
           updated_at?: string
           vat_id?: string | null
@@ -885,6 +891,7 @@ export type Database = {
           id: string
           notes: string | null
           reminder_sent_at: string | null
+          sms_reminder_sent_at: string | null
           start_asap: boolean
           start_date: string | null
           status: string
@@ -899,6 +906,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reminder_sent_at?: string | null
+          sms_reminder_sent_at?: string | null
           start_asap?: boolean
           start_date?: string | null
           status?: string
@@ -913,6 +921,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reminder_sent_at?: string | null
+          sms_reminder_sent_at?: string | null
           start_asap?: boolean
           start_date?: string | null
           status?: string
