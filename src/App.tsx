@@ -81,6 +81,7 @@ export default function App() {
                 <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/bewerbungsgespraech/:token" element={<BewerbungsgespraechPublic />} />
+                <Route path="/r/:code" element={<ShortRedirect />} />
 
                 <Route element={<RequireRole allow={["superadmin"]} />}>
                   <Route path="/superadmin" element={<SuperadminLayout />}>
