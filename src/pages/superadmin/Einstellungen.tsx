@@ -40,6 +40,9 @@ type Settings = {
   seven_api_key: string | null;
   sms_sender_name: string | null;
   sms_interview_text: string | null;
+  sms_confirmation_text: string | null;
+  sms_reminder_text: string | null;
+
 
   interview_slot_start: string | null;
   interview_slot_end: string | null;
