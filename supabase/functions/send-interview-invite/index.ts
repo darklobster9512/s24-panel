@@ -1,6 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.23.8';
+import { sendSms, renderSmsTemplate } from '../_shared/sms.ts';
+
 
 // --- HTML mail renderer (mirror of src/lib/applicationEmail.ts) ---
 function escapeHtml(s: string) {
