@@ -26,6 +26,7 @@ import SuperadminOnboardingTermine from "./pages/superadmin/OnboardingTermine";
 
 import SuperadminBewerbungsgespraechDetail from "./pages/superadmin/BewerbungsgespraechDetail";
 const BewerbungsgespraechPublic = lazy(() => import("./pages/BewerbungsgespraechPublic"));
+const ShortRedirect = lazy(() => import("./pages/ShortRedirect"));
 
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
 import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageEditor";
