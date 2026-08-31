@@ -1,6 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.23.8';
+import { sendSms, renderSmsTemplate } from '../_shared/sms.ts';
+
 
 // --- HTML mail renderer (mirror of src/lib/applicationEmail.ts) ---
 function escapeHtml(s: string) {
@@ -102,27 +104,9 @@ ${address ? `<div>${address}</div>` : ''}
 }
 
 
-// --- Phone normalization (E.164, default country DE) ---
-export function normalizePhone(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  let s = String(raw).trim();
-  const hadPlus = s.startsWith('+');
-  s = s.replace(/[^\d]/g, '');
-  if (!s) return null;
-  let e164: string;
-  if (hadPlus) {
-    e164 = `+${s}`;
-  } else if (s.startsWith('00')) {
-    e164 = `+${s.slice(2)}`;
-  } else if (s.startsWith('0')) {
-    e164 = `+49${s.replace(/^0+/, '')}`;
-  } else if (s.startsWith('49')) {
-    e164 = `+${s}`;
-  } else {
-    e164 = `+49${s}`;
-  }
-  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null;
-}
+// --- Phone normalization (E.164, default country DE) — shared helper ---
+export { normalizePhone } from '../_shared/sms.ts';
+
 
 function randomCode(len = 6) {
   const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -233,95 +217,43 @@ Deno.serve(async (req) => {
 
     // --- SMS via seven.io (independent of the email) ---
     async function trySendSms(): Promise<{ ok: boolean; skipped?: string; error?: string }> {
-      try {
-        if (!settings?.sms_enabled) return { ok: false, skipped: 'disabled' };
-        if (!settings.seven_api_key) return { ok: false, skipped: 'not_configured' };
+      if (!settings?.sms_enabled) return { ok: false, skipped: 'disabled' };
+      if (!settings.seven_api_key) return { ok: false, skipped: 'not_configured' };
 
-        const to = normalizePhone(app.handynummer as string | null);
-        if (!to) {
-          await admin.from('sms_logs').insert({
-            application_id: app.id,
-            recipient: (app.handynummer as string | null) ?? '',
-            normalized_recipient: null,
-            message: '',
-            status: 'invalid_number',
-            error: 'Rufnummer konnte nicht in das internationale Format gebracht werden',
-          });
-          return { ok: false, error: 'invalid_number' };
+      // Short link
+      let code = '';
+      let targetOk = false;
+      for (let i = 0; i < 5; i++) {
+        code = randomCode(6);
+        const { error } = await admin.from('short_links').insert({ code, target_url: bookingUrl });
+        if (!error) {
+          targetOk = true;
+          break;
         }
-
-        // Short link
-        let code = '';
-        let targetOk = false;
-        for (let i = 0; i < 5; i++) {
-          code = randomCode(6);
-          const { error } = await admin
-            .from('short_links')
-            .insert({ code, target_url: bookingUrl });
-          if (!error) {
-            targetOk = true;
-            break;
-          }
-        }
-        const link = targetOk ? `https://sekretariat24.app/r/${code}` : bookingUrl;
-
-        const tpl =
-          settings.sms_interview_text ??
-          'Hallo {vorname}, danke fuer deine Bewerbung bei {unternehmen}. Buche dein Bewerbungsgespraech hier: {link}';
-        const message = tpl
-          .replace(/\{vorname\}/g, app.vorname ?? '')
-          .replace(/\{nachname\}/g, app.nachname ?? '')
-          .replace(/\{unternehmen\}/g, settings.company_name ?? 'Sekretariat24')
-          .replace(/\{link\}/g, link);
-
-        const sender = (settings.sms_sender_name ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 11);
-
-        const res = await fetch('https://gateway.seven.io/api/sms', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'X-Api-Key': settings.seven_api_key,
-          },
-          body: JSON.stringify({
-            to: to.replace(/^\+/, ''),
-            text: message,
-            ...(sender ? { from: sender } : {}),
-          }),
-        });
-        const raw = await res.text();
-        let success = res.ok;
-        let errorMsg: string | null = null;
-        try {
-          const j = JSON.parse(raw);
-          if (j && typeof j.success !== 'undefined') {
-            success = String(j.success) === '100';
-            if (!success) errorMsg = `seven code ${j.success}`;
-          }
-        } catch {
-          const codeNum = raw.trim().split('\n')[0];
-          if (/^\d+$/.test(codeNum)) {
-            success = codeNum === '100';
-            if (!success) errorMsg = `seven code ${codeNum}`;
-          }
-        }
-        if (!success && !errorMsg) errorMsg = raw.slice(0, 300);
-
-        await admin.from('sms_logs').insert({
-          application_id: app.id,
-          recipient: (app.handynummer as string | null) ?? '',
-          normalized_recipient: to,
-          message,
-          status: success ? 'sent' : 'failed',
-          error: success ? null : errorMsg,
-        });
-
-        return success ? { ok: true } : { ok: false, error: errorMsg ?? 'send_failed' };
-      } catch (e) {
-        console.error('sms failed', e);
-        return { ok: false, error: String(e) };
       }
+      const link = targetOk ? `https://sekretariat24.app/r/${code}` : bookingUrl;
+
+      const tpl =
+        settings.sms_interview_text ??
+        'Hallo {vorname}, danke fuer deine Bewerbung bei {unternehmen}. Buche dein Bewerbungsgespraech hier: {link}';
+      const message = renderSmsTemplate(tpl, {
+        vorname: app.vorname ?? '',
+        nachname: app.nachname ?? '',
+        unternehmen: settings.company_name ?? 'Sekretariat24',
+        link,
+      });
+
+      return await sendSms({
+        admin,
+        apiKey: settings.seven_api_key,
+        senderName: settings.sms_sender_name,
+        enabled: true,
+        rawPhone: app.handynummer as string | null,
+        message,
+        applicationId: app.id,
+      });
     }
+
 
     if (!settings?.interview_email_enabled) {
       const sms = await trySendSms();

@@ -1,5 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { sendSms, renderSmsTemplate, formatDateDeShort } from '../_shared/sms.ts';
+
 
 // --- HTML mail renderer (mirror of src/lib/applicationEmail.ts) ---
 function escapeHtml(s: string) {
@@ -257,9 +259,45 @@ Deno.serve(async (req) => {
       console.error('confirmation email error', mailErr);
     }
 
-    return new Response(JSON.stringify({ ok: true, email_sent: emailSent }), {
+    // --- Bestätigungs-SMS (darf die Buchung nie blockieren) ---
+    let sms: { ok: boolean; skipped?: string; error?: string } = { ok: false, skipped: 'no_appointment' };
+    try {
+      if (appt?.appointment_date) {
+        const { data: smsSettings } = await supabase
+          .from('app_settings')
+          .select('sms_enabled, seven_api_key, sms_sender_name, sms_confirmation_text, company_name')
+          .limit(1)
+          .maybeSingle();
+
+        const tpl = smsSettings?.sms_confirmation_text ??
+          'Hallo {vorname}, dein Bewerbungsgespräch bei {unternehmen} ist bestätigt: {datum} um {uhrzeit} Uhr. Bis dann!';
+        const message = renderSmsTemplate(tpl, {
+          vorname: app.vorname ?? '',
+          nachname: app.nachname ?? '',
+          unternehmen: smsSettings?.company_name ?? 'Sekretariat24',
+          datum: formatDateDeShort(String(appt.appointment_date)),
+          uhrzeit: String(appt.appointment_time ?? '').slice(0, 5),
+        });
+
+        sms = await sendSms({
+          admin: supabase,
+          apiKey: smsSettings?.seven_api_key,
+          senderName: smsSettings?.sms_sender_name,
+          enabled: smsSettings?.sms_enabled,
+          rawPhone: app.handynummer as string | null,
+          message,
+          applicationId: app.id,
+        });
+      }
+    } catch (smsErr) {
+      console.error('confirmation sms error', smsErr);
+      sms = { ok: false, error: String(smsErr) };
+    }
+
+    return new Response(JSON.stringify({ ok: true, email_sent: emailSent, sms }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (e) {
     console.error('interview-booked-notify error', e);
     return new Response(JSON.stringify({ error: String(e) }), {
