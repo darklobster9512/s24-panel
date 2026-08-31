@@ -64,6 +64,7 @@ export default function Einstellungen() {
 
   const [form, setForm] = useState<Settings | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const [showSevenKey, setShowSevenKey] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [interviewPreviewOpen, setInterviewPreviewOpen] = useState(false);
   const [confirmationPreviewOpen, setConfirmationPreviewOpen] = useState(false);
