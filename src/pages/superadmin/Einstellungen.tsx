@@ -36,6 +36,11 @@ type Settings = {
   welcome_email_subject: string | null;
   welcome_email_body: string | null;
 
+  sms_enabled: boolean;
+  seven_api_key: string | null;
+  sms_sender_name: string | null;
+  sms_interview_text: string | null;
+
   interview_slot_start: string | null;
   interview_slot_end: string | null;
   interview_slot_interval_minutes: number | null;
@@ -59,6 +64,7 @@ export default function Einstellungen() {
 
   const [form, setForm] = useState<Settings | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const [showSevenKey, setShowSevenKey] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [interviewPreviewOpen, setInterviewPreviewOpen] = useState(false);
   const [confirmationPreviewOpen, setConfirmationPreviewOpen] = useState(false);
@@ -286,6 +292,89 @@ export default function Einstellungen() {
             </div>
           </div>
         </Panel>
+
+        <Panel title="SMS · seven.io" className="lg:col-span-2">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="lg:col-span-2 flex items-center justify-between rounded-lg bg-surface px-3 py-2.5">
+              <div>
+                <div className="text-sm font-medium">SMS beim Annehmen einer Bewerbung</div>
+                <div className="text-xs text-muted-foreground">
+                  Sendet zusätzlich zur Einladungs-Mail eine SMS mit Shortlink an die Handynummer.
+                </div>
+              </div>
+              <Switch
+                checked={form.sms_enabled ?? false}
+                onCheckedChange={(v) => set("sms_enabled", v)}
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>seven.io API Key</Label>
+              <div className="flex gap-2">
+                <Input
+                  type={showSevenKey ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={form.seven_api_key ?? ""}
+                  onChange={(e) => set("seven_api_key", e.target.value)}
+                  className="font-mono"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowSevenKey((v) => !v)}
+                >
+                  {showSevenKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Absendername (max. 11 Zeichen)</Label>
+              <Input
+                maxLength={11}
+                placeholder="Sekretari24"
+                value={form.sms_sender_name ?? ""}
+                onChange={(e) =>
+                  set("sms_sender_name", e.target.value.replace(/[^A-Za-z0-9]/g, "").slice(0, 11))
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5 lg:col-span-2">
+              <Label>SMS-Text</Label>
+              <Textarea
+                rows={4}
+                value={form.sms_interview_text ?? ""}
+                onChange={(e) => set("sms_interview_text", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Platzhalter: <code>{"{vorname}"}</code>, <code>{"{nachname}"}</code>,{" "}
+                <code>{"{unternehmen}"}</code>, <code>{"{link}"}</code>. Handynummern werden
+                automatisch ins internationale Format (+49…) umgewandelt.
+              </p>
+            </div>
+
+            <div className="lg:col-span-2">
+              <Button
+                size="sm"
+                onClick={() =>
+                  save.mutate({
+                    sms_enabled: form.sms_enabled,
+                    seven_api_key: form.seven_api_key,
+                    sms_sender_name: form.sms_sender_name,
+                    sms_interview_text: form.sms_interview_text,
+                  })
+                }
+                disabled={save.isPending}
+              >
+                Speichern
+              </Button>
+            </div>
+          </div>
+        </Panel>
+
+
 
         <Panel title="Bewerbungsgespräch · Einladungs-Mail" className="lg:col-span-2">
           <div className="grid gap-4 lg:grid-cols-2">

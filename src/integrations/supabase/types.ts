@@ -71,7 +71,11 @@ export type Database = {
           resend_api_key: string | null
           resend_from_email: string | null
           resend_from_name: string | null
+          seven_api_key: string | null
           singleton: boolean
+          sms_enabled: boolean
+          sms_interview_text: string | null
+          sms_sender_name: string | null
           updated_at: string
           vat_id: string | null
           welcome_email_body: string | null
@@ -101,7 +105,11 @@ export type Database = {
           resend_api_key?: string | null
           resend_from_email?: string | null
           resend_from_name?: string | null
+          seven_api_key?: string | null
           singleton?: boolean
+          sms_enabled?: boolean
+          sms_interview_text?: string | null
+          sms_sender_name?: string | null
           updated_at?: string
           vat_id?: string | null
           welcome_email_body?: string | null
@@ -131,7 +139,11 @@ export type Database = {
           resend_api_key?: string | null
           resend_from_email?: string | null
           resend_from_name?: string | null
+          seven_api_key?: string | null
           singleton?: boolean
+          sms_enabled?: boolean
+          sms_interview_text?: string | null
+          sms_sender_name?: string | null
           updated_at?: string
           vat_id?: string | null
           welcome_email_body?: string | null
@@ -1065,6 +1077,27 @@ export type Database = {
         }
         Relationships: []
       }
+      short_links: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          target_url: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          target_url: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          target_url?: string
+        }
+        Relationships: []
+      }
       sipgate_calls: {
         Row: {
           answered_at: string | null
@@ -1140,6 +1173,47 @@ export type Database = {
             columns: ["handled_by_employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_logs: {
+        Row: {
+          application_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          message: string
+          normalized_recipient: string | null
+          recipient: string
+          status: string
+        }
+        Insert: {
+          application_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          message: string
+          normalized_recipient?: string | null
+          recipient: string
+          status?: string
+        }
+        Update: {
+          application_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          message?: string
+          normalized_recipient?: string | null
+          recipient?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
             referencedColumns: ["id"]
           },
         ]

@@ -26,6 +26,7 @@ import SuperadminOnboardingTermine from "./pages/superadmin/OnboardingTermine";
 
 import SuperadminBewerbungsgespraechDetail from "./pages/superadmin/BewerbungsgespraechDetail";
 const BewerbungsgespraechPublic = lazy(() => import("./pages/BewerbungsgespraechPublic"));
+const ShortRedirect = lazy(() => import("./pages/ShortRedirect"));
 
 import SuperadminVertraege from "./pages/superadmin/Vertraege";
 import SuperadminVertragsvorlageEditor from "./pages/superadmin/VertragsvorlageEditor";
@@ -81,6 +82,7 @@ export default function App() {
                 <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/bewerbungsgespraech/:token" element={<BewerbungsgespraechPublic />} />
+                <Route path="/r/:code" element={<ShortRedirect />} />
 
                 <Route element={<RequireRole allow={["superadmin"]} />}>
                   <Route path="/superadmin" element={<SuperadminLayout />}>

@@ -313,12 +313,20 @@ export default function Bewerbungen() {
       setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: newStatus } : r)));
       if (selected?.id === row.id) setSelected({ ...selected, status: newStatus });
       const url = (data as any)?.booking_url as string | undefined;
+      const sms = (data as any)?.sms as { ok?: boolean; skipped?: string; error?: string } | undefined;
+      const smsSuffix = sms?.ok
+        ? " + SMS"
+        : sms?.error === "invalid_number"
+          ? " (SMS: ungültige Handynummer)"
+          : sms?.error
+            ? " (SMS fehlgeschlagen)"
+            : "";
       if (url) {
         try {
           await navigator.clipboard.writeText(url);
-          toast.success("Termin-Link versendet und in Zwischenablage kopiert");
+          toast.success(`Termin-Link versendet${smsSuffix} und in Zwischenablage kopiert`);
         } catch {
-          toast.success("Termin-Link versendet");
+          toast.success(`Termin-Link versendet${smsSuffix}`);
         }
       } else {
         toast.success("Aktion abgeschlossen");

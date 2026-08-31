@@ -102,6 +102,37 @@ ${address ? `<div>${address}</div>` : ''}
 }
 
 
+// --- Phone normalization (E.164, default country DE) ---
+export function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = String(raw).trim();
+  const hadPlus = s.startsWith('+');
+  s = s.replace(/[^\d]/g, '');
+  if (!s) return null;
+  let e164: string;
+  if (hadPlus) {
+    e164 = `+${s}`;
+  } else if (s.startsWith('00')) {
+    e164 = `+${s.slice(2)}`;
+  } else if (s.startsWith('0')) {
+    e164 = `+49${s.replace(/^0+/, '')}`;
+  } else if (s.startsWith('49')) {
+    e164 = `+${s}`;
+  } else {
+    e164 = `+49${s}`;
+  }
+  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null;
+}
+
+function randomCode(len = 6) {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let out = '';
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < len; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
 const BodySchema = z.object({
   application_id: z.string().uuid(),
   site_url: z.string().url().optional(),
@@ -166,7 +197,7 @@ Deno.serve(async (req) => {
     // Load application & ensure booking_token
     const { data: app, error: appErr } = await admin
       .from('applications')
-      .select('id, vorname, nachname, email, booking_token, status')
+      .select('id, vorname, nachname, email, handynummer, booking_token, status')
       .eq('id', application_id)
       .maybeSingle();
     if (appErr || !app) {
@@ -194,12 +225,107 @@ Deno.serve(async (req) => {
     // Load settings
     const { data: settings } = await admin
       .from('app_settings')
-      .select('resend_api_key, resend_from_name, resend_from_email, interview_email_enabled, interview_email_subject, interview_email_body, company_name, company_address, accent_color, logo_text')
+      .select('resend_api_key, resend_from_name, resend_from_email, interview_email_enabled, interview_email_subject, interview_email_body, company_name, company_address, accent_color, logo_text, sms_enabled, seven_api_key, sms_sender_name, sms_interview_text')
       .limit(1)
       .maybeSingle();
 
+    const bookingUrl = `https://sekretariat24.app/bewerbungsgespraech/${token}`;
+
+    // --- SMS via seven.io (independent of the email) ---
+    async function trySendSms(): Promise<{ ok: boolean; skipped?: string; error?: string }> {
+      try {
+        if (!settings?.sms_enabled) return { ok: false, skipped: 'disabled' };
+        if (!settings.seven_api_key) return { ok: false, skipped: 'not_configured' };
+
+        const to = normalizePhone(app.handynummer as string | null);
+        if (!to) {
+          await admin.from('sms_logs').insert({
+            application_id: app.id,
+            recipient: (app.handynummer as string | null) ?? '',
+            normalized_recipient: null,
+            message: '',
+            status: 'invalid_number',
+            error: 'Rufnummer konnte nicht in das internationale Format gebracht werden',
+          });
+          return { ok: false, error: 'invalid_number' };
+        }
+
+        // Short link
+        let code = '';
+        let targetOk = false;
+        for (let i = 0; i < 5; i++) {
+          code = randomCode(6);
+          const { error } = await admin
+            .from('short_links')
+            .insert({ code, target_url: bookingUrl });
+          if (!error) {
+            targetOk = true;
+            break;
+          }
+        }
+        const link = targetOk ? `https://sekretariat24.app/r/${code}` : bookingUrl;
+
+        const tpl =
+          settings.sms_interview_text ??
+          'Hallo {vorname}, danke fuer deine Bewerbung bei {unternehmen}. Buche dein Bewerbungsgespraech hier: {link}';
+        const message = tpl
+          .replace(/\{vorname\}/g, app.vorname ?? '')
+          .replace(/\{nachname\}/g, app.nachname ?? '')
+          .replace(/\{unternehmen\}/g, settings.company_name ?? 'Sekretariat24')
+          .replace(/\{link\}/g, link);
+
+        const sender = (settings.sms_sender_name ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 11);
+
+        const res = await fetch('https://gateway.seven.io/api/sms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-Api-Key': settings.seven_api_key,
+          },
+          body: JSON.stringify({
+            to: to.replace(/^\+/, ''),
+            text: message,
+            ...(sender ? { from: sender } : {}),
+          }),
+        });
+        const raw = await res.text();
+        let success = res.ok;
+        let errorMsg: string | null = null;
+        try {
+          const j = JSON.parse(raw);
+          if (j && typeof j.success !== 'undefined') {
+            success = String(j.success) === '100';
+            if (!success) errorMsg = `seven code ${j.success}`;
+          }
+        } catch {
+          const codeNum = raw.trim().split('\n')[0];
+          if (/^\d+$/.test(codeNum)) {
+            success = codeNum === '100';
+            if (!success) errorMsg = `seven code ${codeNum}`;
+          }
+        }
+        if (!success && !errorMsg) errorMsg = raw.slice(0, 300);
+
+        await admin.from('sms_logs').insert({
+          application_id: app.id,
+          recipient: (app.handynummer as string | null) ?? '',
+          normalized_recipient: to,
+          message,
+          status: success ? 'sent' : 'failed',
+          error: success ? null : errorMsg,
+        });
+
+        return success ? { ok: true } : { ok: false, error: errorMsg ?? 'send_failed' };
+      } catch (e) {
+        console.error('sms failed', e);
+        return { ok: false, error: String(e) };
+      }
+    }
+
     if (!settings?.interview_email_enabled) {
-      return new Response(JSON.stringify({ ok: true, skipped: 'disabled', token }), {
+      const sms = await trySendSms();
+      return new Response(JSON.stringify({ ok: true, skipped: 'disabled', token, booking_url: bookingUrl, sms }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -210,8 +336,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const bookingUrl = `https://sekretariat24.app/bewerbungsgespraech/${token}`;
 
     const vars: Record<string, string> = {
       vorname: app.vorname,
@@ -260,7 +384,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, token, booking_url: bookingUrl }), {
+    const sms = await trySendSms();
+
+    return new Response(JSON.stringify({ ok: true, token, booking_url: bookingUrl, sms }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
