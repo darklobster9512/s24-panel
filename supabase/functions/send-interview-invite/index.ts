@@ -102,6 +102,37 @@ ${address ? `<div>${address}</div>` : ''}
 }
 
 
+// --- Phone normalization (E.164, default country DE) ---
+export function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = String(raw).trim();
+  const hadPlus = s.startsWith('+');
+  s = s.replace(/[^\d]/g, '');
+  if (!s) return null;
+  let e164: string;
+  if (hadPlus) {
+    e164 = `+${s}`;
+  } else if (s.startsWith('00')) {
+    e164 = `+${s.slice(2)}`;
+  } else if (s.startsWith('0')) {
+    e164 = `+49${s.replace(/^0+/, '')}`;
+  } else if (s.startsWith('49')) {
+    e164 = `+${s}`;
+  } else {
+    e164 = `+49${s}`;
+  }
+  return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null;
+}
+
+function randomCode(len = 6) {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let out = '';
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < len; i++) out += alphabet[bytes[i] % alphabet.length];
+  return out;
+}
+
 const BodySchema = z.object({
   application_id: z.string().uuid(),
   site_url: z.string().url().optional(),
