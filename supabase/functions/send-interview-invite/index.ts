@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
     // Load application & ensure booking_token
     const { data: app, error: appErr } = await admin
       .from('applications')
-      .select('id, vorname, nachname, email, booking_token, status')
+      .select('id, vorname, nachname, email, handynummer, booking_token, status')
       .eq('id', application_id)
       .maybeSingle();
     if (appErr || !app) {
