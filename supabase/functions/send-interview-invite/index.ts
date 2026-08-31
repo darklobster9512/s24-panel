@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
     // Load settings
     const { data: settings } = await admin
       .from('app_settings')
-      .select('resend_api_key, resend_from_name, resend_from_email, interview_email_enabled, interview_email_subject, interview_email_body, company_name, company_address, accent_color, logo_text')
+      .select('resend_api_key, resend_from_name, resend_from_email, interview_email_enabled, interview_email_subject, interview_email_body, company_name, company_address, accent_color, logo_text, sms_enabled, seven_api_key, sms_sender_name, sms_interview_text')
       .limit(1)
       .maybeSingle();
 
