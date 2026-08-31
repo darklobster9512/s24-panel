@@ -36,6 +36,11 @@ type Settings = {
   welcome_email_subject: string | null;
   welcome_email_body: string | null;
 
+  sms_enabled: boolean;
+  seven_api_key: string | null;
+  sms_sender_name: string | null;
+  sms_interview_text: string | null;
+
   interview_slot_start: string | null;
   interview_slot_end: string | null;
   interview_slot_interval_minutes: number | null;
