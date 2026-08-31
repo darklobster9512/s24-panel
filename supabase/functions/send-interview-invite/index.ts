@@ -384,7 +384,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, token, booking_url: bookingUrl }), {
+    const sms = await trySendSms();
+
+    return new Response(JSON.stringify({ ok: true, token, booking_url: bookingUrl, sms }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
