@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string
+          created_at: string
+          details: Json
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id: string
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           accent_color: string | null
@@ -22,6 +55,9 @@ export type Database = {
           application_email_subject: string | null
           company_address: string | null
           company_name: string | null
+          confirmation_email_body: string | null
+          confirmation_email_enabled: boolean
+          confirmation_email_subject: string | null
           created_at: string
           id: string
           interview_available_weekdays: number[]
@@ -46,6 +82,9 @@ export type Database = {
           application_email_subject?: string | null
           company_address?: string | null
           company_name?: string | null
+          confirmation_email_body?: string | null
+          confirmation_email_enabled?: boolean
+          confirmation_email_subject?: string | null
           created_at?: string
           id?: string
           interview_available_weekdays?: number[]
@@ -70,6 +109,9 @@ export type Database = {
           application_email_subject?: string | null
           company_address?: string | null
           company_name?: string | null
+          confirmation_email_body?: string | null
+          confirmation_email_enabled?: boolean
+          confirmation_email_subject?: string | null
           created_at?: string
           id?: string
           interview_available_weekdays?: number[]
@@ -643,6 +685,9 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          reminder_sent_at: string | null
+          start_asap: boolean
+          start_date: string | null
           status: string
           updated_at: string
         }
@@ -654,6 +699,9 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
+          start_asap?: boolean
+          start_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -665,6 +713,9 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          reminder_sent_at?: string | null
+          start_asap?: boolean
+          start_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -677,6 +728,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      managers: {
+        Row: {
+          created_at: string
+          created_by: string
+          display_name: string | null
+          email: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          display_name?: string | null
+          email: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          display_name?: string | null
+          email?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
