@@ -14,16 +14,279 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assignments: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string
+          employee_id: string
+          id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by: string
+          employee_id: string
+          id?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          city: string | null
+          company_description: string | null
+          company_name: string | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          forwarding_enabled: boolean
+          greeting_text: string | null
+          id: string
+          industry: string | null
+          is_draft: boolean
+          logo_url: string | null
+          phone: string | null
+          postal_code: string | null
+          sip_password: string | null
+          sip_phone_number: string | null
+          sip_server: string | null
+          sip_username: string | null
+          street: string | null
+          updated_at: string
+          vat_id: string | null
+          website: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_description?: string | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          forwarding_enabled?: boolean
+          greeting_text?: string | null
+          id?: string
+          industry?: string | null
+          is_draft?: boolean
+          logo_url?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          sip_password?: string | null
+          sip_phone_number?: string | null
+          sip_server?: string | null
+          sip_username?: string | null
+          street?: string | null
+          updated_at?: string
+          vat_id?: string | null
+          website?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_description?: string | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          forwarding_enabled?: boolean
+          greeting_text?: string | null
+          id?: string
+          industry?: string | null
+          is_draft?: boolean
+          logo_url?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          sip_password?: string | null
+          sip_phone_number?: string | null
+          sip_server?: string | null
+          sip_username?: string | null
+          street?: string | null
+          updated_at?: string
+          vat_id?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          bank_name: string | null
+          bic: string | null
+          birth_date: string | null
+          birth_place: string | null
+          contract_type: string | null
+          created_at: string
+          created_by: string
+          first_name: string | null
+          health_insurance: string | null
+          iban: string | null
+          id: string
+          is_draft: boolean
+          last_name: string | null
+          login_email: string | null
+          login_local_part: string | null
+          marital_status: string | null
+          nationality: string | null
+          password_plain: string | null
+          personal_email: string | null
+          personal_phone: string | null
+          salary: number | null
+          social_security_number: string | null
+          start_date: string | null
+          tax_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bank_name?: string | null
+          bic?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          contract_type?: string | null
+          created_at?: string
+          created_by: string
+          first_name?: string | null
+          health_insurance?: string | null
+          iban?: string | null
+          id?: string
+          is_draft?: boolean
+          last_name?: string | null
+          login_email?: string | null
+          login_local_part?: string | null
+          marital_status?: string | null
+          nationality?: string | null
+          password_plain?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          salary?: number | null
+          social_security_number?: string | null
+          start_date?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bank_name?: string | null
+          bic?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          contract_type?: string | null
+          created_at?: string
+          created_by?: string
+          first_name?: string | null
+          health_insurance?: string | null
+          iban?: string | null
+          id?: string
+          is_draft?: boolean
+          last_name?: string | null
+          login_email?: string | null
+          login_local_part?: string | null
+          marital_status?: string | null
+          nationality?: string | null
+          password_plain?: string | null
+          personal_email?: string | null
+          personal_phone?: string | null
+          salary?: number | null
+          social_security_number?: string | null
+          start_date?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "superadmin" | "kunde" | "mitarbeiter"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +413,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["superadmin", "kunde", "mitarbeiter"],
+    },
   },
 } as const
