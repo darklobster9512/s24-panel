@@ -53,6 +53,41 @@ export type Database = {
           },
         ]
       }
+      client_phone_numbers: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          label: string | null
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_phone_numbers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           city: string | null
@@ -72,10 +107,6 @@ export type Database = {
           logo_url: string | null
           phone: string | null
           postal_code: string | null
-          sip_password: string | null
-          sip_phone_number: string | null
-          sip_server: string | null
-          sip_username: string | null
           street: string | null
           updated_at: string
           vat_id: string | null
@@ -99,10 +130,6 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
-          sip_password?: string | null
-          sip_phone_number?: string | null
-          sip_server?: string | null
-          sip_username?: string | null
           street?: string | null
           updated_at?: string
           vat_id?: string | null
@@ -126,14 +153,85 @@ export type Database = {
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
-          sip_password?: string | null
-          sip_phone_number?: string | null
-          sip_server?: string | null
-          sip_username?: string | null
           street?: string | null
           updated_at?: string
           vat_id?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      company_signature: {
+        Row: {
+          created_at: string
+          id: string
+          signature_source: string
+          signature_style: string | null
+          signature_url: string | null
+          signer_name: string
+          signer_title: string
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          signature_source?: string
+          signature_style?: string | null
+          signature_url?: string | null
+          signer_name?: string
+          signer_title?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          signature_source?: string
+          signature_style?: string | null
+          signature_url?: string | null
+          signer_name?: string
+          signer_title?: string
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contract_templates: {
+        Row: {
+          category: string | null
+          content_html: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          monthly_salary: number
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          category?: string | null
+          content_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_salary?: number
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          category?: string | null
+          content_html?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          monthly_salary?: number
+          title?: string
+          updated_at?: string
+          version?: number
         }
         Relationships: []
       }
@@ -160,6 +258,7 @@ export type Database = {
           personal_email: string | null
           personal_phone: string | null
           salary: number | null
+          sipgate_user_id: string | null
           social_security_number: string | null
           start_date: string | null
           tax_id: string | null
@@ -188,6 +287,7 @@ export type Database = {
           personal_email?: string | null
           personal_phone?: string | null
           salary?: number | null
+          sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
           tax_id?: string | null
@@ -216,6 +316,7 @@ export type Database = {
           personal_email?: string | null
           personal_phone?: string | null
           salary?: number | null
+          sipgate_user_id?: string | null
           social_security_number?: string | null
           start_date?: string | null
           tax_id?: string | null
@@ -251,6 +352,85 @@ export type Database = {
         }
         Relationships: []
       }
+      sipgate_calls: {
+        Row: {
+          answered_at: string | null
+          answered_by_employee_id: string | null
+          caller_name: string | null
+          client_id: string | null
+          created_at: string
+          direction: string
+          ended_at: string | null
+          from_number: string | null
+          handled_by_employee_id: string | null
+          id: string
+          raw_payload: Json | null
+          sipgate_call_id: string
+          started_at: string
+          status: string
+          to_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string | null
+          answered_by_employee_id?: string | null
+          caller_name?: string | null
+          client_id?: string | null
+          created_at?: string
+          direction: string
+          ended_at?: string | null
+          from_number?: string | null
+          handled_by_employee_id?: string | null
+          id?: string
+          raw_payload?: Json | null
+          sipgate_call_id: string
+          started_at?: string
+          status?: string
+          to_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string | null
+          answered_by_employee_id?: string | null
+          caller_name?: string | null
+          client_id?: string | null
+          created_at?: string
+          direction?: string
+          ended_at?: string | null
+          from_number?: string | null
+          handled_by_employee_id?: string | null
+          id?: string
+          raw_payload?: Json | null
+          sipgate_call_id?: string
+          started_at?: string
+          status?: string
+          to_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sipgate_calls_answered_by_employee_id_fkey"
+            columns: ["answered_by_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sipgate_calls_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sipgate_calls_handled_by_employee_id_fkey"
+            columns: ["handled_by_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -282,6 +462,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_client_assigned_to_me: {
+        Args: { _client_id: string }
         Returns: boolean
       }
     }
