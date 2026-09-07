@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          accent_color: string | null
+          application_email_body: string | null
+          application_email_enabled: boolean
+          application_email_subject: string | null
+          company_address: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          logo_text: string | null
+          resend_api_key: string | null
+          resend_from_email: string | null
+          resend_from_name: string | null
+          singleton: boolean
+          updated_at: string
+          vat_id: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          application_email_body?: string | null
+          application_email_enabled?: boolean
+          application_email_subject?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          logo_text?: string | null
+          resend_api_key?: string | null
+          resend_from_email?: string | null
+          resend_from_name?: string | null
+          singleton?: boolean
+          updated_at?: string
+          vat_id?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          application_email_body?: string | null
+          application_email_enabled?: boolean
+          application_email_subject?: string | null
+          company_address?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          logo_text?: string | null
+          resend_api_key?: string | null
+          resend_from_email?: string | null
+          resend_from_name?: string | null
+          singleton?: boolean
+          updated_at?: string
+          vat_id?: string | null
+        }
+        Relationships: []
+      }
+      applications: {
+        Row: {
+          anstellung: string
+          created_at: string
+          email: string
+          geburtsdatum: string
+          handynummer: string
+          id: string
+          lebenslauf_filename: string | null
+          lebenslauf_mime: string | null
+          lebenslauf_path: string | null
+          nachname: string
+          staatsangehoerigkeit: string
+          status: string
+          updated_at: string
+          vorname: string
+        }
+        Insert: {
+          anstellung: string
+          created_at?: string
+          email: string
+          geburtsdatum: string
+          handynummer: string
+          id?: string
+          lebenslauf_filename?: string | null
+          lebenslauf_mime?: string | null
+          lebenslauf_path?: string | null
+          nachname: string
+          staatsangehoerigkeit: string
+          status?: string
+          updated_at?: string
+          vorname: string
+        }
+        Update: {
+          anstellung?: string
+          created_at?: string
+          email?: string
+          geburtsdatum?: string
+          handynummer?: string
+          id?: string
+          lebenslauf_filename?: string | null
+          lebenslauf_mime?: string | null
+          lebenslauf_path?: string | null
+          nachname?: string
+          staatsangehoerigkeit?: string
+          status?: string
+          updated_at?: string
+          vorname?: string
+        }
+        Relationships: []
+      }
       assignments: {
         Row: {
           client_id: string
@@ -128,6 +233,47 @@ export type Database = {
             columns: ["sipgate_call_id"]
             isOneToOne: false
             referencedRelation: "sipgate_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caller_contacts: {
+        Row: {
+          caller_email: string | null
+          caller_name: string | null
+          client_id: string
+          created_at: string
+          id: string
+          last_seen_at: string
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          caller_email?: string | null
+          caller_name?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          caller_email?: string | null
+          caller_name?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caller_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
