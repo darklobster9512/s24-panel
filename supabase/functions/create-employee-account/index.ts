@@ -100,9 +100,16 @@ async function sendWelcomeEmail(
 
 const BodySchema = z.object({
   employee_id: z.string().uuid(),
-  login_email: z.string().email().endsWith("@sekretariat24.app"),
+  login_email: z
+    .string()
+    .email()
+    .refine(
+      (v) => v.endsWith("@sekretariat24.app") || v.endsWith("@sekretariat-24.de"),
+      { message: "E-Mail muss auf @sekretariat24.app oder @sekretariat-24.de enden" },
+    ),
   password: z.string().min(6).max(128),
 });
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
