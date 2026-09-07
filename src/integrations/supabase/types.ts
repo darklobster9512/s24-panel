@@ -71,7 +71,13 @@ export type Database = {
           resend_api_key: string | null
           resend_from_email: string | null
           resend_from_name: string | null
+          seven_api_key: string | null
           singleton: boolean
+          sms_confirmation_text: string | null
+          sms_enabled: boolean
+          sms_interview_text: string | null
+          sms_reminder_text: string | null
+          sms_sender_name: string | null
           updated_at: string
           vat_id: string | null
           welcome_email_body: string | null
@@ -101,7 +107,13 @@ export type Database = {
           resend_api_key?: string | null
           resend_from_email?: string | null
           resend_from_name?: string | null
+          seven_api_key?: string | null
           singleton?: boolean
+          sms_confirmation_text?: string | null
+          sms_enabled?: boolean
+          sms_interview_text?: string | null
+          sms_reminder_text?: string | null
+          sms_sender_name?: string | null
           updated_at?: string
           vat_id?: string | null
           welcome_email_body?: string | null
@@ -131,7 +143,13 @@ export type Database = {
           resend_api_key?: string | null
           resend_from_email?: string | null
           resend_from_name?: string | null
+          seven_api_key?: string | null
           singleton?: boolean
+          sms_confirmation_text?: string | null
+          sms_enabled?: boolean
+          sms_interview_text?: string | null
+          sms_reminder_text?: string | null
+          sms_sender_name?: string | null
           updated_at?: string
           vat_id?: string | null
           welcome_email_body?: string | null
@@ -155,6 +173,7 @@ export type Database = {
           nachname: string
           ranking: string | null
           staatsangehoerigkeit: string
+          startklar_ab: string | null
           status: string
           stelle: string | null
           updated_at: string
@@ -174,6 +193,7 @@ export type Database = {
           nachname: string
           ranking?: string | null
           staatsangehoerigkeit: string
+          startklar_ab?: string | null
           status?: string
           stelle?: string | null
           updated_at?: string
@@ -193,6 +213,7 @@ export type Database = {
           nachname?: string
           ranking?: string | null
           staatsangehoerigkeit?: string
+          startklar_ab?: string | null
           status?: string
           stelle?: string | null
           updated_at?: string
@@ -361,30 +382,36 @@ export type Database = {
       }
       chat_agent_settings: {
         Row: {
+          auto_offline: boolean
           created_at: string
           display_name: string
           id: string
+          offline_after: string
+          online_from: string
           singleton: boolean
           status: string
-          status_text: string | null
           updated_at: string
         }
         Insert: {
+          auto_offline?: boolean
           created_at?: string
           display_name?: string
           id?: string
+          offline_after?: string
+          online_from?: string
           singleton?: boolean
           status?: string
-          status_text?: string | null
           updated_at?: string
         }
         Update: {
+          auto_offline?: boolean
           created_at?: string
           display_name?: string
           id?: string
+          offline_after?: string
+          online_from?: string
           singleton?: boolean
           status?: string
-          status_text?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -746,6 +773,8 @@ export type Database = {
           health_insurance: string | null
           iban: string | null
           id: string
+          internal_interviews: boolean
+          internal_interviews_since: string | null
           is_draft: boolean
           last_name: string | null
           login_email: string | null
@@ -784,6 +813,8 @@ export type Database = {
           health_insurance?: string | null
           iban?: string | null
           id?: string
+          internal_interviews?: boolean
+          internal_interviews_since?: string | null
           is_draft?: boolean
           last_name?: string | null
           login_email?: string | null
@@ -822,6 +853,8 @@ export type Database = {
           health_insurance?: string | null
           iban?: string | null
           id?: string
+          internal_interviews?: boolean
+          internal_interviews_since?: string | null
           is_draft?: boolean
           last_name?: string | null
           login_email?: string | null
@@ -858,6 +891,7 @@ export type Database = {
           id: string
           notes: string | null
           reminder_sent_at: string | null
+          sms_reminder_sent_at: string | null
           start_asap: boolean
           start_date: string | null
           status: string
@@ -872,6 +906,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reminder_sent_at?: string | null
+          sms_reminder_sent_at?: string | null
           start_asap?: boolean
           start_date?: string | null
           status?: string
@@ -886,6 +921,7 @@ export type Database = {
           id?: string
           notes?: string | null
           reminder_sent_at?: string | null
+          sms_reminder_sent_at?: string | null
           start_asap?: boolean
           start_date?: string | null
           status?: string
@@ -958,6 +994,71 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_appointments: {
+        Row: {
+          application_id: string | null
+          appointment_date: string
+          appointment_time: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          nachname: string | null
+          notes: string | null
+          reminder_sent_at: string | null
+          start_date: string | null
+          status: string
+          stelle: string | null
+          telefon: string | null
+          updated_at: string
+          vorname: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          appointment_date: string
+          appointment_time: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nachname?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          start_date?: string | null
+          status?: string
+          stelle?: string | null
+          telefon?: string | null
+          updated_at?: string
+          vorname?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          nachname?: string | null
+          notes?: string | null
+          reminder_sent_at?: string | null
+          start_date?: string | null
+          status?: string
+          stelle?: string | null
+          telefon?: string | null
+          updated_at?: string
+          vorname?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_appointments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null
@@ -982,6 +1083,27 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      short_links: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          target_url: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          target_url: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          target_url?: string
         }
         Relationships: []
       }
@@ -1064,6 +1186,47 @@ export type Database = {
           },
         ]
       }
+      sms_logs: {
+        Row: {
+          application_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          message: string
+          normalized_recipient: string | null
+          recipient: string
+          status: string
+        }
+        Insert: {
+          application_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          message: string
+          normalized_recipient?: string | null
+          recipient: string
+          status?: string
+        }
+        Update: {
+          application_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          message?: string
+          normalized_recipient?: string | null
+          recipient?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_recipients: {
         Row: {
           chat_id: string
@@ -1072,8 +1235,10 @@ export type Database = {
           is_active: boolean
           label: string | null
           notify_applications: boolean
+          notify_chat: boolean
           notify_contracts: boolean
           notify_interviews: boolean
+          notify_onboarding: boolean
           updated_at: string
         }
         Insert: {
@@ -1083,8 +1248,10 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_chat?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
+          notify_onboarding?: boolean
           updated_at?: string
         }
         Update: {
@@ -1094,8 +1261,10 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_chat?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
+          notify_onboarding?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -1153,6 +1322,7 @@ export type Database = {
           weekdays: number[]
         }[]
       }
+      has_internal_interviews: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1160,6 +1330,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      internal_interviews_since: { Args: never; Returns: string }
       is_client_assigned_to_me: {
         Args: { _client_id: string }
         Returns: boolean
