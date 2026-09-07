@@ -74,6 +74,9 @@ export type Database = {
           singleton: boolean
           updated_at: string
           vat_id: string | null
+          welcome_email_body: string | null
+          welcome_email_enabled: boolean
+          welcome_email_subject: string | null
         }
         Insert: {
           accent_color?: string | null
@@ -101,6 +104,9 @@ export type Database = {
           singleton?: boolean
           updated_at?: string
           vat_id?: string | null
+          welcome_email_body?: string | null
+          welcome_email_enabled?: boolean
+          welcome_email_subject?: string | null
         }
         Update: {
           accent_color?: string | null
@@ -128,6 +134,9 @@ export type Database = {
           singleton?: boolean
           updated_at?: string
           vat_id?: string | null
+          welcome_email_body?: string | null
+          welcome_email_enabled?: boolean
+          welcome_email_subject?: string | null
         }
         Relationships: []
       }
@@ -147,6 +156,7 @@ export type Database = {
           ranking: string | null
           staatsangehoerigkeit: string
           status: string
+          stelle: string | null
           updated_at: string
           vorname: string
         }
@@ -165,6 +175,7 @@ export type Database = {
           ranking?: string | null
           staatsangehoerigkeit: string
           status?: string
+          stelle?: string | null
           updated_at?: string
           vorname: string
         }
@@ -183,6 +194,7 @@ export type Database = {
           ranking?: string | null
           staatsangehoerigkeit?: string
           status?: string
+          stelle?: string | null
           updated_at?: string
           vorname?: string
         }
@@ -384,6 +396,10 @@ export type Database = {
       }
       clients: {
         Row: {
+          call_script_company_name: string | null
+          call_script_content: string | null
+          call_script_my_name: string | null
+          call_script_path: string | null
           city: string | null
           company_description: string | null
           company_name: string | null
@@ -398,6 +414,7 @@ export type Database = {
           id: string
           industry: string | null
           is_draft: boolean
+          is_recruitment: boolean
           logo_url: string | null
           phone: string | null
           postal_code: string | null
@@ -407,6 +424,10 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          call_script_company_name?: string | null
+          call_script_content?: string | null
+          call_script_my_name?: string | null
+          call_script_path?: string | null
           city?: string | null
           company_description?: string | null
           company_name?: string | null
@@ -421,6 +442,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_draft?: boolean
+          is_recruitment?: boolean
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -430,6 +452,10 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          call_script_company_name?: string | null
+          call_script_content?: string | null
+          call_script_my_name?: string | null
+          call_script_path?: string | null
           city?: string | null
           company_description?: string | null
           company_name?: string | null
@@ -444,6 +470,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_draft?: boolean
+          is_recruitment?: boolean
           logo_url?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -592,6 +619,8 @@ export type Database = {
           bic: string | null
           birth_date: string | null
           birth_place: string | null
+          caller_api_key: string | null
+          city: string | null
           contract_type: string | null
           created_at: string
           created_by: string
@@ -605,13 +634,20 @@ export type Database = {
           login_local_part: string | null
           marital_status: string | null
           nationality: string | null
+          onboarding_enabled: boolean
+          outbound_recruitment: boolean
           password_plain: string | null
           personal_email: string | null
           personal_phone: string | null
+          phone_system: string | null
+          postal_code: string | null
           salary: number | null
           sipgate_user_id: string | null
           social_security_number: string | null
+          softphone_email: string | null
+          softphone_password: string | null
           start_date: string | null
+          street: string | null
           tax_id: string | null
           updated_at: string
           user_id: string | null
@@ -621,6 +657,8 @@ export type Database = {
           bic?: string | null
           birth_date?: string | null
           birth_place?: string | null
+          caller_api_key?: string | null
+          city?: string | null
           contract_type?: string | null
           created_at?: string
           created_by: string
@@ -634,13 +672,20 @@ export type Database = {
           login_local_part?: string | null
           marital_status?: string | null
           nationality?: string | null
+          onboarding_enabled?: boolean
+          outbound_recruitment?: boolean
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
+          phone_system?: string | null
+          postal_code?: string | null
           salary?: number | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
+          softphone_email?: string | null
+          softphone_password?: string | null
           start_date?: string | null
+          street?: string | null
           tax_id?: string | null
           updated_at?: string
           user_id?: string | null
@@ -650,6 +695,8 @@ export type Database = {
           bic?: string | null
           birth_date?: string | null
           birth_place?: string | null
+          caller_api_key?: string | null
+          city?: string | null
           contract_type?: string | null
           created_at?: string
           created_by?: string
@@ -663,13 +710,20 @@ export type Database = {
           login_local_part?: string | null
           marital_status?: string | null
           nationality?: string | null
+          onboarding_enabled?: boolean
+          outbound_recruitment?: boolean
           password_plain?: string | null
           personal_email?: string | null
           personal_phone?: string | null
+          phone_system?: string | null
+          postal_code?: string | null
           salary?: number | null
           sipgate_user_id?: string | null
           social_security_number?: string | null
+          softphone_email?: string | null
+          softphone_password?: string | null
           start_date?: string | null
+          street?: string | null
           tax_id?: string | null
           updated_at?: string
           user_id?: string | null
@@ -728,6 +782,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      interview_blocked_slots: {
+        Row: {
+          blocked_date: string
+          blocked_time: string
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_date: string
+          blocked_time: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_date?: string
+          blocked_time?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
       }
       managers: {
         Row: {
@@ -873,6 +954,7 @@ export type Database = {
           is_active: boolean
           label: string | null
           notify_applications: boolean
+          notify_contracts: boolean
           notify_interviews: boolean
           updated_at: string
         }
@@ -883,6 +965,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_contracts?: boolean
           notify_interviews?: boolean
           updated_at?: string
         }
@@ -893,6 +976,7 @@ export type Database = {
           is_active?: boolean
           label?: string | null
           notify_applications?: boolean
+          notify_contracts?: boolean
           notify_interviews?: boolean
           updated_at?: string
         }
