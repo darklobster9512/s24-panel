@@ -1,1 +1,27 @@
-project_id = "jlkejvqfxtovercndcfo"
+project_id = "erwuhvouxkaxczzbjrle"
+
+[functions.sipgate-webhook]
+verify_jwt = false
+
+[functions.submit-application]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.interview-booked-notify]
+verify_jwt = false
+
+[functions.interview-reminder]
+verify_jwt = false
+
+[functions.onboarding-reminder]
+verify_jwt = false
+
+[functions.interview-sms-reminder]
+verify_jwt = false
+
+
+
+[functions.tmp-run-sql]
+verify_jwt = false
