@@ -169,8 +169,9 @@ function FormPanel() {
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
           <span>
-            Wir haben aktuell technische Störungen. Bis 12:00 Uhr habt ihr
-            erst einmal frei.
+            Wir haben die technischen Störungen behoben. Falls Ihnen noch
+            Probleme auffallen oder Sie Fehler im System entdecken, melden Sie
+            sich gerne telefonisch oder über den Livechat bei uns.
           </span>
         </div>
         <div className="mb-8">
