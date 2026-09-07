@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const UPSTREAM = 'https://laozvnaupdecerpvwzmh.supabase.co/functions/v1/caller-api';
+const UPSTREAM = 'https://gzgfyuftjvezqjkosntu.supabase.co/functions/v1/caller-api';
 
 const READONLY_ACTIONS = new Set(['meta', 'list_interviews']);
 
