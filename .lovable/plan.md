@@ -18,6 +18,15 @@ Status:
 
 Zusätzlich werden bei jeder Person Anstellungsart (Teilzeit/Vollzeit) und Monatsgehalt aus der Vorlage übernommen, damit Wizard und Übersicht stimmig sind.
 
+## Startdaten
+
+Vorgegeben: Heike Kasper 15.09., Melanie Haase 14.09., Cathrin Koschmann 15.09., Melanie Dreesmann 07.09., Nicole Wilde 07.09., Christiane Rappholz 07.09., Jacqueline Kaleyta 07.09., Dorian Pitz 07.09., Julia Rogge 01.10., Stefanie Botros 07.09., Medina Amara Bozza 01.10., Marcel Röll 07.09. (jeweils 2026).
+
+Aus der ersten Anrufnotiz abgeleitet: Wolfgang Klar 06.08., Patrick Ulmer 17.08., Alina Reetz 20.08., Tom Henke 24.08., Kevin Wettin 01.09. (jeweils 2026).
+
+Ohne Vorgabe und ohne einzige Anrufnotiz — hier fehlt eine Grundlage: Andreas Klaus, Nicole Wurm, Lea Stahnke, Vanessa Pfister, Holger Heidemann, Melina Moch, Daniela Tretter. Vorschlag: 07.09.2026 setzen; sag Bescheid, wenn andere Daten gelten sollen.
+
+
 ## Punkte zum Wissen
 
 - Für die 16 abgeschlossenen Verträge gibt es keine echte Unterschrift des Mitarbeitenden und kein gespeichertes PDF — diese Daten sind mit der alten Datenbank verloren gegangen. Sie werden als unterschrieben und bestätigt markiert (mit Datum), die Unterschriftsfläche bleibt leer. Sag Bescheid, falls stattdessen eine Namenszug-Grafik automatisch erzeugt werden soll.
