@@ -22,6 +22,3 @@ verify_jwt = false
 verify_jwt = false
 
 
-
-[functions.tmp-run-sql]
-verify_jwt = false
