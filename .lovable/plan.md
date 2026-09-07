@@ -24,7 +24,7 @@ Vorgegeben: Heike Kasper 15.09., Melanie Haase 14.09., Cathrin Koschmann 15.09.,
 
 Aus der ersten Anrufnotiz abgeleitet: Wolfgang Klar 06.08., Patrick Ulmer 17.08., Alina Reetz 20.08., Tom Henke 24.08., Kevin Wettin 01.09. (jeweils 2026).
 
-Ohne Vorgabe und ohne einzige Anrufnotiz — hier fehlt eine Grundlage: Andreas Klaus, Nicole Wurm, Lea Stahnke, Vanessa Pfister, Holger Heidemann, Melina Moch, Daniela Tretter. Vorschlag: 07.09.2026 setzen; sag Bescheid, wenn andere Daten gelten sollen.
+Weitere Vorgaben: Andreas Klaus 01.09., Nicole Wurm 07.09., Lea Stahnke 01.09., Vanessa Pfister 08.09., Holger Heidemann 14.09., Melina Moch 01.10., Daniela Tretter 14.09. (jeweils 2026).
 
 
 ## Punkte zum Wissen
