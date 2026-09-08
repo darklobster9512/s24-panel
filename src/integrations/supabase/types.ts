@@ -1238,6 +1238,7 @@ export type Database = {
           notify_chat: boolean
           notify_contracts: boolean
           notify_interviews: boolean
+          notify_notes: boolean
           notify_onboarding: boolean
           updated_at: string
         }
@@ -1251,6 +1252,7 @@ export type Database = {
           notify_chat?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
+          notify_notes?: boolean
           notify_onboarding?: boolean
           updated_at?: string
         }
@@ -1264,6 +1266,7 @@ export type Database = {
           notify_chat?: boolean
           notify_contracts?: boolean
           notify_interviews?: boolean
+          notify_notes?: boolean
           notify_onboarding?: boolean
           updated_at?: string
         }

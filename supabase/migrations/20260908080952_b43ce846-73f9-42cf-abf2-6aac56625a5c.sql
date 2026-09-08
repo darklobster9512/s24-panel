@@ -1,0 +1,1 @@
+ALTER TABLE public.telegram_recipients ADD COLUMN IF NOT EXISTS notify_notes boolean NOT NULL DEFAULT true;
