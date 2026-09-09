@@ -169,7 +169,7 @@ export default function Arbeitszeiten() {
                     "—";
                   return (
                     <tr key={r.employee.id} className="border-t border-border/60">
-                      <td className="sticky left-0 bg-card px-2 py-2.5">
+                      <td className="sticky left-0 bg-card px-2 py-2.5 align-top">
                         <div className="flex items-center gap-2">
                           <span className="truncate font-medium">{name}</span>
                           {r.isOverride && (
@@ -182,7 +182,7 @@ export default function Arbeitszeiten() {
                       {DAY_KEYS.map((k) => {
                         const d = r.days[k];
                         return (
-                          <td key={k} className="px-2 py-2.5">
+                          <td key={k} className="px-2 py-2.5 align-top">
                             {!r.hasPlan ? (
                               <span className="text-xs text-muted-foreground/60">—</span>
                             ) : d.active ? (
@@ -202,7 +202,7 @@ export default function Arbeitszeiten() {
                           </td>
                         );
                       })}
-                      <td className="px-2 py-2.5 text-right font-medium">
+                      <td className="px-2 py-2.5 text-right align-top font-medium">
                         {r.hasPlan ? fmtHours(weekMinutes(r.days)) : "—"}
                       </td>
                     </tr>
