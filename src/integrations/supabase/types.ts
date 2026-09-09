@@ -1293,6 +1293,76 @@ export type Database = {
         }
         Relationships: []
       }
+      work_schedule_weeks: {
+        Row: {
+          created_at: string
+          days: Json
+          employee_id: string
+          id: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          days?: Json
+          employee_id: string
+          id?: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          days?: Json
+          employee_id?: string
+          id?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_schedule_weeks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_schedules: {
+        Row: {
+          created_at: string
+          days: Json
+          employee_id: string
+          id: string
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days?: Json
+          employee_id: string
+          id?: string
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days?: Json
+          employee_id?: string
+          id?: string
+          mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_schedules_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
