@@ -1,13 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, Loader2, RotateCcw, Save } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Eraser,
+  Loader2,
+  RotateCcw,
+  Save,
+  Undo2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
+import { DayCard } from "@/components/arbeitszeiten/DayCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useOutboundProfile } from "@/hooks/use-outbound-profile";
@@ -19,64 +29,52 @@ import {
   ScheduleMode,
   addDays,
   addWeeks,
+  cloneDays,
   defaultDays,
   emptyDays,
   fmtHours,
   fmtRange,
-  
   isoWeekNumber,
   normalizeDays,
+  serializeDays,
   startOfWeek,
   toISODate,
+  validateDays,
   weekMinutes,
 } from "@/lib/work-schedule";
 
 const db = supabase as any;
 
-function DayRow({
-  label,
-  entry,
-  onChange,
+function WeekGrid({
+  days,
+  weekStart,
   disabled,
-  showTimes = true,
+  onChange,
 }: {
-  label: string;
-  entry: { active: boolean; start: string; end: string };
-  onChange: (next: { active: boolean; start: string; end: string }) => void;
+  days: DayMap;
+  weekStart?: Date;
   disabled?: boolean;
-  showTimes?: boolean;
+  onChange: (next: DayMap) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card px-3 py-2.5">
-      <Switch
-        checked={entry.active}
-        disabled={disabled}
-        onCheckedChange={(v) => onChange({ ...entry, active: v })}
-      />
-      <span className="w-28 text-sm font-medium">{label}</span>
-      {showTimes ? (
-        entry.active ? (
-          <div className="flex items-center gap-2">
-            <Input
-              type="time"
-              className="h-9 w-[120px]"
-              value={entry.start}
-              disabled={disabled}
-              onChange={(e) => onChange({ ...entry, start: e.target.value })}
-            />
-            <span className="text-muted-foreground">–</span>
-            <Input
-              type="time"
-              className="h-9 w-[120px]"
-              value={entry.end}
-              disabled={disabled}
-              onChange={(e) => onChange({ ...entry, end: e.target.value })}
-            />
-          </div>
-        ) : (
-          <span className="text-sm text-muted-foreground">frei</span>
-        )
-      ) : null}
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      {DAY_KEYS.map((k: DayKey, i) => (
+        <DayCard
+          key={k}
+          label={DAY_LABELS[k]}
+          dateLabel={
+            weekStart
+              ? addDays(weekStart, i).toLocaleDateString("de-DE", {
+                  day: "2-digit",
+                  month: "2-digit",
+                })
+              : undefined
+          }
+          entry={days[k]}
+          disabled={disabled}
+          onChange={(next) => onChange({ ...days, [k]: next })}
+        />
+      ))}
     </div>
   );
 }
@@ -101,10 +99,8 @@ export default function Arbeitszeiten() {
     },
   });
 
-  const [mode, setMode] = useState<ScheduleMode>("uniform");
   const [days, setDays] = useState<DayMap>(defaultDays());
-  const [uniformStart, setUniformStart] = useState("09:00");
-  const [uniformEnd, setUniformEnd] = useState("17:00");
+  const [savedDays, setSavedDays] = useState<DayMap>(defaultDays());
   const [loadedBase, setLoadedBase] = useState(false);
 
   useEffect(() => {
@@ -113,40 +109,29 @@ export default function Arbeitszeiten() {
     if (row) {
       const d = normalizeDays(row.days);
       setDays(d);
-      setMode(row.mode === "per_day" ? "per_day" : "uniform");
-      const first = DAY_KEYS.map((k) => d[k]).find((e) => e.active);
-      if (first) {
-        setUniformStart(first.start);
-        setUniformEnd(first.end);
-      }
+      setSavedDays(cloneDays(d));
     }
     setLoadedBase(true);
   }, [baseQuery.data, baseQuery.isPending, employeeId, loadedBase]);
 
-  const baseDaysForSave = useMemo<DayMap>(() => {
-    if (mode === "uniform") {
-      const next = emptyDays();
-      DAY_KEYS.forEach((k) => {
-        next[k] = { active: days[k].active, start: uniformStart, end: uniformEnd };
-      });
-      return next;
-    }
-    return days;
-  }, [mode, days, uniformStart, uniformEnd]);
+  const baseDirty = useMemo(
+    () => JSON.stringify(days) !== JSON.stringify(savedDays),
+    [days, savedDays],
+  );
+  const baseValid = validateDays(days);
 
   const saveBase = useMutation({
     mutationFn: async () => {
       if (!employeeId) throw new Error("Kein Mitarbeiterprofil gefunden.");
-      const { error } = await db
-        .from("work_schedules")
-        .upsert(
-          { employee_id: employeeId, mode, days: baseDaysForSave },
-          { onConflict: "employee_id" },
-        );
+      const { error } = await db.from("work_schedules").upsert(
+        { employee_id: employeeId, mode: "per_day", days: serializeDays(days) },
+        { onConflict: "employee_id" },
+      );
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Standardplan gespeichert");
+      setSavedDays(cloneDays(days));
       qc.invalidateQueries({ queryKey: ["work-schedule", employeeId] });
       qc.invalidateQueries({ queryKey: ["work-schedule-week"] });
     },
@@ -180,19 +165,17 @@ export default function Arbeitszeiten() {
     setWeekDraft(weekQuery.data ? normalizeDays(weekQuery.data.days) : null);
   }, [weekQuery.data, weekKey]);
 
-  const savedBaseDays = baseQuery.data ? normalizeDays(baseQuery.data.days) : baseDaysForSave;
-  const effectiveWeek = weekDraft ?? savedBaseDays;
+  const effectiveWeek = weekDraft ?? savedDays;
   const hasOverride = !!weekDraft;
+  const weekValid = validateDays(effectiveWeek);
 
   const saveWeek = useMutation({
     mutationFn: async () => {
       if (!employeeId || !weekDraft) throw new Error("Keine Abweichung zu speichern.");
-      const { error } = await db
-        .from("work_schedule_weeks")
-        .upsert(
-          { employee_id: employeeId, week_start: weekKey, days: weekDraft },
-          { onConflict: "employee_id,week_start" },
-        );
+      const { error } = await db.from("work_schedule_weeks").upsert(
+        { employee_id: employeeId, week_start: weekKey, days: serializeDays(weekDraft) },
+        { onConflict: "employee_id,week_start" },
+      );
       if (error) throw error;
     },
     onSuccess: () => {
@@ -241,99 +224,112 @@ export default function Arbeitszeiten() {
     );
   }
 
+  const applyMonFri = () => {
+    const next = cloneDays(days);
+    DAY_KEYS.forEach((k) => {
+      next[k].active = !["sat", "sun"].includes(k);
+    });
+    setDays(next);
+  };
+
+  const copyMonday = () => {
+    const next = cloneDays(days);
+    const source = next.mon.segments;
+    DAY_KEYS.forEach((k) => {
+      if (next[k].active) next[k].segments = JSON.parse(JSON.stringify(source));
+    });
+    setDays(next);
+  };
+
   return (
     <>
       <PageHeader
         title="Meine Arbeitszeiten"
-        subtitle="Lege deinen Standardplan fest und plane einzelne Wochen abweichend."
+        subtitle="Standardplan festlegen und einzelne Wochen abweichend planen. Pro Tag sind mehrere Zeitblöcke möglich."
       />
 
       <Tabs defaultValue="standard">
         <TabsList className="mb-4">
           <TabsTrigger value="standard">Standardplan</TabsTrigger>
-          <TabsTrigger value="woche">Wochenplanung</TabsTrigger>
+          <TabsTrigger value="woche">Einzelne Woche</TabsTrigger>
         </TabsList>
 
         <TabsContent value="standard">
           <Panel
             title="Standardplan"
-            action={
-              <Badge variant="secondary">{fmtHours(weekMinutes(baseDaysForSave))} / Woche</Badge>
-            }
+            action={<Badge variant="secondary">{fmtHours(weekMinutes(days))} / Woche</Badge>}
           >
-            <div className="mb-4 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "uniform" ? "default" : "outline"}
-                onClick={() => setMode("uniform")}
-              >
-                Jeden Tag gleich
+            <p className="mb-4 text-sm text-muted-foreground">
+              Dieser Plan gilt dauerhaft für jede Woche, solange keine Abweichung hinterlegt ist.
+            </p>
+
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={applyMonFri}>
+                Mo–Fr übernehmen
               </Button>
               <Button
                 type="button"
+                variant="outline"
                 size="sm"
-                variant={mode === "per_day" ? "default" : "outline"}
-                onClick={() => setMode("per_day")}
+                className="gap-1.5"
+                onClick={copyMonday}
               >
-                Pro Tag unterschiedlich
+                <Copy className="h-3.5 w-3.5" /> Montag auf alle aktiven Tage
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground"
+                onClick={() => setDays(emptyDays())}
+              >
+                <Eraser className="h-3.5 w-3.5" /> Alles leeren
               </Button>
             </div>
 
-            {mode === "uniform" && (
-              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-surface/60 px-3 py-3">
-                <span className="text-sm font-medium">Arbeitszeit an aktiven Tagen</span>
-                <Input
-                  type="time"
-                  className="h-9 w-[120px]"
-                  value={uniformStart}
-                  onChange={(e) => setUniformStart(e.target.value)}
-                />
-                <span className="text-muted-foreground">–</span>
-                <Input
-                  type="time"
-                  className="h-9 w-[120px]"
-                  value={uniformEnd}
-                  onChange={(e) => setUniformEnd(e.target.value)}
-                />
+            {baseDirty && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+                <span className="font-medium">Ungespeicherte Änderungen</span>
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setDays(cloneDays(savedDays))}
+                  >
+                    <Undo2 className="h-3.5 w-3.5" /> Verwerfen
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    disabled={saveBase.isPending || !baseValid}
+                    onClick={() => saveBase.mutate()}
+                  >
+                    {saveBase.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    Speichern
+                  </Button>
+                </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              {DAY_KEYS.map((k: DayKey) => (
-                <DayRow
-                  key={k}
-                  label={DAY_LABELS[k]}
-                  entry={
-                    mode === "uniform"
-                      ? { active: days[k].active, start: uniformStart, end: uniformEnd }
-                      : days[k]
-                  }
-                  showTimes={mode === "per_day"}
-                  onChange={(next) => setDays({ ...days, [k]: next })}
-                />
-              ))}
-            </div>
+            <WeekGrid days={days} onChange={setDays} />
 
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => saveBase.mutate()} disabled={saveBase.isPending} className="gap-2">
-                {saveBase.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                Standardplan speichern
-              </Button>
-            </div>
+            {!baseValid && (
+              <p className="mt-3 text-xs text-destructive">
+                Bitte zuerst die markierten Zeitblöcke korrigieren.
+              </p>
+            )}
           </Panel>
         </TabsContent>
 
         <TabsContent value="woche">
           <Panel
-            title="Wochenplanung"
-            action={
-              <Badge variant="secondary">{fmtHours(weekMinutes(effectiveWeek))} / Woche</Badge>
-            }
+            title="Einzelne Woche"
+            action={<Badge variant="secondary">{fmtHours(weekMinutes(effectiveWeek))} / Woche</Badge>}
           >
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <Button
@@ -366,7 +362,7 @@ export default function Arbeitszeiten() {
                 <Badge className="ml-auto">Abweichend geplant</Badge>
               ) : (
                 <Badge variant="outline" className="ml-auto">
-                  Standardplan
+                  Folgt dem Standardplan
                 </Badge>
               )}
             </div>
@@ -377,33 +373,16 @@ export default function Arbeitszeiten() {
               </div>
             )}
 
-            <div className="space-y-2">
-              {DAY_KEYS.map((k: DayKey, i) => (
-                <DayRow
-                  key={k}
-                  label={`${DAY_LABELS[k]} · ${addDays(weekStart, i).toLocaleDateString("de-DE", {
-                    day: "2-digit",
-                    month: "2-digit",
-                  })}`}
-                  entry={effectiveWeek[k]}
-                  disabled={isPast || !hasOverride}
-                  onChange={(next) =>
-                    setWeekDraft({ ...(weekDraft ?? effectiveWeek), [k]: next } as DayMap)
-                  }
-                />
-              ))}
-            </div>
+            <WeekGrid
+              days={effectiveWeek}
+              weekStart={weekStart}
+              disabled={isPast || !hasOverride}
+              onChange={(next) => setWeekDraft(next)}
+            />
 
             <div className="mt-4 flex flex-wrap justify-end gap-2">
               {!hasOverride ? (
-                <Button
-                  disabled={isPast}
-                  onClick={() =>
-                    setWeekDraft(
-                      JSON.parse(JSON.stringify(effectiveWeek)) as DayMap,
-                    )
-                  }
-                >
+                <Button disabled={isPast} onClick={() => setWeekDraft(cloneDays(effectiveWeek))}>
                   Diese Woche abweichend planen
                 </Button>
               ) : (
@@ -418,7 +397,7 @@ export default function Arbeitszeiten() {
                   </Button>
                   <Button
                     className="gap-2"
-                    disabled={isPast || saveWeek.isPending}
+                    disabled={isPast || saveWeek.isPending || !weekValid}
                     onClick={() => saveWeek.mutate()}
                   >
                     {saveWeek.isPending ? (
