@@ -23,15 +23,20 @@ export const DAY_SHORT: Record<DayKey, string> = {
   sun: "So",
 };
 
-export type DayEntry = { active: boolean; start: string; end: string };
+export type Segment = { start: string; end: string };
+export type DayEntry = { active: boolean; segments: Segment[] };
 export type DayMap = Record<DayKey, DayEntry>;
 export type ScheduleMode = "uniform" | "per_day";
 
-export const DEFAULT_DAY: DayEntry = { active: false, start: "09:00", end: "17:00" };
+export const DEFAULT_SEGMENT: Segment = { start: "09:00", end: "17:00" };
+
+export function emptySegment(): Segment {
+  return { ...DEFAULT_SEGMENT };
+}
 
 export function emptyDays(): DayMap {
   return DAY_KEYS.reduce((acc, k) => {
-    acc[k] = { ...DEFAULT_DAY };
+    acc[k] = { active: false, segments: [emptySegment()] };
     return acc;
   }, {} as DayMap);
 }
@@ -43,40 +48,108 @@ export function defaultDays(): DayMap {
   return d;
 }
 
-/** Normalisiert beliebige jsonb-Daten aus der Datenbank in eine vollständige DayMap. */
+function normalizeTime(v: unknown, fallback: string): string {
+  return typeof v === "string" && /^\d{1,2}:\d{2}/.test(v) ? v.slice(0, 5) : fallback;
+}
+
+/** Normalisiert jsonb-Daten (altes Format start/end oder neues segments-Format). */
 export function normalizeDays(raw: unknown): DayMap {
   const base = emptyDays();
   if (!raw || typeof raw !== "object") return base;
   const obj = raw as Record<string, unknown>;
   for (const key of DAY_KEYS) {
-    const v = obj[key] as Partial<DayEntry> | undefined;
+    const v = obj[key] as Record<string, unknown> | undefined;
     if (!v || typeof v !== "object") continue;
-    base[key] = {
-      active: !!v.active,
-      start: typeof v.start === "string" && v.start ? v.start : DEFAULT_DAY.start,
-      end: typeof v.end === "string" && v.end ? v.end : DEFAULT_DAY.end,
-    };
+    let segments: Segment[] = [];
+    if (Array.isArray(v.segments)) {
+      segments = (v.segments as unknown[])
+        .filter((s) => s && typeof s === "object")
+        .map((s) => {
+          const seg = s as Record<string, unknown>;
+          return {
+            start: normalizeTime(seg.start, DEFAULT_SEGMENT.start),
+            end: normalizeTime(seg.end, DEFAULT_SEGMENT.end),
+          };
+        });
+    }
+    if (segments.length === 0) {
+      segments = [
+        {
+          start: normalizeTime(v.start, DEFAULT_SEGMENT.start),
+          end: normalizeTime(v.end, DEFAULT_SEGMENT.end),
+        },
+      ];
+    }
+    base[key] = { active: !!v.active, segments };
   }
   return base;
 }
 
-function toMinutes(t: string): number {
+/** Für die Datenbank: neues Format plus start/end des ersten Blocks (Abwärtskompatibilität). */
+export function serializeDays(days: DayMap): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const key of DAY_KEYS) {
+    const d = days[key];
+    const first = d.segments[0] ?? emptySegment();
+    out[key] = {
+      active: d.active,
+      segments: d.segments.map((s) => ({ start: s.start, end: s.end })),
+      start: first.start,
+      end: first.end,
+    };
+  }
+  return out;
+}
+
+export function cloneDays(days: DayMap): DayMap {
+  return JSON.parse(JSON.stringify(days)) as DayMap;
+}
+
+export function toMinutes(t: string): number {
   const [h, m] = t.split(":").map((n) => parseInt(n, 10));
   if (Number.isNaN(h) || Number.isNaN(m)) return 0;
   return h * 60 + m;
 }
 
-/** Dauer eines Tages in Minuten; Zeiten über Mitternacht werden unterstützt. */
+export function segmentMinutes(seg: Segment): number {
+  const diff = toMinutes(seg.end) - toMinutes(seg.start);
+  return diff >= 0 ? diff : diff + 24 * 60;
+}
+
+/** Dauer eines Tages in Minuten (Summe aller Blöcke). */
 export function dayMinutes(entry: DayEntry): number {
   if (!entry.active) return 0;
-  const start = toMinutes(entry.start);
-  const end = toMinutes(entry.end);
-  const diff = end - start;
-  return diff >= 0 ? diff : diff + 24 * 60;
+  return entry.segments.reduce((sum, s) => sum + segmentMinutes(s), 0);
 }
 
 export function weekMinutes(days: DayMap): number {
   return DAY_KEYS.reduce((sum, k) => sum + dayMinutes(days[k]), 0);
+}
+
+/** Fehlermeldungen für einen Tag (leeres Array = gültig). */
+export function validateDay(entry: DayEntry): string[] {
+  if (!entry.active) return [];
+  const errors: string[] = [];
+  if (entry.segments.length === 0) return ["Mindestens ein Zeitblock nötig."];
+  entry.segments.forEach((s, i) => {
+    if (toMinutes(s.end) <= toMinutes(s.start)) {
+      errors.push(`Block ${i + 1}: Ende muss nach dem Start liegen.`);
+    }
+  });
+  const sorted = entry.segments
+    .map((s, i) => ({ ...s, i }))
+    .sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+  for (let i = 1; i < sorted.length; i++) {
+    if (toMinutes(sorted[i].start) < toMinutes(sorted[i - 1].end)) {
+      errors.push("Zeitblöcke überschneiden sich.");
+      break;
+    }
+  }
+  return errors;
+}
+
+export function validateDays(days: DayMap): boolean {
+  return DAY_KEYS.every((k) => validateDay(days[k]).length === 0);
 }
 
 /** "37,5 Std." */
@@ -84,6 +157,13 @@ export function fmtHours(minutes: number): string {
   const h = minutes / 60;
   const rounded = Math.round(h * 100) / 100;
   return `${rounded.toString().replace(".", ",")} Std.`;
+}
+
+/** "7:30 Std." kompakt für Tageszeilen. */
+export function fmtHoursShort(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} Std.` : `${h}:${String(m).padStart(2, "0")} Std.`;
 }
 
 /** Montag der Woche eines Datums (lokale Zeit), als Date um 00:00. */
