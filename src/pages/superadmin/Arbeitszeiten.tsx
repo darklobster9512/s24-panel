@@ -186,9 +186,16 @@ export default function Arbeitszeiten() {
                             {!r.hasPlan ? (
                               <span className="text-xs text-muted-foreground/60">—</span>
                             ) : d.active ? (
-                              <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 font-mono text-xs text-foreground">
-                                {d.start}–{d.end}
-                              </span>
+                              <div className="flex flex-col items-start gap-1">
+                                {d.segments.map((s: any, si: number) => (
+                                  <span
+                                    key={si}
+                                    className="inline-flex rounded-md bg-primary/10 px-2 py-1 font-mono text-xs text-foreground"
+                                  >
+                                    {s.start}–{s.end}
+                                  </span>
+                                ))}
+                              </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">frei</span>
                             )}
