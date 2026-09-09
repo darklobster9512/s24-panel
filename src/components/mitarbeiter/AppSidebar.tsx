@@ -13,6 +13,7 @@ import {
   FileSignature,
   CalendarClock,
   GraduationCap,
+  Clock,
 } from "lucide-react";
 
 import {
@@ -49,6 +50,7 @@ const docItems = [
 ];
 
 const meItemsBase = [
+  { title: "Meine Arbeitszeiten", url: "/mitarbeiter/arbeitszeiten", icon: Clock },
   { title: "Meine Statistik", url: "/mitarbeiter/statistik", icon: BarChart3 },
   { title: "Profil & Vertrag", url: "/mitarbeiter/profil", icon: User },
 ];
