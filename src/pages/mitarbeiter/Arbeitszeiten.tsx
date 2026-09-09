@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader, Panel } from "@/components/mitarbeiter/MitarbeiterLayout";
-import { DayCard } from "@/components/arbeitszeiten/DayCard";
+import { DayRow } from "@/components/arbeitszeiten/DayRow";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -57,9 +57,9 @@ function WeekGrid({
   onChange: (next: DayMap) => void;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+    <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60 bg-card">
       {DAY_KEYS.map((k: DayKey, i) => (
-        <DayCard
+        <DayRow
           key={k}
           label={DAY_LABELS[k]}
           dateLabel={
