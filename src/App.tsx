@@ -150,6 +150,7 @@ export default function App() {
                     <Route path="profil" element={<MitarbeiterProfil />} />
                     <Route path="arbeitsvertrag" element={<MitarbeiterArbeitsvertrag />} />
                     <Route path="onboarding" element={<MitarbeiterOnboarding />} />
+                    <Route path="arbeitszeiten" element={<MitarbeiterArbeitszeiten />} />
                   </Route>
                 </Route>
 
