@@ -37,6 +37,7 @@ import SuperadminTelegram from "./pages/superadmin/Telegram";
 import SuperadminManager from "./pages/superadmin/Manager";
 import SuperadminLivechat from "./pages/superadmin/Livechat";
 import SuperadminArbeitsvertraege from "./pages/superadmin/Arbeitsvertraege";
+import SuperadminArbeitszeiten from "./pages/superadmin/Arbeitszeiten";
 
 import SuperadminArbeitsvertragDetail from "./pages/superadmin/ArbeitsvertragDetail";
 
